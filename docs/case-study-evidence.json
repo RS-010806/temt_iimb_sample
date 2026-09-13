@@ -1,0 +1,111 @@
+{
+  "date": "14 September 2026",
+  "commit": "63bcf04",
+  "site_url": "https://temt-iimb-sample.onrender.com",
+  "api_url": "https://temt-iimb-api.onrender.com",
+  "repository_url": "https://github.com/RS-010806/temt_iimb_sample",
+  "tests_passed": 89,
+  "typecheck_passed": true,
+  "source_check_passed": true,
+  "production_build_passed": true,
+  "live_api_verified": true,
+  "screenshots": {
+    "hero": "artifacts/screenshots/hero-desktop.jpg",
+    "demo": "artifacts/screenshots/demo-desktop.jpg",
+    "mobile": "artifacts/screenshots/hero-mobile.jpg",
+    "pipeline": "artifacts/screenshots/pipeline-desktop.jpg"
+  },
+  "measurements": [
+    {
+      "label": "Lighthouse performance",
+      "value": "97 desktop / 87 mobile"
+    },
+    {
+      "label": "Lighthouse accessibility",
+      "value": "100 desktop / 100 mobile"
+    },
+    {
+      "label": "Largest contentful paint",
+      "value": "1.1 s desktop / 2.7 s mobile"
+    },
+    {
+      "label": "Total blocking time",
+      "value": "0 ms desktop / 350 ms mobile"
+    },
+    {
+      "label": "Cumulative layout shift",
+      "value": "0 desktop / 0 mobile"
+    }
+  ],
+  "sample_pdf_path": "/downloads/temt-example-report.pdf",
+  "power_bi_path": "/downloads/temt-power-bi-pack.zip",
+  "sample_csv_path": "/downloads/temt-sample-shipments.csv",
+  "validation_notes": [
+    "Lighthouse 13.4.1 against the public site, 14 September 2026. Mobile: 4\u00d7 CPU slowdown, 150 ms RTT; shared-machine load can affect these lab results. Latest mobile performance: 87/100; the 90 target was not met. These are not field measurements.",
+    "Warm API observation: 32 legs, 24 shipments; 146.06 ms including connection and transfer. Browser/server output matched exactly. This is not a cold-start measurement."
+  ],
+  "limitations": [
+    "The latest public mobile performance score is 87/100, below the 90 target.",
+    "Lighthouse runs are laboratory observations on a shared machine; no production uptime or latency guarantee is established.",
+    "The Render free API may suspend between visits; the browser can calculate locally while it wakes."
+  ],
+  "ci_url": "https://github.com/RS-010806/temt_iimb_sample/actions/runs/34779961171",
+  "lighthouse_evidence": {
+    "desktop": {
+      "artifact": "artifacts/qa/lighthouse-public-desktop.json",
+      "fetch_time": "2026-09-13T20:18:56.021Z",
+      "performance": 97,
+      "accessibility": 100,
+      "best_practices": 100,
+      "seo": 100,
+      "lcp_s": 1.1,
+      "tbt_ms": 0,
+      "cls": 0
+    },
+    "mobile": {
+      "artifact": "artifacts/qa/lighthouse-public-mobile-final.json",
+      "fetch_time": "2026-09-13T20:23:04.270Z",
+      "performance": 87,
+      "accessibility": 100,
+      "best_practices": 100,
+      "seo": 100,
+      "lcp_s": 2.7,
+      "tbt_ms": 350,
+      "cls": 0
+    }
+  },
+  "screenshot_provenance": {
+    "hero": {
+      "sha256": "2b54542c09e1f085677ef310b30b01d2fb36cbbc7219e170ce80d3a786983b4b",
+      "dimensions_px": [
+        1440,
+        1000
+      ],
+      "capture": "Actual public website browser screenshot"
+    },
+    "demo": {
+      "sha256": "ff39f5487db0695c250201cae8b00f50e79197fbf78e4a405a2cba80bea2d1a3",
+      "dimensions_px": [
+        1440,
+        1000
+      ],
+      "capture": "Actual public website browser screenshot"
+    },
+    "mobile": {
+      "sha256": "adb51b8ca8b6d8a28ea51f5ab62a071b903b0df7ad1c33c9b924814227cb8750",
+      "dimensions_px": [
+        375,
+        900
+      ],
+      "capture": "Actual public website browser screenshot"
+    },
+    "pipeline": {
+      "sha256": "4243c71ab5241749d4619dc30fa05bfcbdef70a1c982ac0966bb47ac9d8f30f4",
+      "dimensions_px": [
+        1440,
+        1000
+      ],
+      "capture": "Actual public website browser screenshot"
+    }
+  }
+}

@@ -2,6 +2,10 @@
 
 An authorized product preview for India's enterprise sustainability and supply-chain teams. The project pairs an interactive freight-emissions landing page with a real shipment-analysis API, transparent methodology, and downloadable reporting.
 
+**[Live site](https://temt-iimb-sample.onrender.com) · [Interactive demo](https://temt-iimb-sample.onrender.com/demo/) · [Case study PDF](artifacts/deliverables/TEMT-Product-Case-Study.pdf) · [Editable DOCX](artifacts/deliverables/TEMT-Product-Case-Study.docx)**
+
+![TEMT enterprise landing page](artifacts/screenshots/hero-desktop.jpg)
+
 ## What works
 
 - Immediate road-to-rail scenario calculator, powered by published GLEC v3.2 factors.
@@ -46,12 +50,17 @@ The frontend is served from a CDN independently of the backend. Imported records
 
 ## Deployment
 
-[render.yaml](render.yaml) defines a free static site and free Node API in Singapore. Both build from the repository root. Configure the actual frontend/API origins before publication. The API may take about a minute to wake after inactivity; the UI offers local processing after eight seconds and reports where results were calculated.
+[render.yaml](render.yaml) defines a free static site and free Node API in Singapore. Both build from the repository root. The assigned public frontend and API origins are recorded in the Blueprint. The API may take about a minute to wake after inactivity; the UI offers local processing after eight seconds and reports where results were calculated.
 
 Follow the [deployment guide](docs/deployment.md). GitHub Actions runs source integrity checks, tests, type checks and both production builds. No paid infrastructure is required.
 
 ## Evidence and reproducibility
 
+- [Measured release verification](docs/verification.md)
+- [Example emissions PDF](https://temt-iimb-sample.onrender.com/downloads/temt-example-report.pdf)
+- [Power BI import pack](https://temt-iimb-sample.onrender.com/downloads/temt-power-bi-pack.zip)
+- [Sample shipment CSV](https://temt-iimb-sample.onrender.com/downloads/temt-sample-shipments.csv)
+- [Case-study reproduction](docs/case-study-production.md)
 - [Source register](docs/SOURCES.md)
 - [Implementation decisions](docs/implementation-notes.md)
 - [NIFTY source snapshot and refresh script](docs/data/nifty500-source.csv)
