@@ -4,6 +4,8 @@ export type Sector = "automotive" | "fmcg" | "materials" | "pharma";
 export type Company = { name: string; symbol: string; industry: string; sector: Sector | "general" };
 export type DemoLeg = ShipmentLeg & { origin: string; destination: string };
 export type Filters = { mode: string; subsidiary: string; from: string; to: string };
+export type QuickEstimate = { tonnes: number; kilometres: number; railShare: number };
+export const QUICK_SCENARIO_NAME = "Quick freight scenario";
 export const DEFAULT_FILTERS: Filters = { mode: "all", subsidiary: "all", from: "2025-10-01", to: "2026-09-30" };
 export const SECTORS: Record<Sector, { label: string; company: string; description: string }> = {
   automotive: { label: "Automotive", company: "India automotive group", description: "Plants, suppliers and dealer distribution" },
@@ -22,7 +24,29 @@ export function normalizeCSVRows(records: Record<string, string>[]): DemoLeg[] {
 
 export function parseDemoQuery(search: string) {
   const params = new URLSearchParams(search); const sector = params.get("sector"); const mode = params.get("mode"); const rail = params.get("rail");
-  return { sector: sector && Object.hasOwn(SECTORS, sector) ? sector as Sector : "fmcg" as Sector, company: params.get("company"), mode: mode && Object.hasOwn(MODE_LABELS, mode) ? mode : "all", rail: rail !== null && Number.isFinite(Number(rail)) ? Math.min(100, Math.max(0, Number(rail))) : 30 };
+  const boundedNumber = (key: string, min: number, max: number) => {
+    const value = params.get(key);
+    if (params.getAll(key).length !== 1 || value === null || !/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value)) return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric >= min && numeric <= max ? numeric : null;
+  };
+  const tonnes = boundedNumber("tonnes", 1, 1000000);
+  const kilometres = boundedNumber("km", 1, 20000);
+  const railShare = boundedNumber("rail", 0, 100);
+  const quick: QuickEstimate | null = params.getAll("quick").length === 1 && params.get("quick") === "1" && tonnes !== null && kilometres !== null && railShare !== null ? { tonnes, kilometres, railShare } : null;
+  return { sector: sector && Object.hasOwn(SECTORS, sector) ? sector as Sector : "fmcg" as Sector, company: quick ? null : params.get("company"), mode: quick ? "all" : mode && Object.hasOwn(MODE_LABELS, mode) ? mode : "all", rail: quick ? quick.railShare : rail !== null && Number.isFinite(Number(rail)) ? Math.min(100, Math.max(0, Number(rail))) : 30, quick };
+}
+
+/** Quick URLs describe a single synthetic monthly road baseline, not a company network. */
+export function makeQuickScenario(estimate: QuickEstimate): DemoLeg[] {
+  return [{ shipmentId: "QUICK-001", legIndex: 1, date: "2026-09-14", subsidiary: QUICK_SCENARIO_NAME, mode: "road", profile: "road-hcv", tonnes: estimate.tonnes, kilometres: estimate.kilometres, origin: "Illustrative origin", destination: "Illustrative destination" }];
+}
+
+/** Remove the quick seed when a different dataset is selected, retaining unrelated URL state. */
+export function clearQuickQuery(search: string): URLSearchParams {
+  const params = new URLSearchParams(search);
+  if (params.has("quick")) for (const key of ["quick", "tonnes", "km", "rail"]) params.delete(key);
+  return params;
 }
 
 export function backendErrorMessage(payload: unknown, status: number): string {

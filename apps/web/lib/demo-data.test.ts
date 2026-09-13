@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { analyze, FACTORS } from "@temt/calculator";
+import { analyze, compareFreightMix, FACTORS } from "@temt/calculator";
 import Papa from "papaparse";
-import { DEFAULT_FILTERS, REQUIRED_CSV_COLUMNS, backendErrorMessage, filteredAnalysis, makeScenario, normalizeCSVRows, parseDemoQuery, profileFor, type DemoLeg, type Sector } from "./demo-data";
+import { DEFAULT_FILTERS, QUICK_SCENARIO_NAME, REQUIRED_CSV_COLUMNS, backendErrorMessage, clearQuickQuery, filteredAnalysis, makeQuickScenario, makeScenario, normalizeCSVRows, parseDemoQuery, profileFor, type DemoLeg, type Sector } from "./demo-data";
 import { buildExceptionRows, buildExportRows, buildPowerBIPack, buildReportPDF, buildStandaloneCSV, serializeCSV, validationSummary, type ExportContext } from "./demo-export";
 
 const completeShipment: DemoLeg[] = [
@@ -27,6 +27,74 @@ describe("scenario integrity", () => {
     const base = { ...completeShipment[0], mode: "air" as const, kilometres: 1500, profile: profileFor("air", 1500) };
     expect(analyze([base]).errors).toEqual([]);
     expect(analyze([{ ...base, kilometres: 1500.01, profile: profileFor("air", 1500.01) }]).errors).toEqual([]);
+  });
+});
+
+describe("landing quick-estimate continuity", () => {
+  const quickSearch = "?quick=1&tonnes=1000&km=1000&rail=30";
+
+  it("carries the hero baseline, rail share and displayed saving into one synthetic road leg", () => {
+    const query = parseDemoQuery(quickSearch);
+    expect(query.quick).toEqual({ tonnes: 1000, kilometres: 1000, railShare: 30 });
+    const rows = makeQuickScenario(query.quick!);
+    expect(rows).toEqual([{ shipmentId: "QUICK-001", legIndex: 1, date: "2026-09-14", subsidiary: QUICK_SCENARIO_NAME, mode: "road", profile: "road-hcv", tonnes: 1000, kilometres: 1000, origin: "Illustrative origin", destination: "Illustrative destination" }]);
+    const result = filteredAnalysis(analyze(rows), DEFAULT_FILTERS);
+    expect(result.errors).toEqual([]);
+    expect(result.totals).toEqual({ emissionsKg: 66300, tonneKm: 1000000, shipmentCount: 1, legCount: 1 });
+    const comparison = compareFreightMix(rows[0].tonnes, rows[0].kilometres, query.rail);
+    expect(comparison.baselineKg).toBe(result.totals.emissionsKg);
+    expect(comparison.scenarioKg / 1000).toBeCloseTo(49.59, 10);
+    expect(comparison.savedKg / 1000).toBeCloseTo(16.71, 10);
+  });
+
+  it.each([[1, 1, 0], [1000000, 20000, 100], [1234.5, 999.25, 37.5]])("matches explicit road/rail engine legs at %s tonnes, %s km, %s%% rail", (tonnes, kilometres, railShare) => {
+    const query = parseDemoQuery(`?quick=1&tonnes=${tonnes}&km=${kilometres}&rail=${railShare}`);
+    expect(query.quick).toEqual({ tonnes, kilometres, railShare });
+    const base = makeQuickScenario(query.quick!)[0];
+    const baseline = analyze([base]);
+    const shifted: DemoLeg[] = [];
+    if (railShare < 100) shifted.push({ ...base, shipmentId: "QUICK-ROAD", tonnes: tonnes * (1 - railShare / 100) });
+    if (railShare > 0) shifted.push({ ...base, shipmentId: "QUICK-RAIL", mode: "rail", profile: "rail-india", tonnes: tonnes * railShare / 100 });
+    const scenario = analyze(shifted);
+    const comparison = compareFreightMix(tonnes, kilometres, railShare);
+    expect(baseline.errors).toEqual([]); expect(scenario.errors).toEqual([]);
+    expect(comparison.baselineKg).toBe(baseline.totals.emissionsKg);
+    expect(comparison.scenarioKg).toBeCloseTo(scenario.totals.emissionsKg, 6);
+    expect(comparison.savedKg).toBeCloseTo(baseline.totals.emissionsKg - scenario.totals.emissionsKg, 6);
+  });
+
+  it.each([
+    "quick=0&tonnes=1000&km=1000&rail=30", "quick=1&km=1000&rail=30", "quick=1&tonnes=1000&rail=30", "quick=1&tonnes=1000&km=1000",
+    "quick=1&tonnes=&km=1000&rail=30", "quick=1&tonnes=0&km=1000&rail=30", "quick=1&tonnes=1000001&km=1000&rail=30",
+    "quick=1&tonnes=1000&km=0&rail=30", "quick=1&tonnes=1000&km=20001&rail=30", "quick=1&tonnes=1000&km=1000&rail=-1",
+    "quick=1&tonnes=1000&km=1000&rail=101", "quick=1&tonnes=Infinity&km=1000&rail=30", "quick=1&tonnes=1000&km=NaN&rail=30",
+    "quick=1&tonnes=0x3e8&km=1000&rail=30", "quick=1&tonnes=1000&km=1000&rail=", "quick=1&tonnes=1000&tonnes=500&km=1000&rail=30",
+  ])("does not seed a quick scenario from malformed or ambiguous inputs: %s", search => {
+    expect(parseDemoQuery(search).quick).toBeNull();
+  });
+
+  it("keeps an explicit quick seed independent of company and mode URL inputs", () => {
+    const query = parseDemoQuery(`${quickSearch}&company=CIPLA&sector=pharma&mode=rail`);
+    expect(query.company).toBeNull(); expect(query.mode).toBe("all"); expect(query.rail).toBe(30);
+    expect(makeQuickScenario(query.quick!)[0].shipmentId).toBe("QUICK-001");
+  });
+
+  it("removes quick seed parameters when leaving it without changing ordinary demo URLs", () => {
+    const cleared = clearQuickQuery(`${quickSearch}&sector=pharma&company=CIPLA&mode=air`);
+    expect(cleared.toString()).toBe("sector=pharma&company=CIPLA&mode=air");
+    expect(parseDemoQuery(cleared.toString())).toMatchObject({ sector: "pharma", company: "CIPLA", mode: "air", rail: 30, quick: null });
+    expect(clearQuickQuery("sector=fmcg&rail=40").toString()).toBe("sector=fmcg&rail=40");
+  });
+
+  it("exports the quick baseline under its own name with the retained source inputs", async () => {
+    const query = parseDemoQuery(quickSearch); const rawRows = makeQuickScenario(query.quick!);
+    const ctx: ExportContext = { analysis: analyze(rawRows), rawRows, name: QUICK_SCENARIO_NAME, filters: DEFAULT_FILTERS, synthetic: true, processing: "local" };
+    const rows = buildExportRows(ctx);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ companyScenario: QUICK_SCENARIO_NAME, shipmentId: "QUICK-001", date: "2026-09-14", tonnes: 1000, kilometres: 1000, emissionsKg: 66300, dataType: "synthetic scenario" });
+    const pack = await buildPowerBIPack(ctx);
+    expect(await pack.file("summary.csv")!.async("string")).toContain(QUICK_SCENARIO_NAME);
+    expect(await pack.file("shipments.csv")!.async("string")).toContain("QUICK-001");
   });
 });
 
@@ -135,7 +203,7 @@ describe("untrusted URL and backend error handling", () => {
     expect(parseDemoQuery(`?sector=${value}&mode=${value}`)).toMatchObject({ sector: "fmcg", mode: "all", rail: 30 });
   });
   it("accepts known query values and bounds the rail percentage", () => {
-    expect(parseDemoQuery("?sector=pharma&company=CIPLA&mode=air&rail=500")).toEqual({ sector: "pharma", company: "CIPLA", mode: "air", rail: 100 });
+    expect(parseDemoQuery("?sector=pharma&company=CIPLA&mode=air&rail=500")).toEqual({ sector: "pharma", company: "CIPLA", mode: "air", rail: 100, quick: null });
     expect(parseDemoQuery("?rail=-12").rail).toBe(0); expect(parseDemoQuery("?rail=not-a-number").rail).toBe(30); expect(parseDemoQuery("?rail=Infinity").rail).toBe(30);
   });
   it("uses nested server messages without stringifying objects", () => {
