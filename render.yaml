@@ -1,0 +1,74 @@
+# Both services build from the repository root so packages/calculator is available.
+# Set the actual assigned public URLs after creating the services, then redeploy.
+services:
+  - type: web
+    name: temt-iimb-sample
+    runtime: static
+    repo: https://github.com/RS-010806/temt_iimb_sample
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build:web
+    staticPublishPath: apps/web/out
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - apps/web/**
+        - packages/**
+        - package.json
+        - package-lock.json
+        - tsconfig*.json
+    envVars:
+      - key: NODE_VERSION
+        value: 22.23.2
+      - key: SKIP_INSTALL_DEPS
+        value: "true"
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: ""
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /_next/static/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /fonts/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /images/*
+        name: Cache-Control
+        value: public, max-age=86400
+
+  - type: web
+    name: temt-iimb-api
+    runtime: node
+    repo: https://github.com/RS-010806/temt_iimb_sample
+    branch: main
+    region: singapore
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build:api
+    startCommand: npm run start --workspace=@temt/api
+    healthCheckPath: /api/health
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/**
+        - package.json
+        - package-lock.json
+        - tsconfig*.json
+    envVars:
+      - key: NODE_VERSION
+        value: 22.23.2
+      - key: NODE_ENV
+        value: production
+      - key: SKIP_INSTALL_DEPS
+        value: "true"
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:3000
+      - key: TRUST_PROXY_HOPS
+        value: "1"

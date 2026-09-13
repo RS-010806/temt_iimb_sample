@@ -1,0 +1,23 @@
+{
+  "source": "NSE Indices Limited: NIFTY 500 constituent list",
+  "url": "https://www.niftyindices.com/IndexConstituent/ind_nifty500list.csv",
+  "asof": "2026-09-14",
+  "retrieved_at": "2026-09-14T01:19:05+05:30",
+  "count": 501,
+  "effective_date": null,
+  "asof_note": "Download date. The source CSV does not state an effective date.",
+  "raw_sha256": "7b90cc2fbfc268cae8eeb95cf1bd80218a0a41f81f0fd1b0ff1ebf64f4dd8bfa",
+  "raw_path": "docs/data/nifty500-source.csv",
+  "classification_note": "Name, symbol and industry are source fields. Sector is a broad demo preset mapping, not an NSE classification or a company's reported freight activity.",
+  "scenario_note": "Company selection personalizes a synthetic demonstration. No company shipment data, customer relationship or emissions disclosure is represented.",
+  "sector_mapping": {
+    "Automobile and Auto Components": "automotive",
+    "Fast Moving Consumer Goods": "fmcg",
+    "Healthcare": "pharma",
+    "Chemicals": "materials",
+    "Metals & Mining": "materials",
+    "Construction Materials": "materials",
+    "Oil Gas & Consumable Fuels": "materials"
+  },
+  "sector_default": "general"
+}

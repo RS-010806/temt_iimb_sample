@@ -1,0 +1,31 @@
+{
+  "name": "temt-enterprise-preview",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.0.0 <23"
+  },
+  "scripts": {
+    "dev": "npm run build:calculator && concurrently -n web,api -c cyan,yellow \"npm run dev -w @temt/web\" \"npm run dev -w @temt/api\"",
+    "build:calculator": "npm run build -w @temt/calculator",
+    "build:web": "npm run build:calculator && npm run build -w @temt/web",
+    "build:api": "npm run build:calculator && npm run build -w @temt/api",
+    "build": "npm run build:calculator && npm run build -w @temt/api && npm run build -w @temt/web",
+    "check": "npm run build:calculator && npm run check --workspaces --if-present",
+    "test": "npm run build:calculator && vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@axe-core/cli": "^4.13.0",
+    "@types/node": "^22.0.0",
+    "concurrently": "^9.2.0",
+    "lighthouse": "^13.4.1",
+    "serve": "^14.2.6",
+    "typescript": "^5.9.0",
+    "vitest": "5.0.0"
+  }
+}
