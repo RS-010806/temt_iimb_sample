@@ -1,24 +1,36 @@
 # Case study QA
 
-Final artifacts: `artifacts/deliverables/TEMT-Product-Case-Study.docx` and `artifacts/deliverables/TEMT-Product-Case-Study.pdf`.
+The refreshed case study describes validated application release `81f7a0b52022b3af7773bed137992968e2f11d36`. Final artifacts are `artifacts/deliverables/TEMT-Product-Case-Study.docx` and `artifacts/deliverables/TEMT-Product-Case-Study.pdf`; identical copies are in `apps/web/public/downloads/` for the next documentation deployment.
 
-The final Word file was rendered with the managed Documents runtime on 14 September 2026. Every one of the five rendered pages was visually inspected after the final screenshot and measurement updates. No clipped text, overlap, orphaned page content or misplaced table rows was observed. The PDF is exactly five US Letter pages and carries page numbers 1/5 through 5/5.
+The final Word file was rendered with the managed Documents runtime on 14 September 2026. The document author and release coordinator each visually inspected all five final page PNGs. No clipped text, overlap, orphaned content or misplaced table rows was observed. The PDF is exactly five US Letter pages with page numbers 1/5 through 5/5.
 
 | Page | Checked content |
 | --- | --- |
-| 1 | Outcome, actual public hero, scope and synthetic-data boundary |
-| 2 | Actual desktop workspace and mobile captures, three buyer actions |
-| 3 | Completed pipeline capture, input validation, shared calculations and exports |
-| 4 | Architecture, 89 tests, public Lighthouse observations, warm API timing and CI link |
-| 5 | Live handoff links, design decisions, selected sources and credits |
+| 1 | Cinematic desktop hero, mobile estimator priority, outcome and synthetic-data boundary |
+| 2 | Landing reporting, retained enterprise workspace, story chapters, URL handoff and interaction behavior |
+| 3 | Completed pipeline, missing-load control, validation, calculation and reporting trail |
+| 4 | Architecture, 112 tests, current public Lighthouse results, API timing scope and successful CI link |
+| 5 | Live handoff links, design decisions, source references and credits |
 
-Structural checks confirmed four screenshots with alternative text, four explicit page breaks, eleven correct PDF hyperlink destinations and zero em dashes. PDF font inspection confirmed embedded subsets of Manrope Regular/Bold, Barlow Condensed SemiBold and IBM Plex Mono Regular. The text remains editable in the DOCX. Screenshot hashes and dimensions are recorded in `docs/case-study-evidence.json`.
+The four new captures show local production build `81f7a0b`, explicitly identified in the captions. The retained workspace screenshot shows the same unchanged FMCG scenario from the earlier public release. The pipeline screenshot displays the valid result of 1,394.33 kgCO₂e; the text separately explains what the missing-load control does.
 
-The report uses the final public observations of 97 desktop and 87 mobile performance, with accessibility 100 on both. It explicitly records that the mobile performance target of 90 was not met and describes the lab conditions. The 4.925 ms calculation and 146.06 ms request are identified as one warm API observation. Cold-start behavior is not represented by those measurements.
+Structural checks confirmed five screenshots with alternative text, four explicit page breaks, eleven correct PDF hyperlink destinations and zero em dashes. Every embedded screenshot was decoded and compared with its original: dimensions and RGB pixels match exactly. Four JPEG copies received an in-memory JFIF marker for Word compatibility; source files were not altered. PDF font inspection confirmed embedded Manrope Regular/Bold, Barlow Condensed SemiBold and IBM Plex Mono Regular. Text remains editable in the DOCX.
+
+The document reports the final public performance scores of 100 desktop and 91 mobile, with accessibility 100 on both. The project performance floors were met. LCP is 0.6 s desktop and 2.9 s mobile. The displayed mobile TBT is 50 ms, matching Lighthouse's rounded display; its raw numeric value of 54 ms is retained in the manifest. These are lab observations, not field results.
+
+The current one-leg API analysis returned 66,300 kgCO₂e with exact client/server parity. The 1.82 ms engine duration and 112.83 ms HTTP duration are identified as individual warm observations. The initial 23.25 s health request has unknown prior idle history and is not presented as a controlled cold-start measurement. Previous release results remain archived under `previous_release` in the evidence manifest.
 
 | Artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
-| DOCX | 408942 | `27023cdcdb9d8259d50c342a0ea4a9eb026e24f2ef60fdc57f9ae91c3c654245` |
-| PDF | 619599 | `5f7bd28c34608a7ee2a9c66f8b9c7ad7dca2fbab5462b97031ec2300adb4dfb6` |
+| DOCX | 453532 | `60c67b3fef697f7eae164733524a25d5a265d8e9c712ce14a951a956e43d3cb9` |
+| PDF | 611642 | `733aacbdbd234457bb84b285797234bf5a9aae948965207047af6ff474b798aa` |
 
-The application release referenced in the report is `63bcf04`. The final document's later commit does not change the release that was tested.
+Final page renders:
+
+- `artifacts/doc-build/case-study-revision-final-qa/page-1.png`
+- `artifacts/doc-build/case-study-revision-final-qa/page-2.png`
+- `artifacts/doc-build/case-study-revision-final-qa/page-3.png`
+- `artifacts/doc-build/case-study-revision-final-qa/page-4.png`
+- `artifacts/doc-build/case-study-revision-final-qa/page-5.png`
+
+The generated document references the application release tested above. Its later documentation-only commit does not change that test reference. No commit or push was performed by the document task.

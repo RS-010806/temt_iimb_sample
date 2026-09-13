@@ -54,11 +54,11 @@ For the revised release, record the deployed commit, public URL, viewport, throt
 
 ## Case study refresh, after the revision is verified
 
-The current case study and its published copies are intentionally unchanged by this research task. Once the revised build is deployed and checked:
+The following handoff was specified at the research stage. It is now completed for the cinematic revision; final measurements and screenshot provenance are in the [release verification](verification.md) and [case-study evidence](case-study-evidence.json). The implementation used verified production-build captures corresponding to the published source, with this provenance disclosed. The original handoff steps were:
 
 1. Capture the public desktop hero and mobile hero in the new design. Recapture the pipeline if its visual treatment changes; refresh the workspace capture if that interface changes.
 2. Update `docs/case-study-evidence.json` with the validated release, new measurements and screenshot provenance. Preserve the distinction between local calculation, warm API timing and service wake-up behavior.
 3. Revise the design-decision text to describe the implemented result. Retain source and synthetic-data boundaries.
 4. Regenerate the editable DOCX and PDF, verify exactly five pages, inspect every page, and recheck embedded fonts and links before replacing public downloads.
 
-No new source-code changes, case-study edits, browser actions or performance measurements were made for this research artifact.
+This document records the research stage. Implementation, browser verification, measurements and the refreshed case study are documented in the linked release records.

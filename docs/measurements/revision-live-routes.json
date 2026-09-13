@@ -1,0 +1,146 @@
+{
+  "base": "https://temt-iimb-sample.onrender.com",
+  "startedAt": "2026-09-13T21:46:56.289Z",
+  "routes": [
+    {
+      "path": "/",
+      "at": "2026-09-13T21:46:56.290Z",
+      "status": 200,
+      "wallMs": 197.935834,
+      "bytes": 88283,
+      "contentType": "text/html; charset=utf-8",
+      "passed": true
+    },
+    {
+      "path": "/demo/",
+      "at": "2026-09-13T21:46:56.489Z",
+      "status": 200,
+      "wallMs": 376.553625,
+      "bytes": 49439,
+      "contentType": "text/html; charset=utf-8",
+      "passed": true,
+      "analyticsAnchor": true
+    },
+    {
+      "path": "/methodology/",
+      "at": "2026-09-13T21:46:56.865Z",
+      "status": 200,
+      "wallMs": 377.27750000000003,
+      "bytes": 29114,
+      "contentType": "text/html; charset=utf-8",
+      "passed": true
+    },
+    {
+      "path": "/privacy/",
+      "at": "2026-09-13T21:46:57.243Z",
+      "status": 200,
+      "wallMs": 364.02712500000007,
+      "bytes": 17576,
+      "contentType": "text/html; charset=utf-8",
+      "passed": true
+    },
+    {
+      "path": "/robots.txt",
+      "at": "2026-09-13T21:46:57.607Z",
+      "status": 200,
+      "wallMs": 336.2316249999999,
+      "bytes": 100,
+      "contentType": "text/plain; charset=utf-8",
+      "passed": true,
+      "hasSitemap": true
+    },
+    {
+      "path": "/sitemap.xml",
+      "at": "2026-09-13T21:46:57.943Z",
+      "status": 200,
+      "wallMs": 324.4323340000001,
+      "bytes": 491,
+      "contentType": "application/xml",
+      "passed": true,
+      "listedRoutes": [
+        "https://temt-iimb-sample.onrender.com/",
+        "https://temt-iimb-sample.onrender.com/methodology/",
+        "https://temt-iimb-sample.onrender.com/privacy/"
+      ],
+      "expectedIndexableRoutes": [
+        "https://temt-iimb-sample.onrender.com/",
+        "https://temt-iimb-sample.onrender.com/methodology/",
+        "https://temt-iimb-sample.onrender.com/privacy/"
+      ],
+      "hasIndexableRoutes": true,
+      "intentionalExclusion": "/demo/ is noindex and disallowed by the published robots policy; it is intentionally absent from the sitemap."
+    },
+    {
+      "path": "/data/nifty500.json",
+      "at": "2026-09-13T21:46:58.268Z",
+      "status": 200,
+      "wallMs": 19.31358299999988,
+      "bytes": 51941,
+      "contentType": "application/json",
+      "passed": true,
+      "companyCount": 501,
+      "validCompanyRecords": true
+    },
+    {
+      "path": "/data/nifty500-meta.json",
+      "at": "2026-09-13T21:46:58.288Z",
+      "status": 200,
+      "wallMs": 348.44891699999994,
+      "bytes": 1154,
+      "contentType": "application/json",
+      "passed": true
+    },
+    {
+      "path": "/verification-route-does-not-exist/",
+      "at": "2026-09-13T21:46:58.636Z",
+      "status": 404,
+      "wallMs": 392.57162500000004,
+      "bytes": 13511,
+      "contentType": "text/html; charset=utf-8",
+      "passed": true
+    }
+  ],
+  "downloads": [
+    {
+      "path": "/downloads/temt-example-report.pdf",
+      "at": "2026-09-13T21:46:59.029Z",
+      "status": 200,
+      "wallMs": 383.75158299999975,
+      "contentType": "application/pdf",
+      "localBytes": 45784,
+      "remoteBytes": 45784,
+      "localSha256": "d4272e493ee68456624bdaf6a4d15271d388dd450bc7e4949dca70fe0681129b",
+      "remoteSha256": "d4272e493ee68456624bdaf6a4d15271d388dd450bc7e4949dca70fe0681129b",
+      "identical": true,
+      "passed": true
+    },
+    {
+      "path": "/downloads/temt-power-bi-pack.zip",
+      "at": "2026-09-13T21:46:59.414Z",
+      "status": 200,
+      "wallMs": 322.04437499999995,
+      "contentType": "application/zip",
+      "localBytes": 6147,
+      "remoteBytes": 6147,
+      "localSha256": "a222b8ba7ee3495edf0bf76a2c7364156fcd069307a500336d99e67779945bda",
+      "remoteSha256": "a222b8ba7ee3495edf0bf76a2c7364156fcd069307a500336d99e67779945bda",
+      "identical": true,
+      "passed": true
+    },
+    {
+      "path": "/downloads/temt-sample-shipments.csv",
+      "at": "2026-09-13T21:46:59.736Z",
+      "status": 200,
+      "wallMs": 350.76274999999987,
+      "contentType": "text/csv; charset=utf-8",
+      "localBytes": 5548,
+      "remoteBytes": 5548,
+      "localSha256": "b0c27510cf404f3706c052faad86ee6270101429fb8ed90a75ae5f68e6bcee2b",
+      "remoteSha256": "b0c27510cf404f3706c052faad86ee6270101429fb8ed90a75ae5f68e6bcee2b",
+      "identical": true,
+      "passed": true
+    }
+  ],
+  "allPassed": true,
+  "completedAt": "2026-09-13T21:47:55.843Z"
+}

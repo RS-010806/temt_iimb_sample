@@ -1,0 +1,139 @@
+{
+  "revision": "81f7a0b",
+  "checkedAt": "2026-09-13T21:35:25.529Z",
+  "ci": [
+    {
+      "at": "2026-09-13T21:35:25.530Z",
+      "url": "https://api.github.com/repos/RS-010806/temt_iimb_sample/actions/runs/34784180046",
+      "status": "completed",
+      "wallMs": 617.729875,
+      "runId": 34784180046,
+      "headSha": "81f7a0b52022b3af7773bed137992968e2f11d36",
+      "conclusion": "success",
+      "httpStatus": 200,
+      "updatedAt": "2026-09-13T21:34:16Z",
+      "htmlUrl": "https://github.com/RS-010806/temt_iimb_sample/actions/runs/34784180046"
+    }
+  ],
+  "static": [
+    {
+      "at": "2026-09-13T21:35:26.149Z",
+      "url": "https://temt-iimb-sample.onrender.com/",
+      "status": 200,
+      "wallMs": 563.0382500000001,
+      "freightStoryScene": true,
+      "quickEstimateLink": true,
+      "mobileSmallAsset": true,
+      "cacheControl": "public, max-age=0, s-maxage=300",
+      "etag": "\"fe8540a5385ff2c82219141b2eedb369\""
+    }
+  ],
+  "api": [
+    {
+      "name": "health_initial_observation",
+      "url": "https://temt-iimb-api.onrender.com/api/health",
+      "at": "2026-09-13T21:37:05.532Z",
+      "method": "GET",
+      "wallMs": 23246.197834,
+      "status": 200,
+      "headers": {
+        "allowOrigin": null,
+        "vary": "Origin, Accept-Encoding",
+        "cacheControl": "no-store",
+        "contentType": "application/json; charset=utf-8"
+      },
+      "response": {
+        "status": "ok",
+        "engineVersion": "temt-demo-1.0.0",
+        "persistence": "none"
+      },
+      "timingNote": "First API call in this audit. Prior server idle duration is unknown; this is not a controlled cold-start measurement.",
+      "passed": true
+    },
+    {
+      "name": "factors",
+      "url": "https://temt-iimb-api.onrender.com/api/factors",
+      "at": "2026-09-13T21:37:28.781Z",
+      "method": "GET",
+      "wallMs": 101.35204100000192,
+      "status": 200,
+      "headers": {
+        "allowOrigin": null,
+        "vary": "Origin, Accept-Encoding",
+        "cacheControl": "no-store",
+        "contentType": "application/json; charset=utf-8"
+      },
+      "factorCount": 5,
+      "engineVersion": "temt-demo-1.0.0",
+      "exactLocalFactorMatch": true,
+      "passed": true
+    },
+    {
+      "name": "quick_scenario_analyze",
+      "url": "https://temt-iimb-api.onrender.com/api/analyze",
+      "at": "2026-09-13T21:37:28.884Z",
+      "method": "POST",
+      "wallMs": 112.8304590000007,
+      "status": 200,
+      "headers": {
+        "allowOrigin": "https://temt-iimb-sample.onrender.com",
+        "vary": "Origin, Accept-Encoding",
+        "cacheControl": "no-store",
+        "contentType": "application/json; charset=utf-8"
+      },
+      "processingMs": 1.8195720000003348,
+      "calculatedAt": "2026-09-13T21:37:29.042Z",
+      "engineVersion": "temt-demo-1.0.0",
+      "totals": {
+        "emissionsKg": 66300,
+        "tonneKm": 1000000,
+        "legCount": 1,
+        "shipmentCount": 1
+      },
+      "validationErrors": [],
+      "exactClientServerParity": true,
+      "quickQuery": "?quick=1&tonnes=1000&km=1000&rail=30",
+      "comparison": {
+        "baselineKg": 66300,
+        "scenarioKg": 49589.99999999999,
+        "savedKg": 16710.000000000007,
+        "reductionPercent": 25.203619909502272
+      },
+      "passed": true
+    },
+    {
+      "name": "allowed_cors_preflight",
+      "url": "https://temt-iimb-api.onrender.com/api/analyze",
+      "at": "2026-09-13T21:37:28.997Z",
+      "method": "OPTIONS",
+      "wallMs": 99.27512500000012,
+      "status": 204,
+      "headers": {
+        "allowOrigin": "https://temt-iimb-sample.onrender.com",
+        "vary": "Origin",
+        "cacheControl": "no-store",
+        "contentType": null
+      },
+      "passed": true
+    },
+    {
+      "name": "lookalike_cors_preflight",
+      "url": "https://temt-iimb-api.onrender.com/api/analyze",
+      "at": "2026-09-13T21:37:29.098Z",
+      "method": "OPTIONS",
+      "wallMs": 276.73549999999886,
+      "status": 403,
+      "headers": {
+        "allowOrigin": null,
+        "vary": "Accept-Encoding",
+        "cacheControl": "no-store",
+        "contentType": "application/json; charset=utf-8"
+      },
+      "passed": true
+    }
+  ],
+  "lastCheckedAt": "2026-09-13T21:37:29.374Z",
+  "timingScope": "HTTP wall durations include receiving each response body from this machine; API processingMs is the server-reported computation observation. These are individual observations, not latency targets or service guarantees.",
+  "allApiChecksPassed": true,
+  "completedAt": "2026-09-13T21:37:29.376Z"
+}

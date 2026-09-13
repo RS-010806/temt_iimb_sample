@@ -12,3 +12,5 @@ artifacts/qa/
 artifacts/doc-build/
 tmp/
 .cache/
+artifacts/measurements/
+artifacts/screenshots/revision/
