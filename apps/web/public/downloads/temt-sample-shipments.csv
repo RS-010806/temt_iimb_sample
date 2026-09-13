@@ -1,0 +1,33 @@
+﻿shipmentId,legIndex,date,subsidiary,origin,destination,mode,profile,tonnes,kilometres,dataType,scenario,generatedAt
+FMC-1001,1,2025-10-07,Foods division,Mumbai,Delhi,road,road-hcv,185.6,1420,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1001,2,2025-10-07,Foods division,Delhi,Distribution centre,road,road-hcv,185.6,38,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1002,1,2025-11-10,Home & personal care,Chennai,Bengaluru,road,road-hcv,409.6,362,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1003,1,2025-12-13,Distribution,Pune,Ahmedabad,road,road-hcv,249.6,684,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1004,1,2026-01-16,Foods division,Kolkata,Delhi,rail,rail-india,473.6,1566,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1004,2,2026-01-16,Foods division,Delhi,Distribution centre,road,road-hcv,473.6,47,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1005,1,2026-02-19,Home & personal care,Hyderabad,Mumbai,road,road-hcv,313.6,710,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1006,1,2026-03-22,Distribution,Chennai,Kolkata,air,air-long,43,1672,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1007,1,2026-04-07,Foods division,JNPT,Chennai port,ocean,ocean-container,641.9,2194,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1007,2,2026-04-07,Foods division,Delhi,Distribution centre,road,road-hcv,641.9,56,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1008,1,2026-05-10,Home & personal care,Bengaluru,Pune,road,road-hcv,217.6,876,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1009,1,2026-06-13,Distribution,Mumbai,Delhi,rail,rail-india,441.6,1420,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1010,1,2026-07-16,Foods division,Chennai,Bengaluru,road,road-hcv,281.6,362,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1010,2,2026-07-16,Foods division,Bengaluru,Distribution centre,road,road-hcv,281.6,65,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1011,1,2026-08-19,Home & personal care,Pune,Ahmedabad,road,road-hcv,505.6,684,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1012,1,2026-09-22,Distribution,Kolkata,Delhi,road,road-hcv,345.6,1566,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1013,1,2025-10-07,Foods division,Hyderabad,Mumbai,road,road-hcv,185.6,710,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1013,2,2025-10-07,Foods division,Mumbai,Distribution centre,road,road-hcv,185.6,74,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1014,1,2025-11-10,Home & personal care,Chennai,Kolkata,rail,rail-india,409.6,1672,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1015,1,2025-12-13,Distribution,JNPT,Chennai port,ocean,ocean-container,424.3,2346,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1016,1,2026-01-16,Foods division,Bengaluru,Pune,road,road-hcv,473.6,876,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1016,2,2026-01-16,Foods division,Pune,Distribution centre,road,road-hcv,473.6,83,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1017,1,2026-02-19,Home & personal care,Mumbai,Delhi,air,air-short,25.1,1420,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1018,1,2026-03-22,Distribution,Chennai,Bengaluru,road,road-hcv,537.6,362,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1019,1,2026-04-07,Foods division,Pune,Ahmedabad,rail,rail-india,377.6,684,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1019,2,2026-04-07,Foods division,Ahmedabad,Distribution centre,road,road-hcv,377.6,92,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1020,1,2026-05-10,Home & personal care,Kolkata,Delhi,road,road-hcv,217.6,1566,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1021,1,2026-06-13,Distribution,Hyderabad,Mumbai,road,road-hcv,441.6,710,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1022,1,2026-07-16,Foods division,Chennai,Kolkata,road,road-hcv,281.6,1672,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1022,2,2026-07-16,Foods division,Kolkata,Distribution centre,road,road-hcv,281.6,101,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1023,1,2026-08-19,Home & personal care,JNPT,Chennai port,ocean,ocean-container,859.5,2498,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z
+FMC-1024,1,2026-09-22,Distribution,Bengaluru,Pune,rail,rail-india,345.6,876,synthetic scenario,Illustrative India consumer group scenario,2026-09-13T20:09:04.257Z

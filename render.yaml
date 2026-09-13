@@ -1,5 +1,5 @@
 # Both services build from the repository root so packages/calculator is available.
-# Set the actual assigned public URLs after creating the services, then redeploy.
+# Public service URLs assigned to this Blueprint on 14 September 2026.
 services:
   - type: web
     name: temt-iimb-sample
@@ -22,7 +22,9 @@ services:
       - key: SKIP_INSTALL_DEPS
         value: "true"
       - key: NEXT_PUBLIC_API_BASE_URL
-        value: ""
+        value: https://temt-iimb-api.onrender.com
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://temt-iimb-sample.onrender.com
     headers:
       - path: /*
         name: X-Content-Type-Options
@@ -69,6 +71,6 @@ services:
       - key: SKIP_INSTALL_DEPS
         value: "true"
       - key: ALLOWED_ORIGINS
-        value: http://localhost:3000
+        value: https://temt-iimb-sample.onrender.com
       - key: TRUST_PROXY_HOPS
         value: "1"
