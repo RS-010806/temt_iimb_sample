@@ -66,72 +66,134 @@ export async function exportPowerBI(context: ExportContext) {
 }
 
 export async function buildReportPDF(context: ExportContext) {
-  const { jsPDF } = await import("jspdf"); const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const { jsPDF } = await import("jspdf");
+  // Standard PDF Times avoids shipping a proprietary desktop font to browsers.
+  const doc = new jsPDF({ unit: "mm", format: "a4", putOnlyUsedFonts: true });
   const validation = validationSummary(context);
-  const ink = "#21331f", muted = "#6e7e62", orange = "#c66a3e"; const left = 18; let y = 20;
-  doc.setFillColor("#f5f4eb"); doc.rect(0, 0, 210, 297, "F"); doc.setTextColor(ink); doc.setFont("helvetica", "bold"); doc.setFontSize(25); doc.text("TEMT / FREIGHT REPORT", left, y); y += 10;
-  doc.setFont("helvetica", "normal"); doc.setFontSize(11); const nameLines = doc.splitTextToSize(context.name, 173); doc.text(nameLines, left, y); y += nameLines.length * 5 + 2; doc.setTextColor(orange); doc.setFontSize(8); doc.text(context.synthetic ? "ILLUSTRATIVE SCENARIO. SYNTHETIC DATA." : "USER-SUPPLIED DATA. UNASSURED CALCULATIONS.", left, y); y += 10;
-  doc.setTextColor(muted); const filterText = `${context.filters.from || "Start"} to ${context.filters.to || "Present"} | Mode: ${context.filters.mode} | Unit: ${context.filters.subsidiary}`; doc.text(doc.splitTextToSize(filterText, 173), left, y); y += 12;
-  const metrics = [["EMISSIONS", `${formatNumber(context.analysis.totals.emissionsKg / 1000, 2)} tCO2e`], ["SHIPMENTS", formatNumber(context.analysis.totals.shipmentCount)], ["FREIGHT ACTIVITY", `${formatNumber(context.analysis.totals.tonneKm, 0)} tkm`]];
-  for (let i = 0; i < metrics.length; i++) { const x = left + i * 59; doc.setDrawColor("#ced8c3"); doc.roundedRect(x, y, 55, 26, 1, 1); doc.setFontSize(7); doc.setTextColor(muted); doc.text(metrics[i][0], x + 5, y + 8); doc.setFontSize(i === 2 ? 11 : 14); doc.setTextColor(ink); doc.text(metrics[i][1], x + 5, y + 18); } y += 39;
-  doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("WHERE EMISSIONS OCCUR", left, y); y += 8;
+  const left = 18, right = 192, width = right - left, bottom = 272;
+  const lineHeight = 4.4;
+  let y = 22;
+  const normaliseText = (value: string) => value.replace(/[–—]/g, "-").replaceAll("CO₂", "CO2").replaceAll("→", "to").replaceAll("↗", "");
+  const font = (size = 10, bold = false) => { doc.setFont("times", bold ? "bold" : "normal"); doc.setFontSize(size); doc.setTextColor(0, 0, 0); };
+  const heading = (title: string, size = 14) => { font(size, true); doc.text(title, left, y); y += size > 18 ? 11 : 9; };
+  const newPage = (title: string) => { doc.addPage(); y = 22; heading(title); };
+  const paragraph = (value: string, continuation = "Method and provenance (continued)", size = 10, gap = 2) => {
+    font(size);
+    const lines = doc.splitTextToSize(normaliseText(value), width) as string[];
+    for (const line of lines) {
+      if (y + lineHeight > bottom) { newPage(continuation); font(size); }
+      doc.text(line, left, y); y += lineHeight;
+    }
+    y += gap;
+  };
+
+  heading("TEMT freight emissions report", 24);
+  paragraph(context.name, "Report context (continued)", 12, 2);
+  paragraph(context.synthetic ? "Illustrative scenario. SYNTHETIC DATA." : "User-supplied data. Unassured calculations.", "Report context (continued)", 10, 3);
+  paragraph(`${context.filters.from || "Start"} to ${context.filters.to || "Present"} | Mode: ${context.filters.mode} | Unit: ${context.filters.subsidiary}`, "Report context (continued)", 10, 5);
+  if (y + 32 > bottom) newPage("Report summary");
+  const metrics = [["Emissions", `${formatNumber(context.analysis.totals.emissionsKg / 1000, 2)} tCO2e`], ["Shipments", formatNumber(context.analysis.totals.shipmentCount)], ["Freight activity", `${formatNumber(context.analysis.totals.tonneKm, 0)} tkm`]];
+  for (let i = 0; i < metrics.length; i++) {
+    const x = left + i * 59;
+    doc.setDrawColor(0); doc.setLineWidth(.2); doc.rect(x, y, 55, 26);
+    font(10); doc.text(metrics[i][0], x + 4, y + 8);
+    font(i === 2 ? 11 : 15, true);
+    const valueLines = doc.splitTextToSize(metrics[i][1], 47) as string[];
+    doc.text(valueLines, x + 4, y + 17, { lineHeightFactor: 1.05 });
+  }
+  y += 38;
+  if (y + 63 > bottom) newPage("Emissions by mode");
+  else heading("Emissions by mode", 13);
   const largest = Math.max(...context.analysis.byMode.map(row => row.emissionsKg), 1);
-  for (const row of context.analysis.byMode) { doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(muted); doc.text(row.mode.toUpperCase(), left, y + 4); doc.setFillColor("#b3c894"); doc.rect(left + 25, y, (row.emissionsKg / largest) * 103, 5, "F"); doc.setTextColor(ink); doc.text(`${formatNumber(row.emissionsKg / 1000, 2)} tCO2e`, 191, y + 4, { align: "right" }); y += 11; }
-  y += 8; doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("METHOD & PROVENANCE", left, y); y += 7; doc.setFont("helvetica", "normal"); doc.setTextColor(muted); doc.setFontSize(8);
-  const notes = [`Emissions kgCO2e = tonnes x kilometres x profile factor. Engine: ${context.analysis.engineVersion}.`, `Calculated: ${context.analysis.calculatedAt}. Processing: ${context.processing}.`, "Published factors are illustrative. Authorized product preview; separate demonstration engine. Certification applies to the operational TEMT platform.", "Road HCV, India rail, container ocean at 10t/TEU, and distance-specific air profiles are used.", "Selected filters are applied after validation. A shipment with an invalid leg is excluded in full.", `Validation: ${validation.validationExceptionCount} exception records; ${validation.excludedRowCount} excluded rows; ${validation.excludedShipmentCount} identifiable excluded shipments from ${validation.sourceRowCount} input rows. Counts cover the full input before filters.`, "Full factor values, assumptions and source references are included in the methodology appendix.", ...(validation.validationExceptionCount ? ["Every rejected row and exclusion reason is listed in the validation exceptions appendix."] : [])];
-  for (const note of notes) { const lines = doc.splitTextToSize(note, 173); doc.text(lines, left, y); y += lines.length * 4 + 2; }
-  const rows = enrichRows(context.analysis.rows, context.rawRows); doc.addPage(); y = 21; const header = () => { doc.setTextColor(ink); doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.text("SHIPMENT LEDGER", left, y); y += 10; doc.setFontSize(7); const columns = [["SHIPMENT / LEG", 18], ["DATE", 53], ["MODE", 78], ["TONNES", 99], ["KM", 124], ["TKM", 143], ["KGCO2E", 174]] as const; for (const [label, x] of columns) doc.text(label, x, y); y += 5; doc.setDrawColor("#ced8c3"); doc.line(18, y - 2, 193, y - 2); y += 2; doc.setFont("helvetica", "normal"); };
-  header(); for (const row of rows) {
-    doc.setFontSize(7); const identifierLines = doc.splitTextToSize(`${row.shipmentId} / ${row.legIndex}`, 31) as string[]; const rowHeight = Math.max(6, identifierLines.length * 3.2 + 2);
-    if (y + rowHeight > 275) { doc.addPage(); y = 21; header(); }
-    doc.setFontSize(7); doc.setTextColor(muted); doc.text(identifierLines, 18, y, { lineHeightFactor: 1.29 }); doc.text(row.date, 53, y); doc.text(row.mode, 78, y);
-    const numbers = [[formatNumber(row.tonnes, 1), 118, 21], [formatNumber(row.kilometres), 139, 18], [formatNumber(row.tonneKm), 170, 28], [formatNumber(row.emissionsKg, 2), 194, 22]] as const;
-    for (const [text, x, maxWidth] of numbers) { doc.setFontSize(7); const width = doc.getTextWidth(text); if (width > maxWidth) doc.setFontSize(Math.max(4, 7 * maxWidth / width)); doc.text(text, x, y, { align: "right" }); }
+  for (const row of context.analysis.byMode) {
+    font(10); doc.text(row.mode[0].toUpperCase() + row.mode.slice(1), left, y + 4);
+    doc.setFillColor(0, 0, 0); doc.rect(left + 25, y, row.emissionsKg / largest * 103, 5, "F");
+    doc.text(`${formatNumber(row.emissionsKg / 1000, 2)} tCO2e`, right, y + 4, { align: "right" });
+    y += 11;
+  }
+  y += 8;
+  if (y + 35 > bottom) newPage("Method and provenance");
+  else heading("Method and provenance", 13);
+  const notes = [
+    `Emissions kgCO2e = tonnes x kilometres x profile factor. Engine: ${context.analysis.engineVersion}.`,
+    `Calculated: ${context.analysis.calculatedAt}. Processing: ${context.processing}.`,
+    "Published factors are illustrative. This report uses a separate demonstration engine. It is not covered by the SGS validation of the TEMT v1.3 methodology against ISO 14083:2023.",
+    "Road HCV, India rail, container ocean at 10t/TEU, and distance-specific air profiles are used.",
+    "Selected filters are applied after validation. A shipment with an invalid leg is excluded in full.",
+    `Validation: ${validation.validationExceptionCount} exception records; ${validation.excludedRowCount} excluded rows; ${validation.excludedShipmentCount} identifiable excluded shipments from ${validation.sourceRowCount} input rows. Counts cover the full input before filters.`,
+    "Full factor values, assumptions and source references are included in the methodology appendix.",
+    ...(validation.validationExceptionCount ? ["Every rejected row and exclusion reason is listed in the validation exceptions appendix."] : []),
+  ];
+  for (const note of notes) paragraph(note);
+
+  const rows = enrichRows(context.analysis.rows, context.rawRows);
+  const ledgerHeader = (continued = false) => {
+    newPage(continued ? "Shipment ledger (continued)" : "Shipment ledger");
+    font(9, true);
+    doc.text("Shipment / leg", left, y); doc.text("Date", 53, y); doc.text("Mode", 78, y);
+    for (const [label, x] of [["Tonnes", 118], ["km", 139], ["Tonne-km", 169], ["kgCO2e", 193]] as const) doc.text(label, x, y, { align: "right" });
+    y += 5; doc.setDrawColor(0); doc.setLineWidth(.2); doc.line(left, y - 2, 193, y - 2); y += 3;
+  };
+  ledgerHeader();
+  for (const row of rows) {
+    font(9);
+    const identifierLines = doc.splitTextToSize(`${row.shipmentId} / ${row.legIndex}`, 31) as string[];
+    const numbers = [[formatNumber(row.tonnes, 1), 118, 21], [formatNumber(row.kilometres), 139, 18], [formatNumber(row.tonneKm), 169, 27], [formatNumber(row.emissionsKg, 2), 193, 21]] as const;
+    const cells = numbers.map(([text, x, maxWidth]) => ({ x, lines: doc.splitTextToSize(text, maxWidth) as string[] }));
+    const rowHeight = Math.max(6.5, Math.max(identifierLines.length, ...cells.map(cell => cell.lines.length)) * 3.8 + 2);
+    if (y + rowHeight > bottom) ledgerHeader(true);
+    font(9); doc.text(identifierLines, left, y, { lineHeightFactor: 1.2 }); doc.text(row.date, 53, y); doc.text(row.mode, 78, y);
+    for (const cell of cells) doc.text(cell.lines, cell.x, y, { align: "right", lineHeightFactor: 1.2 });
     y += rowHeight;
   }
-  if (!rows.length) doc.text("No valid rows match the selected filters.", left, y + 5);
-  doc.addPage(); y = 21;
-  const methodologyHeading = (continued = false) => { doc.setFont("helvetica", "bold"); doc.setTextColor(ink); doc.setFontSize(14); doc.text(continued ? "METHODOLOGY / CONTINUED" : "METHODOLOGY / FACTOR REGISTER", left, y); y += 10; };
-  methodologyHeading();
-  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(muted);
-  const methodologyIntro = doc.splitTextToSize("Published well-to-wheel default factors. These are estimates, not measured carrier-specific factors. The demonstration engine is separate from the certified operational TEMT platform. Values below are applied without intermediate rounding.", 174);
-  doc.text(methodologyIntro, left, y); y += methodologyIntro.length * 4 + 8;
+  if (!rows.length) { font(10); doc.text("No valid rows match the selected filters.", left, y + 5); }
+
+  const methodLineHeight = 3.8;
+  newPage("Methodology / factor register");
+  paragraph("Published well-to-wheel default factors. These are estimates, not measured carrier-specific factors. This demonstration is separate from production TEMT; values are applied without intermediate rounding.", "Methodology (continued)", 9, 3);
   for (const factor of Object.values(FACTORS)) {
-    const assumptions = factor.assumptions.map(assumption => doc.splitTextToSize(`- ${assumption.replace(/[–—]/g, "-").replaceAll("CO₂", "CO2")}`, 169) as string[]);
-    const height = 21 + assumptions.reduce((sum, lines) => sum + lines.length * 4, 0);
-    if (y + height > 268) { doc.addPage(); y = 21; methodologyHeading(true); }
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(ink); doc.text(factor.id, left, y); y += 5;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(muted); doc.text(factor.label.replace(/[–—]/g, "-"), left, y); y += 5;
-    doc.setTextColor(orange); doc.text(`${factor.kgCO2ePerTonneKm} kgCO2e / tonne-km | ${factor.version} | Source 1, page ${factor.sourcePage}`, left, y); y += 6;
-    doc.setTextColor(muted); for (const lines of assumptions) { doc.text(lines, left + 3, y); y += lines.length * 4; }
-    y += 5; doc.setDrawColor("#dce3d2"); doc.line(left, y - 5, 192, y - 5);
+    font(9);
+    const assumptions = factor.assumptions.map(assumption => doc.splitTextToSize(normaliseText(`- ${assumption}`), width - 3) as string[]);
+    const factorLabel = doc.splitTextToSize(normaliseText(factor.label), width) as string[];
+    const factorValue = doc.splitTextToSize(`${factor.kgCO2ePerTonneKm} kgCO2e / tonne-km | ${factor.version} | Source 1, page ${factor.sourcePage}`, width) as string[];
+    const height = 10 + (factorLabel.length + factorValue.length + assumptions.reduce((sum, lines) => sum + lines.length, 0)) * methodLineHeight;
+    if (y + height > bottom) newPage("Methodology (continued)");
+    font(11, true); doc.text(factor.id, left, y); y += 5;
+    font(9); doc.text(factorLabel, left, y, { lineHeightFactor: 1.24 }); y += factorLabel.length * methodLineHeight + .5;
+    doc.text(factorValue, left, y, { lineHeightFactor: 1.24 }); y += factorValue.length * methodLineHeight + 1;
+    for (const lines of assumptions) { doc.text(lines, left + 3, y, { lineHeightFactor: 1.24 }); y += lines.length * methodLineHeight; }
+    y += 5; doc.setDrawColor(0); doc.setLineWidth(.15); doc.line(left, y - 4, right, y - 4);
   }
-  const source = Object.values(FACTORS)[0]; const sourceLines = doc.splitTextToSize(source.sourceUrl, 173) as string[];
-  if (y + sourceLines.length * 4 + 28 > 268) { doc.addPage(); y = 21; methodologyHeading(true); }
-  doc.setFont("helvetica", "bold"); doc.setTextColor(ink); doc.setFontSize(10); doc.text("SOURCE 1 / PUBLISHED FACTORS", left, y); y += 6;
-  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(muted); doc.text(source.sourceLabel, left, y); y += 5; doc.text(sourceLines, left, y); doc.link(left, y - 3, 174, sourceLines.length * 4 + 2, { url: source.sourceUrl }); y += sourceLines.length * 4 + 7;
-  doc.text(doc.splitTextToSize("Mode-shift illustration: keep road tonne-kilometres constant, then apply the selected rail share using the rail default. Savings are the road baseline less the blended road/rail scenario. Rail availability, capacity, detours, lead times and cost are not modelled.", 173), left, y);
+  const source = Object.values(FACTORS)[0];
+  font(9); const sourceLines = doc.splitTextToSize(source.sourceUrl, width) as string[];
+  if (y + sourceLines.length * methodLineHeight + 38 > bottom) newPage("Methodology (continued)");
+  heading("Source 1 / published factors", 11);
+  paragraph(source.sourceLabel, "Methodology (continued)", 9, 1);
+  font(9); doc.text(sourceLines, left, y, { lineHeightFactor: 1.24 }); doc.link(left, y - 3.5, width, sourceLines.length * methodLineHeight + 2, { url: source.sourceUrl }); y += sourceLines.length * methodLineHeight + 5;
+  paragraph("Mode-shift illustration: keep road tonne-kilometres constant, then apply the selected rail share using the rail default. Savings are the road baseline less the blended road/rail scenario. Rail availability, capacity, detours, lead times and cost are not modelled.", "Methodology (continued)", 9);
+
   const exceptions = buildExceptionRows(context);
   if (exceptions.length) {
-    doc.addPage(); y = 21;
-    const exceptionHeader = (continued = false) => { doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(ink); doc.text(continued ? "VALIDATION EXCEPTIONS / CONTINUED" : "VALIDATION EXCEPTIONS", left, y); y += 10; doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(muted); };
-    exceptionHeader();
-    const exceptionIntro = doc.splitTextToSize(`${validation.validationExceptionCount} exception records across ${validation.excludedRowCount} distinct input rows and ${validation.excludedShipmentCount} identifiable shipments. The list covers the complete source input before view filters. Source rows are one-based. CSV line assumes one header line. These rows contribute no emissions to this report.`, 173) as string[];
-    doc.text(exceptionIntro, left, y); y += exceptionIntro.length * 4 + 8;
+    newPage("Validation exceptions");
+    paragraph(`${validation.validationExceptionCount} exception records across ${validation.excludedRowCount} distinct input rows and ${validation.excludedShipmentCount} identifiable shipments. The list covers the complete source input before view filters. Source rows are one-based. CSV line assumes one header line. These rows contribute no emissions to this report.`, "Validation exceptions (continued)", 10, 5);
     for (const exception of exceptions) {
-      const title = doc.splitTextToSize(`Shipment: ${exception.shipmentId || "Unidentified"} | Leg: ${exception.legIndex || "Unknown"}`, 173) as string[];
-      const message = doc.splitTextToSize(exception.message.replace(/[–—]/g, "-"), 173) as string[];
-      const fieldLines = exception.fields ? doc.splitTextToSize(`Fields: ${exception.fields}`, 173) as string[] : [];
-      const height = 12 + (title.length + message.length + fieldLines.length) * 4;
-      if (y + height > 272) { doc.addPage(); y = 21; exceptionHeader(true); }
-      doc.setTextColor(orange); doc.setFontSize(8); doc.text(`Source row ${exception.sourceRow} / CSV line ${exception.csvLine} | ${exception.code}`, left, y); y += 5;
-      doc.setTextColor(ink); doc.setFont("helvetica", "bold"); doc.text(title, left, y); y += title.length * 4 + 1;
-      doc.setTextColor(muted); doc.setFont("helvetica", "normal"); doc.text(message, left, y); y += message.length * 4;
-      if (fieldLines.length) { doc.text(fieldLines, left, y); y += fieldLines.length * 4; }
-      y += 6; doc.setDrawColor("#dce3d2"); doc.line(left, y - 5, 192, y - 5);
+      font(10, true); const title = doc.splitTextToSize(`Shipment: ${exception.shipmentId || "Unidentified"} | Leg: ${exception.legIndex || "Unknown"}`, width) as string[];
+      font(10); const message = doc.splitTextToSize(normaliseText(exception.message), width) as string[];
+      const fieldLines = exception.fields ? doc.splitTextToSize(`Fields: ${exception.fields}`, width) as string[] : [];
+      const height = 13 + (title.length + message.length + fieldLines.length) * lineHeight;
+      if (y + height > bottom) newPage("Validation exceptions (continued)");
+      font(10); doc.text(`Source row ${exception.sourceRow} / CSV line ${exception.csvLine} | ${exception.code}`, left, y); y += 6;
+      font(10, true); doc.text(title, left, y, { lineHeightFactor: 1.24 }); y += title.length * lineHeight + 1;
+      font(10); doc.text(message, left, y, { lineHeightFactor: 1.24 }); y += message.length * lineHeight;
+      if (fieldLines.length) { doc.text(fieldLines, left, y, { lineHeightFactor: 1.24 }); y += fieldLines.length * lineHeight; }
+      y += 7; doc.setDrawColor(0); doc.setLineWidth(.15); doc.line(left, y - 4, right, y - 4);
     }
   }
-  for (let page = 1; page <= doc.getNumberOfPages(); page++) { doc.setPage(page); doc.setFontSize(7); doc.setTextColor("#829175"); doc.text(`TEMT authorized product preview | ${context.synthetic ? "Synthetic scenario" : "User supplied"} | ${dateStamp()}`, left, 287); doc.text(`${page} / ${doc.getNumberOfPages()}`, 192, 287, { align: "right" }); }
+  for (let page = 1; page <= doc.getNumberOfPages(); page++) {
+    doc.setPage(page); font(9); doc.setDrawColor(0); doc.setLineWidth(.15); doc.line(left, 281, right, 281);
+    doc.text(`TEMT authorized product preview | ${context.synthetic ? "Synthetic scenario" : "User supplied"} | ${dateStamp()}`, left, 287);
+    doc.text(`${page} / ${doc.getNumberOfPages()}`, right, 287, { align: "right" });
+  }
   return doc;
 }
 

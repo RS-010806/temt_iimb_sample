@@ -43,9 +43,9 @@ Company selection changes demonstration context. It does not reveal the selected
 
 ## Visual references and assets
 
-- [WHOOP](https://www.whoop.com/in/en/) informed the strong type hierarchy, restrained motion and quick product-led opening. Page layouts, wording and brand assets are not copied.
+- [WHOOP](https://www.whoop.com/us/en/) informed the strong type hierarchy, restrained motion and quick product-led opening. Page layouts, wording and brand assets are not copied.
 - Hero port photograph: [CHUTTERSNAP on Unsplash](https://unsplash.com/photos/fn603qcEA7g); [source image](https://images.unsplash.com/photo-1494412651409-8963ce7935a7). The photograph is a generic port image and is not labeled as an Indian location.
-- Barlow Condensed, Manrope and IBM Plex Mono are Google Fonts selections. Keep their applicable font licenses with the distributed font files.
+- Site typography uses Barlow Condensed, Manrope and IBM Plex Mono, with their applicable licenses retained alongside the distributed files. The design document uses Times New Roman; operational PDF exports use the standard PDF Times family. Original interface screenshots retain the site typography.
 - Interface icons use Lucide. Icons communicate modes and actions; they do not indicate an integration or endorsement.
 
 ## Engineering and hosting sources
@@ -58,6 +58,6 @@ Company selection changes demonstration context. It does not reveal the selected
 - [Express CORS middleware](https://expressjs.com/en/resources/middleware/cors/): allowed frontend origins and browser preflight behavior.
 - [GitHub Actions checkout](https://github.com/actions/checkout), [setup-node](https://github.com/actions/setup-node) and [upload-artifact](https://github.com/actions/upload-artifact): CI dependencies are pinned to reviewed release commit hashes.
 
-## Evidence still collected at delivery
+## Delivery evidence
 
-Final deployment URLs, live commit, screenshots, accessibility findings, calculation checks, response timing and production build results must come from the completed implementation. No test result or performance promise is created from a design mockup.
+The [verification record](verification.md) contains observed deployment, calculation, browser and performance results with their conditions. The [case-study evidence](case-study-evidence.json) records screenshot provenance and the [document QA record](case-study-qa.md) records visual and structural checks. Measurements describe the tested release; they do not establish production SLAs or customer savings.

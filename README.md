@@ -13,12 +13,12 @@ An authorized product preview for India's enterprise sustainability and supply-c
 - Road, rail, ocean and air comparisons with explicit assumptions.
 - Four explorable sector networks and a dated official NIFTY 500 constituent directory.
 - Interactive validation pipeline with a missing-data experiment and traceable calculations.
-- Editable multi-leg shipment ledger, CSV import, validation exceptions and consistent filters.
+- Editable multi-leg shipment ledger, validated CSV import, shipment-level exceptions and filters.
 - Recharts analytics, CSV and PDF reports, and a Power BI import pack.
 - Stateless Express API with the same calculation engine as the browser.
 - Local processing when the free Render backend is waking or unavailable.
 
-All scenario activity is synthetic. Existing TEMT certifications apply only to the product and scope stated in their original evidence, not to this separate demonstration engine.
+Included scenarios are synthetic; imported records are user supplied. Existing TEMT certifications apply only to the product and scope stated in their original evidence, not to this separate demonstration engine.
 
 ## Run locally
 
@@ -46,19 +46,23 @@ npm run build
 | `apps/api` | Express API, CORS, rate limiting, request caps and sanitized errors |
 | `packages/calculator` | Shared TypeScript engine, Zod validation, factor registry and aggregation |
 
-The frontend is served from a CDN independently of the backend. Imported records remain in the browser unless server analysis is requested. The server processes records in memory and does not persist shipment data or log request bodies.
+The frontend is served from a CDN independently of the backend. Results are calculated locally as inputs change. Imported records remain in the browser unless **Run analysis** is selected. The server processes records in memory and does not persist shipment data or log request bodies.
+
+CSV import accepts a file only when every row validates; a rejected import leaves the current dataset unchanged. For ledger edits and API requests, any invalid, duplicate or missing leg excludes its entire identifiable shipment. Filters apply after validation, so filtering a complete shipment to one mode does not invalidate its remaining visible legs.
 
 `GET /api/health` reports engine availability. `GET /api/factors` returns methodology metadata. `POST /api/analyze` accepts `{ "rows": [...] }` and returns validated calculations, exceptions, aggregates and provenance. See the [API documentation](apps/api/README.md) and [calculation contract](packages/calculator/README.md).
 
+The public API caps requests at 2 MiB and 1,000 legs, with 60 requests per minute per IP for API routes. Health checks and CORS preflights are excluded from that limit. Exact browser-origin checks are CORS policy, not authentication; origin-less clients can also call the API.
+
 ## Deployment
 
-[render.yaml](render.yaml) defines a free static site and free Node API in Singapore. Both build from the repository root. The assigned public frontend and API origins are recorded in the Blueprint. The free API can sleep after inactivity; the UI offers local processing after eight seconds and reports where results were calculated.
+[render.yaml](render.yaml) defines a free static site on Render's CDN and a free Node API in Singapore. Both build from the repository root. Public origins and build-time frontend configuration are recorded in the Blueprint. The free API can sleep after inactivity. Local results remain available during a server request; after eight seconds, **Process in browser** lets the user cancel that request. A request failure or 90-second timeout also falls back to the local engine. The UI identifies which path produced the result.
 
 Follow the [deployment guide](docs/deployment.md). GitHub Actions runs source integrity checks, tests, type checks and both production builds. No paid infrastructure is required.
 
 ## Measured validation
 
-The published cinematic revision scored **91 mobile / 100 desktop performance**, with **100 accessibility, best practices and SEO** in both Lighthouse 13.4.1 audits. Mobile LCP was 2.9 seconds and CLS was 0. These are single lab observations, not production guarantees. All **112 automated tests**, type checks, source checks and production builds passed. See the verification record for test conditions and remaining automation limits.
+The published cinematic application release [`81f7a0b`](https://github.com/RS-010806/temt_iimb_sample/commit/81f7a0b52022b3af7773bed137992968e2f11d36) scored **91 mobile / 100 desktop performance**, with **100 accessibility, best practices and SEO** in both Lighthouse 13.4.1 audits. Mobile LCP was 2.9 seconds and CLS was 0. These are single lab observations, not production guarantees. That release passed **112 automated tests**, type checks, source checks and production builds. See the verification record for test conditions and remaining automation limits.
 
 ## Evidence and reproducibility
 
@@ -70,7 +74,7 @@ The published cinematic revision scored **91 mobile / 100 desktop performance**,
 - [Case-study reproduction](docs/case-study-production.md)
 - [Source register](docs/SOURCES.md)
 - [Implementation decisions](docs/implementation-notes.md)
-- [NIFTY source snapshot and refresh script](docs/data/nifty500-source.csv)
+- [NIFTY source snapshot](docs/data/nifty500-source.csv) and [refresh script](docs/scripts/refresh-nifty500.py)
 - [Original TEMT](https://iimb.freightemissions.com/)
 - [DPIIT product](https://dpiit.freightemissions.com/)
 

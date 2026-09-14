@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "status": "ready",
-  "revision": "cinematic hero and interactive landing",
+  "revision": "formal technical submission to Pratham Agarwal, IIM Bangalore",
   "date": "14 September 2026",
   "commit": "81f7a0b",
   "site_url": "https://temt-iimb-sample.onrender.com",
@@ -53,8 +53,8 @@
   "power_bi_path": "/downloads/temt-power-bi-pack.zip",
   "sample_csv_path": "/downloads/temt-sample-shipments.csv",
   "validation_notes": [
-    "Lighthouse 13.4.1 on the public site, 14 September 2026. Mobile: simulated 4\u00d7 CPU slowdown, 150 ms RTT. Project performance floors of 95 desktop and 90 mobile were met. These are lab observations, not field measurements.",
-    "Warm quick-scenario API: 66,300 kgCO\u2082e; 112.83 ms including response transfer, 1.82 ms engine. Exact client/server parity. Initial health request: 23.25 s with unknown prior idle time, not a controlled cold-start test."
+    "Lighthouse 13.4.1 on the public site, 14 September 2026. Mobile: simulated 4× CPU slowdown, 150 ms RTT. Project performance floors of 95 desktop and 90 mobile were met. These are lab observations, not field measurements.",
+    "Warm quick-scenario API: 66,300 kgCO₂e; 112.83 ms including response transfer, 1.82 ms engine. Exact client/server parity. Initial health request: 23.25 s with unknown prior idle time, not a controlled cold-start test."
   ],
   "limitations": [
     "Mobile LCP is 2.9 seconds in the final public lab run; no field Core Web Vitals claim is made.",
@@ -74,7 +74,7 @@
       "seo": 100,
       "lcp_ms": 582.988,
       "tbt_ms": 0,
-      "tbt_display": "0\u00a0ms",
+      "tbt_display": "0 ms",
       "cls": 0,
       "throttling_method": "simulate",
       "throttling": {
@@ -96,7 +96,7 @@
       "seo": 100,
       "lcp_ms": 2870.484,
       "tbt_ms": 54,
-      "tbt_display": "50\u00a0ms",
+      "tbt_display": "50 ms",
       "cls": 0,
       "throttling_method": "simulate",
       "throttling": {
@@ -200,7 +200,7 @@
     "power_bi_path": "/downloads/temt-power-bi-pack.zip",
     "sample_csv_path": "/downloads/temt-sample-shipments.csv",
     "validation_notes": [
-      "Lighthouse 13.4.1 against the public site, 14 September 2026. Mobile: 4\u00d7 CPU slowdown, 150 ms RTT; shared-machine load can affect these lab results. Latest mobile performance: 87/100; the 90 target was not met. These are not field measurements.",
+      "Lighthouse 13.4.1 against the public site, 14 September 2026. Mobile: 4× CPU slowdown, 150 ms RTT; shared-machine load can affect these lab results. Latest mobile performance: 87/100; the 90 target was not met. These are not field measurements.",
       "Warm API observation: 32 legs, 24 shipments; 146.06 ms including connection and transfer. Browser/server output matched exactly. This is not a cold-start measurement."
     ],
     "limitations": [
@@ -287,25 +287,66 @@
   "document_qa": {
     "status": "complete",
     "pages": 5,
-    "visual_review": "All five final rendered pages inspected; no clipping or overlap observed.",
-    "qa_directory": "artifacts/doc-build/case-study-revision-final-qa",
+    "visual_review": "Document author inspected all five final page PNGs at original resolution. No clipping, overlap, missing glyphs or split tables observed.",
+    "qa_directory": "artifacts/doc-build/technical-submission-final-qa-v2",
+    "structural_audit": "artifacts/doc-build/technical-submission-final-qa-v2/structural-audit.json",
     "embedded_images": 5,
     "image_pixels_match_source": true,
-    "pdf_hyperlinks": 11,
+    "pdf_hyperlinks": 13,
+    "docx_font_families": [
+      "Times New Roman"
+    ],
+    "docx_text_colors": [
+      "000000"
+    ],
+    "pdf_font_families": [
+      "Times New Roman Regular",
+      "Times New Roman Bold"
+    ],
+    "pdf_nonspace_characters_checked": 9068,
+    "pdf_text_colors": [
+      "(0.0, 0.0, 0.0)"
+    ],
+    "em_dash_count": 0,
+    "tables": 3,
     "artifacts": {
       "docx": {
-        "bytes": 453532,
-        "sha256": "60c67b3fef697f7eae164733524a25d5a265d8e9c712ce14a951a956e43d3cb9",
+        "bytes": 455384,
+        "sha256": "88957a7f5302f7dfefa55cd43226b4cf0231c75e5a8835cc2128a30b104b2927",
         "path": "artifacts/deliverables/TEMT-Product-Case-Study.docx",
         "public_copy": "apps/web/public/downloads/TEMT-Product-Case-Study.docx"
       },
       "pdf": {
-        "bytes": 611642,
-        "sha256": "733aacbdbd234457bb84b285797234bf5a9aae948965207047af6ff474b798aa",
+        "bytes": 760314,
+        "sha256": "556f5253a8c5a4fc7aa6c1a075b8b1be9042f9e5a52ddbf089dee66650e08cd2",
         "path": "artifacts/deliverables/TEMT-Product-Case-Study.pdf",
         "public_copy": "apps/web/public/downloads/TEMT-Product-Case-Study.pdf"
       }
     },
-    "independent_visual_review": "Release coordinator also inspected all five final page PNGs and confirmed layout and content."
+    "independent_visual_review": "Release coordinator inspected all five pages of the formal report before the final two wording corrections; layout was clean.",
+    "final_wording_corrections": [
+      "Page 4 uses the actual interface label: Process in browser.",
+      "Page 3 states that health and CORS preflight requests are outside the API rate limit."
+    ]
+  },
+  "application_revision": "cinematic hero and interactive landing",
+  "document_format": {
+    "recipient": "Pratham Agarwal, IIM Bangalore",
+    "purpose": "Post-meeting technical submission",
+    "preset": "standard_business_brief",
+    "header_pattern": "memo_masthead",
+    "page_size": "US Letter",
+    "margins_inches": 1,
+    "pages": 5,
+    "font_family": "Times New Roman",
+    "text_color": "000000",
+    "body_points": 11,
+    "title_points": 18,
+    "page_heading_points": 14,
+    "table_points": 10,
+    "caption_points": 9.5,
+    "header_footer_points": 9,
+    "screenshot_policy": "Retain original colours, dimensions and decoded RGB pixels; Word-compatible JPEG metadata only.",
+    "tone": "Formal technical prose; no em dashes or promotional headings."
   }
 }

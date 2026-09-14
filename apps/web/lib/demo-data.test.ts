@@ -147,7 +147,7 @@ describe("download reconciliation and spreadsheet safety", () => {
   });
   it("embeds every factor value and the methodology appendix in the PDF", async () => {
     const pdf = await buildReportPDF(context()); const output = pdf.output();
-    expect(pdf.getNumberOfPages()).toBeGreaterThanOrEqual(3); expect(output).toContain("METHODOLOGY / FACTOR REGISTER");
+    expect(pdf.getNumberOfPages()).toBeGreaterThanOrEqual(3); expect(output).toContain("Methodology / factor register");
     for (const factor of Object.values(FACTORS)) { expect(output).toContain(`${factor.kgCO2ePerTonneKm} kgCO2e`); expect(output).toContain(factor.id); }
     expect(output).toContain(FACTORS["road-hcv"].sourceUrl); expect(output).toContain("SYNTHETIC DATA");
   });
@@ -188,7 +188,7 @@ describe("exception trails survive every export", () => {
   });
   it("prints full exception identities, source rows and reasons in the PDF", async () => {
     const ctx = invalidContext(); const pdf = await buildReportPDF(ctx); const text = pdf.output();
-    expect(text).toContain("VALIDATION EXCEPTIONS"); expect(text).toContain("2 excluded rows"); expect(text).toContain("Shipment: MULTI-01"); expect(text).toContain("Source row 1 / CSV line 2"); expect(text).toContain("shipment_excluded");
+    expect(text).toContain("Validation exceptions"); expect(text).toContain("2 excluded rows"); expect(text).toContain("Shipment: MULTI-01"); expect(text).toContain("Source row 1 / CSV line 2"); expect(text).toContain("shipment_excluded");
   });
   it("retains two long shipment identifiers sharing the same first 17 characters", async () => {
     const first = "IDENTICAL-PREFIX-001-PLANT-INDIA-DELIVERY-000001"; const second = "IDENTICAL-PREFIX-001-PLANT-INDIA-DELIVERY-000002";

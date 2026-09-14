@@ -1,6 +1,16 @@
 # Release verification
 
-## Cinematic revision: current release
+## Formal submission and report revision
+
+The final design document is addressed to Pratham Agarwal following the project meeting. It uses Times New Roman with black text, retains the original interface screenshots and includes the calculation method, factor assumptions, data contract, validation rules, API controls, architecture, measured results and proposed production work. All five pages were rendered and inspected. [Document QA](case-study-qa.md) records fonts, links, image integrity and artifact hashes.
+
+The shared dynamic PDF exporter and public sample report now use the standard PDF Times family, black text and readable 9–10 pt detail. No standalone proprietary font files are distributed with the website. Full identifiers and long numeric values wrap within their cells. The sample remains three pages and preserves its original calculation timestamp and totals: 453,635.58993 kg CO2e, 24 shipments and 32 legs. CSV and Power BI files are unchanged. [Report export QA](report-export-qa.md) documents the example, long-identifier/exception and empty-filter cases.
+
+Local verification after the export changes passed all 112 tests, TypeScript checks and both production builds. A final certification-wording correction was followed by the 51-test export/demo suite and a fresh frontend build. The documentation now states the 2 MiB limit, separates all-or-nothing CSV import from invalid-shipment exclusion, identifies the eight-second manual processing option and 90-second timeout, and explains that CORS is not authentication. Health and CORS preflight requests are outside the API rate limit.
+
+The Lighthouse observations below remain evidence for the explicitly identified cinematic application build. They were not rerun for this document and report-formatting revision.
+
+## Cinematic application baseline
 
 Application source: [`81f7a0b52022b3af7773bed137992968e2f11d36`](https://github.com/RS-010806/temt_iimb_sample/commit/81f7a0b52022b3af7773bed137992968e2f11d36). Published to the existing free Render services on 14 September 2026 IST. [GitHub Actions run 34784180046](https://github.com/RS-010806/temt_iimb_sample/actions/runs/34784180046) passed source integrity, all **112 tests across three files**, type checks and both production builds.
 
