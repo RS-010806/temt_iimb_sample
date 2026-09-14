@@ -25,7 +25,7 @@ Node is pinned to `22.23.2`. Dependencies are installed from the root lockfile. 
 4. Copy the frontend's actual HTTPS origin. Set API `ALLOWED_ORIGINS` to that origin. To include local development, append `,http://localhost:3000`.
 5. Record those public values in `render.yaml` before the next Blueprint sync. A sync can restore the file's values over dashboard edits. These URLs are public configuration, not secrets.
 6. Redeploy the API and rebuild the frontend. `NEXT_PUBLIC_*` values are embedded at build time, so an environment change requires a new frontend build.
-7. Verify a real browser POST from the deployed frontend, server calculation, report download, refresh on demo routes, keyboard controls and mobile layout. Record the live URL and exact deployed commit in the handoff.
+7. Verify a real browser POST from the deployed frontend, server calculation, report download, refresh on demo routes, keyboard controls and mobile layout. Record the live URL and observed results.
 
 The Blueprint now records the assigned URLs: `https://temt-iimb-sample.onrender.com` for the frontend and `https://temt-iimb-api.onrender.com` for the API. A fork or recreated service can receive different hostnames; update both the frontend's API URL and the API's allowed origin together. `TRUST_PROXY_HOPS=1` matches the directly deployed Render service.
 
@@ -39,9 +39,9 @@ The Blueprint now records the assigned URLs: `https://temt-iimb-sample.onrender.
 - An optional API upgrade to `plan: 0.5c-512mb` removes the free plan's idle sleep. The reviewed base compute price is $7/month; only change this with authorization for the paid service.
 - The Apache 2.0 repository license is retained. Source data, fonts, photography and third-party code keep their own applicable terms.
 
-## CI and release evidence
+## Build verification
 
-The GitHub workflow checks source data, builds the shared calculator, checks types, runs tests, and builds the frontend and API. It uploads the generated frontend and API artifacts for 14 days. Actions use pinned release commits and read-only repository permission.
+The GitHub workflow checks source data, builds the shared calculator, checks types, runs tests, and builds the frontend and API. It uploads the generated frontend and API artifacts for 14 days. Actions use pinned dependency revisions and read-only repository permission.
 
 Before marking the delivery complete, confirm the successful GitHub run and Render deployment. Merely adding this Blueprint and workflow does not establish a live deployment.
 

@@ -50,15 +50,8 @@ The cinematic treatment should preserve the static landing's independent loading
 
 Measure responsiveness on real actions such as mode selection, opening assumptions and starting the pipeline. web.dev classifies INP at or below 200 ms as good; its field assessment uses the 75th percentile, separated by mobile and desktop. A single lab interaction or Lighthouse performance score does not establish field INP. [INP guidance](https://web.dev/articles/inp)
 
-For the revised release, record the deployed commit, public URL, viewport, throttling and test time. Recheck the hero image request, interaction console, keyboard flow, reduced motion, mobile layout and sample calculation parity. Publish observed performance results and conditions. Earlier case-study scores remain evidence for the earlier release until replaced by measurements of this revision.
+Record the public URL, viewport, throttling and test time with observed measurements. Recheck the hero image request, interaction console, keyboard flow, reduced motion, mobile layout and sample calculation parity. Publish observed performance results and conditions. Keep laboratory observations distinct from field performance and service guarantees.
 
-## Case study refresh, after the revision is verified
+## Implementation evidence
 
-The following handoff was specified at the research stage. It is now completed for the cinematic revision; final measurements and screenshot provenance are in the [release verification](verification.md) and [case-study evidence](case-study-evidence.json). The implementation used verified production-build captures corresponding to the published source, with this provenance disclosed. The original handoff steps were:
-
-1. Capture the public desktop hero and mobile hero in the new design. Recapture the pipeline if its visual treatment changes; refresh the workspace capture if that interface changes.
-2. Update `docs/case-study-evidence.json` with the validated release, new measurements and screenshot provenance. Preserve the distinction between local calculation, warm API timing and service wake-up behavior.
-3. Revise the design-decision text to describe the implemented result. Retain source and synthetic-data boundaries.
-4. Regenerate the editable DOCX and PDF, verify exactly five pages, inspect every page, and recheck embedded fonts and links before replacing public downloads.
-
-This document records the research stage. Implementation, browser verification, measurements and the refreshed case study are documented in the linked release records.
+The [verification record](verification.md) documents calculation checks, browser observations, accessibility coverage and measured performance. The design document connects the interface screenshots to the implementation and its technical assumptions.

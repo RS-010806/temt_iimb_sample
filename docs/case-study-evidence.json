@@ -1,9 +1,7 @@
 {
   "schema_version": 2,
   "status": "ready",
-  "revision": "formal technical submission to Pratham Agarwal, IIM Bangalore",
   "date": "14 September 2026",
-  "commit": "81f7a0b",
   "site_url": "https://temt-iimb-sample.onrender.com",
   "api_url": "https://temt-iimb-api.onrender.com",
   "repository_url": "https://github.com/RS-010806/temt_iimb_sample",
@@ -21,11 +19,11 @@
     "pipeline": "artifacts/screenshots/pipeline-desktop.jpg"
   },
   "capture_requirements": {
-    "hero": "Production build 81f7a0b, desktop Compare chapter paused, estimator 16.71 tCO2e.",
-    "mobile": "Production build 81f7a0b, mobile controls and estimate prioritized.",
-    "reporting": "Production build 81f7a0b, FMCG By Month view, 453.6 tCO2e.",
-    "demo": "Prior public workspace capture reviewed; its visible FMCG scenario remains accurate.",
-    "pipeline": "Production build 81f7a0b, completed valid sample, 1394.33 kgCO2e, exception control visible."
+    "hero": "Desktop scenario comparison with a calculated 16.71 t CO2e difference.",
+    "mobile": "Mobile estimator and input controls.",
+    "reporting": "Monthly analytics for the synthetic FMCG scenario, 453.6 t CO2e.",
+    "demo": "Synthetic FMCG workspace with 24 shipments and 32 legs.",
+    "pipeline": "Completed valid sample: 1,394.33 kg CO2e; exception control visible."
   },
   "measurements": [
     {
@@ -59,10 +57,8 @@
   "limitations": [
     "Mobile LCP is 2.9 seconds in the final public lab run; no field Core Web Vitals claim is made.",
     "The Lighthouse display rounds mobile total blocking time to 50 ms; its raw numeric audit value is 54 ms.",
-    "API durations are individual observations, not a service guarantee. Initial health request idle history is unknown.",
-    "Four revised screenshots depict local production build 81f7a0b. The workspace screenshot is retained from the prior public release because its visible scenario remains accurate."
+    "API durations are individual observations, not a service guarantee. Initial health request idle history is unknown."
   ],
-  "ci_url": "https://github.com/RS-010806/temt_iimb_sample/actions/runs/34784180046",
   "lighthouse_evidence": {
     "desktop": {
       "artifact": "docs/measurements/lighthouse-desktop-revision.json",
@@ -109,166 +105,7 @@
       }
     }
   },
-  "screenshot_provenance": {
-    "hero": {
-      "sha256": "0af5a027f4275836a6ffd3b331ff8754232ff8769d90954821d34c596cfb42e4",
-      "dimensions_px": [
-        1440,
-        1000
-      ],
-      "capture": "Actual browser screenshot of local production build 81f7a0b",
-      "release": "81f7a0b"
-    },
-    "mobile": {
-      "sha256": "5f8876771381ae46edb105dc2d5caa7e3ea146d98ca07c119f611730a9993f0e",
-      "dimensions_px": [
-        375,
-        900
-      ],
-      "capture": "Actual browser screenshot of local production build 81f7a0b",
-      "release": "81f7a0b"
-    },
-    "reporting": {
-      "sha256": "7bb46b31bcfe66914668d2f804c28731e2b7ea17e90bd1002f8b07e83eec680e",
-      "dimensions_px": [
-        1440,
-        1000
-      ],
-      "capture": "Actual browser screenshot of local production build 81f7a0b",
-      "release": "81f7a0b"
-    },
-    "demo": {
-      "sha256": "ff39f5487db0695c250201cae8b00f50e79197fbf78e4a405a2cba80bea2d1a3",
-      "dimensions_px": [
-        1440,
-        1000
-      ],
-      "capture": "Actual prior public workspace browser capture; visible scenario reviewed and retained",
-      "release": "63bcf04"
-    },
-    "pipeline": {
-      "sha256": "cb3dd34a35ec06839b1a32e20a36e0b1188e380c4375a447e6166d00f302abea",
-      "dimensions_px": [
-        1440,
-        1000
-      ],
-      "capture": "Actual browser screenshot of local production build 81f7a0b",
-      "release": "81f7a0b"
-    }
-  },
   "pending_evidence": [],
-  "previous_release": {
-    "date": "14 September 2026",
-    "commit": "63bcf04",
-    "site_url": "https://temt-iimb-sample.onrender.com",
-    "api_url": "https://temt-iimb-api.onrender.com",
-    "repository_url": "https://github.com/RS-010806/temt_iimb_sample",
-    "tests_passed": 89,
-    "typecheck_passed": true,
-    "source_check_passed": true,
-    "production_build_passed": true,
-    "live_api_verified": true,
-    "screenshots": {
-      "hero": "artifacts/screenshots/hero-desktop.jpg",
-      "demo": "artifacts/screenshots/demo-desktop.jpg",
-      "mobile": "artifacts/screenshots/hero-mobile.jpg",
-      "pipeline": "artifacts/screenshots/pipeline-desktop.jpg"
-    },
-    "measurements": [
-      {
-        "label": "Lighthouse performance",
-        "value": "97 desktop / 87 mobile"
-      },
-      {
-        "label": "Lighthouse accessibility",
-        "value": "100 desktop / 100 mobile"
-      },
-      {
-        "label": "Largest contentful paint",
-        "value": "1.1 s desktop / 2.7 s mobile"
-      },
-      {
-        "label": "Total blocking time",
-        "value": "0 ms desktop / 350 ms mobile"
-      },
-      {
-        "label": "Cumulative layout shift",
-        "value": "0 desktop / 0 mobile"
-      }
-    ],
-    "sample_pdf_path": "/downloads/temt-example-report.pdf",
-    "power_bi_path": "/downloads/temt-power-bi-pack.zip",
-    "sample_csv_path": "/downloads/temt-sample-shipments.csv",
-    "validation_notes": [
-      "Lighthouse 13.4.1 against the public site, 14 September 2026. Mobile: 4× CPU slowdown, 150 ms RTT; shared-machine load can affect these lab results. Latest mobile performance: 87/100; the 90 target was not met. These are not field measurements.",
-      "Warm API observation: 32 legs, 24 shipments; 146.06 ms including connection and transfer. Browser/server output matched exactly. This is not a cold-start measurement."
-    ],
-    "limitations": [
-      "The latest public mobile performance score is 87/100, below the 90 target.",
-      "Lighthouse runs are laboratory observations on a shared machine; no production uptime or latency guarantee is established.",
-      "The Render free API may suspend between visits; the browser can calculate locally while it wakes."
-    ],
-    "ci_url": "https://github.com/RS-010806/temt_iimb_sample/actions/runs/34779961171",
-    "lighthouse_evidence": {
-      "desktop": {
-        "artifact": "artifacts/qa/lighthouse-public-desktop.json",
-        "fetch_time": "2026-09-13T20:18:56.021Z",
-        "performance": 97,
-        "accessibility": 100,
-        "best_practices": 100,
-        "seo": 100,
-        "lcp_s": 1.1,
-        "tbt_ms": 0,
-        "cls": 0
-      },
-      "mobile": {
-        "artifact": "artifacts/qa/lighthouse-public-mobile-final.json",
-        "fetch_time": "2026-09-13T20:23:04.270Z",
-        "performance": 87,
-        "accessibility": 100,
-        "best_practices": 100,
-        "seo": 100,
-        "lcp_s": 2.7,
-        "tbt_ms": 350,
-        "cls": 0
-      }
-    },
-    "screenshot_provenance": {
-      "hero": {
-        "sha256": "2b54542c09e1f085677ef310b30b01d2fb36cbbc7219e170ce80d3a786983b4b",
-        "dimensions_px": [
-          1440,
-          1000
-        ],
-        "capture": "Actual public website browser screenshot"
-      },
-      "demo": {
-        "sha256": "ff39f5487db0695c250201cae8b00f50e79197fbf78e4a405a2cba80bea2d1a3",
-        "dimensions_px": [
-          1440,
-          1000
-        ],
-        "capture": "Actual public website browser screenshot"
-      },
-      "mobile": {
-        "sha256": "adb51b8ca8b6d8a28ea51f5ab62a071b903b0df7ad1c33c9b924814227cb8750",
-        "dimensions_px": [
-          375,
-          900
-        ],
-        "capture": "Actual public website browser screenshot"
-      },
-      "pipeline": {
-        "sha256": "4243c71ab5241749d4619dc30fa05bfcbdef70a1c982ac0966bb47ac9d8f30f4",
-        "dimensions_px": [
-          1440,
-          1000
-        ],
-        "capture": "Actual public website browser screenshot"
-      }
-    }
-  },
-  "full_commit": "81f7a0b52022b3af7773bed137992968e2f11d36",
   "api_evidence": {
     "artifact": "docs/measurements/revision-live-api.json",
     "quick_scenario": {
@@ -286,53 +123,33 @@
   },
   "document_qa": {
     "status": "complete",
-    "pages": 5,
-    "visual_review": "Document author inspected all five final page PNGs at original resolution. No clipping, overlap, missing glyphs or split tables observed.",
-    "qa_directory": "artifacts/doc-build/technical-submission-final-qa-v2",
-    "structural_audit": "artifacts/doc-build/technical-submission-final-qa-v2/structural-audit.json",
-    "embedded_images": 5,
-    "image_pixels_match_source": true,
-    "pdf_hyperlinks": 13,
-    "docx_font_families": [
-      "Times New Roman"
-    ],
-    "docx_text_colors": [
-      "000000"
-    ],
-    "pdf_font_families": [
-      "Times New Roman Regular",
-      "Times New Roman Bold"
-    ],
-    "pdf_nonspace_characters_checked": 9068,
-    "pdf_text_colors": [
-      "(0.0, 0.0, 0.0)"
-    ],
-    "em_dash_count": 0,
-    "tables": 3,
+    "qa_directory": "artifacts/doc-build/design-document-final",
     "artifacts": {
       "docx": {
-        "bytes": 455384,
-        "sha256": "88957a7f5302f7dfefa55cd43226b4cf0231c75e5a8835cc2128a30b104b2927",
         "path": "artifacts/deliverables/TEMT-Product-Case-Study.docx",
-        "public_copy": "apps/web/public/downloads/TEMT-Product-Case-Study.docx"
+        "public_copy": "apps/web/public/downloads/TEMT-Product-Case-Study.docx",
+        "bytes": 455040,
+        "sha256": "2aca03d33bce69e93e6290a0737f565a54829178ef28c8492aeb6e058ea5f149"
       },
       "pdf": {
-        "bytes": 760314,
-        "sha256": "556f5253a8c5a4fc7aa6c1a075b8b1be9042f9e5a52ddbf089dee66650e08cd2",
         "path": "artifacts/deliverables/TEMT-Product-Case-Study.pdf",
-        "public_copy": "apps/web/public/downloads/TEMT-Product-Case-Study.pdf"
+        "public_copy": "apps/web/public/downloads/TEMT-Product-Case-Study.pdf",
+        "bytes": 748424,
+        "sha256": "f57f9d639501778d79725e95f3c09cb6c5244f923663dcac34a477e419af89d1"
       }
     },
-    "independent_visual_review": "Release coordinator inspected all five pages of the formal report before the final two wording corrections; layout was clean.",
-    "final_wording_corrections": [
-      "Page 4 uses the actual interface label: Process in browser.",
-      "Page 3 states that health and CORS preflight requests are outside the API rate limit."
-    ]
+    "pages": 5,
+    "visual_review": "All five final pages visually inspected; no clipping or overlap observed.",
+    "structural_audit": "artifacts/doc-build/design-document-final/structural-audit.json",
+    "font_family": "Times New Roman",
+    "text_color": "000000",
+    "embedded_images": 5,
+    "image_pixels_match_source": true,
+    "pdf_hyperlinks": 12,
+    "em_dash_count": 0
   },
-  "application_revision": "cinematic hero and interactive landing",
   "document_format": {
-    "recipient": "Pratham Agarwal, IIM Bangalore",
-    "purpose": "Post-meeting technical submission",
+    "purpose": "Design and implementation documentation",
     "preset": "standard_business_brief",
     "header_pattern": "memo_masthead",
     "page_size": "US Letter",
@@ -347,6 +164,9 @@
     "caption_points": 9.5,
     "header_footer_points": 9,
     "screenshot_policy": "Retain original colours, dimensions and decoded RGB pixels; Word-compatible JPEG metadata only.",
-    "tone": "Formal technical prose; no em dashes or promotional headings."
-  }
+    "tone": "Formal technical prose; no em dashes or promotional headings.",
+    "header": "TEMT Design Document",
+    "footer": "Page number only"
+  },
+  "title": "TEMT: Design and Implementation"
 }

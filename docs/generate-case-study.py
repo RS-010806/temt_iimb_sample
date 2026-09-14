@@ -268,18 +268,18 @@ def setup(doc):
     hp.style = doc.styles["Header"]
     hp.paragraph_format.tab_stops.clear_all()
     hp.paragraph_format.tab_stops.add_tab_stop(Inches(WIDTH), WD_TAB_ALIGNMENT.RIGHT)
-    hp.add_run("TEMT Technical Submission\tIIM Bangalore")
+    hp.add_run("TEMT Design Document")
     fp = sec.footer.paragraphs[0]
     fp.style = doc.styles["Footer"]
     fp.paragraph_format.tab_stops.clear_all()
     fp.paragraph_format.tab_stops.add_tab_stop(Inches(WIDTH), WD_TAB_ALIGNMENT.RIGHT)
-    fp.add_run("14 September 2026\tPage ")
+    fp.add_run("Page ")
     field(fp, "PAGE")
     fp.add_run(" of 5")
-    doc.core_properties.title = "TEMT Enterprise Product Preview: Technical Submission"
-    doc.core_properties.subject = "Post-meeting submission to Pratham Agarwal, IIM Bangalore"
+    doc.core_properties.title = "TEMT: Design and Implementation"
+    doc.core_properties.subject = "Design, implementation and verification of the TEMT product preview"
     doc.core_properties.author = "TEMT project"
-    doc.core_properties.keywords = "TEMT, technical submission, freight emissions, implementation, verification"
+    doc.core_properties.keywords = "TEMT, design, freight emissions, implementation, verification"
 
 
 def enforce_formal_text(doc):
@@ -308,22 +308,20 @@ def build(e):
     site = e["site_url"].rstrip("/")
     captures = {k: ROOT / v for k, v in e["screenshots"].items()}
 
-    # 1. Formal submission and scope, supported by unchanged interface captures.
-    doc.add_paragraph("TEMT Enterprise Product Preview\nTechnical Submission", style="Title")
-    body(doc, "Prepared for Pratham Agarwal, IIM Bangalore", "Subtitle")
-    body(doc, "Post-meeting submission | 14 September 2026 | Application release " + e["commit"], "Small")
-    body(doc, "This submission records the implemented website and freight-emissions demonstration, the reasons for the principal design decisions, and the evidence used to verify the work. The deployed application and editable source are available for review.")
+    # 1. Product scope and interface.
+    doc.add_paragraph("TEMT: Design and Implementation", style="Title")
+    body(doc, "This project helps sustainability and supply-chain teams explore freight emissions, compare transport choices and inspect the records behind each estimate. The implementation connects an interactive landing page to a working shipment workspace, analysis API and downloadable reports.")
     screenshot_pair(doc, [
-        (captures["hero"], 4.4, "Desktop production build showing the Compare chapter and its calculated 16.71 tonne emissions difference."),
-        (captures["mobile"], 1.1, "Mobile production build with the estimator and input controls before the illustrative freight scene."),
+        (captures["hero"], 4.4, "Desktop interface showing the Compare chapter and its calculated 16.71 tonne emissions difference."),
+        (captures["mobile"], 1.1, "Mobile interface with the estimator and input controls before the illustrative freight scene."),
     ], max_height=3.06)
-    caption(doc, 1, "Desktop and mobile views of production build 81f7a0b. The desktop view supports scenario comparison; the mobile view presents inputs before the illustrative scene.")
+    caption(doc, 1, "Desktop and mobile views of the interactive estimator. The desktop view supports scenario comparison; the mobile view presents inputs before the illustrative scene.")
     doc.add_paragraph("Implemented scope", style="Heading 2")
     body(doc, "The delivery comprises a responsive landing page, immediate emissions estimator, NIFTY 500 company lookup, editable shipment workspace, road/rail/ocean/air calculations, mode and monthly analytics, a validation demonstration, and a stateless analysis API. The workspace exports CSV, PDF and a Power BI import pack.")
     label_para(doc, "Audience and data.", "The principal audience is sustainability and supply-chain teams at India-focused listed enterprises. The official NIFTY 500 source snapshot contains 501 records, retrieved on 14 September 2026. Company names are real; shipment activity and resulting emissions are synthetic examples, not customer data.")
     p = body(doc, "Institutional and certification references concern the original product. The ", "Small")
     link(p, "SGS statement for TEMT v1.3", "https://dpiit.freightemissions.com/certification.pdf")
-    p.add_run(" does not certify this separate demonstration engine. No exclusivity or customer relationship is asserted.")
+    p.add_run(" covers the original TEMT v1.3 methodology against ISO 14083:2023. This preview uses a separate calculation engine and produces illustrative estimates.")
     p = doc.add_paragraph(style="Link")
     link(p, "Deployed application", site)
     p.add_run("  |  ")
@@ -332,7 +330,7 @@ def build(e):
     # 2. Calculation contract and numeric example.
     new_page(doc)
     doc.add_paragraph("1. Calculation method and data", style="Page Heading")
-    body(doc, "The browser and server import the same TypeScript calculator, version temt-demo-1.0.0. Each accepted transport leg is evaluated using a published well-to-wheel (WTW) default factor. This includes fuel or energy supply and vehicle operation within the stated factor boundary.")
+    body(doc, "The browser and server import the same shared TypeScript calculator. Each accepted transport leg is evaluated using a published well-to-wheel (WTW) default factor. This includes fuel or energy supply and vehicle operation within the stated factor boundary.")
     p = body(doc, "Emissions (kg CO2e) = tonnes × kilometres × factor (kg CO2e / tonne-km)")
     p.runs[0].bold = True
     table(doc, [
@@ -357,7 +355,7 @@ def build(e):
     new_page(doc)
     doc.add_paragraph("2. Data validation and API controls", style="Page Heading")
     screenshot(doc, captures["pipeline"], max_height=2.25, alt="Completed three-row validation example showing 1394.33 kilograms of emissions, with a control to introduce a missing load.")
-    caption(doc, 2, "Production-build validation example: three accepted legs across two shipments produce 1,394.33 kg CO2e. The missing-load control is visible but inactive.")
+    caption(doc, 2, "Validation example: three accepted legs across two shipments produce 1,394.33 kg CO2e. The missing-load control is visible but inactive.")
     label_para(doc, "Validation rules.", "Required identifiers must be non-empty and bounded in length. Leg indices must be positive integers, dates must be real calendar dates, and tonnes and kilometres must be finite and positive. Mode and profile must agree; air profiles must match the distance threshold. Numerical-range and maximum-row checks apply.")
     label_para(doc, "Shipment integrity.", "An invalid leg, duplicate leg index or missing index in a shipment excludes that entire identifiable shipment. Invalid rows without an identifiable shipment are rejected individually. Introducing the missing load in the example excludes both TEMT-002 legs; the remaining TEMT-001 leg produces 1,034.28 kg CO2e.")
     label_para(doc, "CSV import.", "Imports require a .csv file, all required headers and an explicit profile for every row, with limits of 2 MiB and 1,000 legs. Import is all-or-nothing: any parse or validation failure leaves the existing dataset unchanged. Imported rows remain in the browser until the user requests server analysis.")
@@ -378,17 +376,15 @@ def build(e):
         (captures["reporting"], 2.75, "Landing monthly analytics for the synthetic FMCG sample, totalling 453.6 tonnes of emissions."),
         (captures["demo"], 2.75, "Enterprise workspace for the same synthetic FMCG sample, including 24 shipments and 32 legs."),
     ], max_height=1.92)
-    caption(doc, 3, "Landing reporting from production build 81f7a0b, and the retained public workspace capture. The visible FMCG dataset is unchanged: 24 shipments, 32 legs and 453.64 t CO2e.")
+    caption(doc, 3, "Landing analytics and the shipment workspace show the same FMCG sample: 24 shipments, 32 legs and 453.64 t CO2e.")
     label_para(doc, "Evaluation sequence.", "A visitor first changes freight weight, distance and rail share, then opens the workspace with those three inputs preserved in the URL. Sector and transport-mode examples expose calculated activity. The reporting preview switches between mode and month views and provides exact chart data. This sequence connects the initial estimate to inspectable records.")
-    label_para(doc, "Interaction and accessibility.", "Connect, Measure, Compare and Report chapters provide context without blocking the estimator. Playback has pause and manual controls, pauses off-screen or in a hidden tab, and uses manual playback for reduced-motion or supported data-saving preferences. Mobile layouts prioritise the result and native input controls. These are design decisions, not evidence of conversion improvement.")
+    label_para(doc, "Interaction and accessibility.", "Connect, Measure, Compare and Report chapters provide context without blocking the estimator. Playback has pause and manual controls, pauses off-screen or in a hidden tab, and uses manual playback for reduced-motion or supported data-saving preferences. Mobile layouts prioritise the result and native input controls. ")
     label_para(doc, "Reporting.", "The current filtered view can be exported as CSV, a PDF report or a Power BI import pack. Outputs preserve factor/version context, relevant inputs and validation information. CSV formula-injection protection is tested. The Power BI pack supports importing files; it does not establish a live Power BI connection.")
 
-    # 5. Observed evidence, handoff, and explicitly prospective work.
+    # 5. Verification, deliverables and further development.
     new_page(doc)
-    doc.add_paragraph("4. Verification, delivery and next steps", style="Page Heading")
-    p = body(doc, f"Release {e['commit']} passed {e['tests_passed']} automated tests, TypeScript checks, source-integrity checks and production builds. Tests cover calculator validation, imports/exports, API controls and estimator-to-workspace parity. The ")
-    link(p, "successful CI run", e["ci_url"])
-    p.add_run(" records the validated application release.")
+    doc.add_paragraph("4. Verification and further development", style="Page Heading")
+    body(doc, f"All {e['tests_passed']} automated tests passed, alongside TypeScript checks, source-integrity checks and production builds. Tests cover calculator validation, imports and exports, API controls, filter consistency and estimator-to-workspace parity.")
     table(doc, [
         ["Public-site Lighthouse 13.4.1", "Desktop", "Mobile"],
         ["Performance score", "100", "91"],
@@ -400,7 +396,7 @@ def build(e):
     ], [4860, 2160, 2340])
     body(doc, "Public audits ran on 14 September 2026 at 03:08 IST. Mobile used simulated 4× CPU slowdown and 150 ms RTT; desktop used 1× and 40 ms RTT. Performance floors of 95 desktop and 90 mobile were met. These are laboratory observations on a shared machine, not field Core Web Vitals or an accessibility certification.", "Table Note")
     label_para(doc, "API observation.", "The one-leg default scenario returned 66,300 kg CO2e with exact browser/server parity. The observed engine duration was 1.82 ms and HTTP duration, including response transfer, was 112.83 ms. An initial health request took 23.25 s with unknown prior idle time. These individual observations do not establish latency guarantees or controlled cold-start performance.")
-    doc.add_paragraph("Review material", style="Heading 2")
+    doc.add_paragraph("Project resources", style="Heading 2")
     for labels in [
         [("Live application", site), ("Analysis workspace", site + "/demo/"), ("Source repository", e["repository_url"])],
         [("Sample shipment CSV", urljoin(site + "/", e["sample_csv_path"])), ("Sample PDF report", urljoin(site + "/", e["sample_pdf_path"])), ("Power BI import pack", urljoin(site + "/", e["power_bi_path"]))],
@@ -410,10 +406,10 @@ def build(e):
             if index:
                 p.add_run("  |  ")
             link(p, label, url)
-    body(doc, "The repository retains source references, UX rationale, test records, raw Lighthouse JSON and the API measurement file in docs/. Screenshots document the interface; four show the local production build, while the unchanged workspace capture is from the prior public release.", "Small")
-    doc.add_paragraph("Proposed production work and limitations", style="Heading 2")
-    body(doc, "Before enterprise use, proposed work includes SSO and role-based access, tenant isolation, governed factor updates, persistent audit trails, reviewed data retention, approved logistics integrations, monitored paid capacity and repeatable load testing. None of these controls is represented as implemented in this stateless preview.")
-    body(doc, "Default-factor scenarios are not carrier measurements, a complete corporate inventory, or assured reporting. Production decisions require verified activity data and reviewed methodological boundaries. Partner references, company names and original-product certification do not establish integration, endorsement or certification of this demonstration.")
+    body(doc, "The repository includes setup instructions, deployment configuration, source references, design rationale, test records and raw performance measurements. The screenshots show the implemented interface and sample data.", "Small")
+    doc.add_paragraph("Further development", style="Heading 2")
+    body(doc, "Before enterprise use, proposed work includes SSO and role-based access, tenant isolation, governed factor updates, persistent audit trails, reviewed data retention, approved logistics integrations, monitored paid capacity and repeatable load testing. The current preview is stateless and requires no customer credentials.")
+    body(doc, "Default-factor scenarios are not carrier measurements, a complete corporate inventory, or assured reporting. Production decisions require verified activity data and reviewed methodological boundaries. ")
     p = doc.add_paragraph(style="Small")
     link(p, "IIMB: DPIIT adoption and ULIP", "https://www.iimb.ac.in/node/14281")
     p.add_run("  |  ")
@@ -429,8 +425,8 @@ def main():
     args = parser.parse_args()
     e = json.loads(args.evidence.read_text())
     if e.get("status") != "ready":
-        raise SystemExit("Case-study revision is awaiting final screenshots and release evidence.")
-    for key in ("commit", "ci_url", "site_url", "api_url", "typecheck_passed", "source_check_passed", "production_build_passed", "live_api_verified", "live_analysis_summary", "measurements"):
+        raise SystemExit("The design document requires final screenshots and verification evidence.")
+    for key in ("site_url", "api_url", "typecheck_passed", "source_check_passed", "production_build_passed", "live_api_verified", "live_analysis_summary", "measurements"):
         if not e.get(key):
             raise SystemExit(f"Final evidence required: {key}")
     if not isinstance(e.get("tests_passed"), int) or e["tests_passed"] < 1:

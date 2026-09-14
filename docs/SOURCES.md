@@ -56,8 +56,8 @@ Company selection changes demonstration context. It does not reveal the selected
 - [Render free service limits](https://render.com/docs/free): the API can sleep after 15 idle minutes and may take about one minute to resume; static frontend delivery remains independent.
 - [Render pricing](https://render.com/pricing): the lowest paid Node compute reviewed on 14 September 2026 is `0.5c-512mb`, $7 per month. The provided Blueprint uses the free plan.
 - [Express CORS middleware](https://expressjs.com/en/resources/middleware/cors/): allowed frontend origins and browser preflight behavior.
-- [GitHub Actions checkout](https://github.com/actions/checkout), [setup-node](https://github.com/actions/setup-node) and [upload-artifact](https://github.com/actions/upload-artifact): CI dependencies are pinned to reviewed release commit hashes.
+- [GitHub Actions checkout](https://github.com/actions/checkout), [setup-node](https://github.com/actions/setup-node) and [upload-artifact](https://github.com/actions/upload-artifact): CI dependencies are pinned to reviewed dependency revisions.
 
 ## Delivery evidence
 
-The [verification record](verification.md) contains observed deployment, calculation, browser and performance results with their conditions. The [case-study evidence](case-study-evidence.json) records screenshot provenance and the [document QA record](case-study-qa.md) records visual and structural checks. Measurements describe the tested release; they do not establish production SLAs or customer savings.
+The [verification record](verification.md) contains observed deployment, calculation, browser and performance results with their conditions. The [case-study evidence](case-study-evidence.json) records screenshot provenance and the [document QA record](case-study-qa.md) records visual and structural checks. Measurements describe the observed test conditions; they do not establish production SLAs or customer savings.

@@ -62,11 +62,11 @@ Follow the [deployment guide](docs/deployment.md). GitHub Actions runs source in
 
 ## Measured validation
 
-The published cinematic application release [`81f7a0b`](https://github.com/RS-010806/temt_iimb_sample/commit/81f7a0b52022b3af7773bed137992968e2f11d36) scored **91 mobile / 100 desktop performance**, with **100 accessibility, best practices and SEO** in both Lighthouse 13.4.1 audits. Mobile LCP was 2.9 seconds and CLS was 0. These are single lab observations, not production guarantees. That release passed **112 automated tests**, type checks, source checks and production builds. See the verification record for test conditions and remaining automation limits.
+The published website scored **91 mobile / 100 desktop performance**, with **100 accessibility, best practices and SEO** in both Lighthouse 13.4.1 audits. Mobile LCP was 2.9 seconds and CLS was 0. These are single lab observations, not production guarantees. Validation included **112 passing automated tests**, type checks, source checks and production builds. See the verification record for test conditions and remaining automation limits.
 
 ## Evidence and reproducibility
 
-- [Measured release verification](docs/verification.md)
+- [Measured verification](docs/verification.md)
 - [UX research and design rationale](docs/ux-research.md)
 - [Example emissions PDF](https://temt-iimb-sample.onrender.com/downloads/temt-example-report.pdf)
 - [Power BI import pack](https://temt-iimb-sample.onrender.com/downloads/temt-power-bi-pack.zip)

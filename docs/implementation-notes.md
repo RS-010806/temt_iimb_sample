@@ -40,7 +40,7 @@ Source snapshots, retrieval metadata and hashes remain in the repository. CI che
 - Repository: https://github.com/RS-010806/temt_iimb_sample
 - Reports and Power BI files: linked from the website and root README.
 
-The cinematic application release `81f7a0b` passed 112 automated tests and the published Lighthouse audits recorded performance 91 mobile / 100 desktop and accessibility 100 on both. These are lab observations under the conditions in the verification record, not production guarantees. Native file-picker automation and an OS reduced-motion toggle were not automated on the test machine; the record distinguishes code/test coverage from browser observations. The Power BI pack is verified for file structure and numerical reconciliation; it has not been exercised in Power BI Desktop.
+Validation included 112 passing automated tests. Published Lighthouse audits recorded performance 91 mobile / 100 desktop and accessibility 100 on both. These are lab observations under the conditions in the verification record, not production guarantees. Native file-picker automation and an OS reduced-motion toggle were not automated on the test machine; the record distinguishes code/test coverage from browser observations. The Power BI pack is verified for file structure and numerical reconciliation; it has not been exercised in Power BI Desktop.
 
 Case-study page renders, screenshot provenance, report hashes, PDF font embedding and hyperlink checks are recorded in [case-study QA](case-study-qa.md). The [UX research record](ux-research.md) explains the design decisions and supporting references.
 
