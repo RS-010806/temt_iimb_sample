@@ -39,11 +39,11 @@ function Background() {
 function Route({ progress }: { progress: number }) {
   const length = 1400;
   return (
-    <svg width="1920" height="1080" style={{ position: "absolute", inset: 0 }}>
-      <path d="M 180 860 C 520 700, 700 900, 980 720 S 1500 420, 1760 260" stroke="rgba(243,201,166,.55)" strokeWidth="3" fill="none" strokeDasharray="10 12"
+    <svg width="1920" height="1080" style={{ position: "absolute", inset: 0, opacity: 0.45 }}>
+      <path d="M 180 930 C 560 880, 820 990, 1180 900 S 1560 700, 1760 520" stroke="rgba(243,201,166,.55)" strokeWidth="3" fill="none" strokeDasharray="10 12"
         style={{ strokeDashoffset: length * (1 - progress) }} pathLength={length} />
-      <circle cx="180" cy="860" r="9" fill="white" opacity={Math.min(1, progress * 4)} />
-      <circle cx="1760" cy="260" r="11" fill={SAND} opacity={Math.max(0, progress * 3 - 2)} />
+      <circle cx="180" cy="930" r="9" fill="white" opacity={Math.min(1, progress * 4)} />
+      <circle cx="1760" cy="520" r="11" fill={SAND} opacity={Math.max(0, progress * 3 - 2)} />
     </svg>
   );
 }
@@ -96,10 +96,11 @@ function Outro({ duration }: { duration: number }) {
   );
 }
 
+// Rendered inside the product <Sequence>, whose frames start at 0: add the intro back for absolute time.
 function ChapterLabel() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const t = frame / fps;
+  const t = frame / fps + data.intro;
   const index = titled.findLastIndex((chapter) => chapter.start <= t + 0.05);
   if (index < 0) return null;
   const chapter = titled[index]!;
@@ -126,7 +127,7 @@ function Brandmark() {
 function Progress() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const t = frame / fps;
+  const t = frame / fps + data.intro;
   const start = data.intro, end = data.intro + data.capture;
   const p = Math.min(1, Math.max(0, (t - start) / (end - start)));
   return (

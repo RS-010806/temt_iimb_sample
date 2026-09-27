@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { EV_ENERGY_PROXY_KWH_PER_TKM, FACTOR_SETS, FUELS, GLEC_AIR, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, RAIL_FACTORS, REEFER_UPLIFT, ROAD_CLASSES, ROAD_FACTORS, SOURCES, TEMT_AIR, TEMT_COURIER, TRADE_LANES, VESSELS, type FactorSetId } from "@temt/calculator";
+import { EV_ENERGY_PROXY_KWH_PER_TKM, FACTOR_SETS, FUELS, GLEC_AIR, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, SOURCES, TEMT_AIR, TEMT_COURIER, TRADE_LANES, VESSELS, type FactorSetId } from "@temt/calculator";
 import { fmt, pct } from "@/lib/format";
 import { actions, useSettings } from "@/lib/store";
 import { BarList } from "../charts";
@@ -66,7 +66,7 @@ export function FactorsView() {
               const aw = a ? a.wtt + a.ttw : undefined, bw = b ? b.wtt + b.ttw : undefined;
               return [[`${item.label} (${item.gvw})`, fuel === "cng" ? "CNG" : fuel, a ? g(a.wtt) : "–", a ? g(a.ttw) : "–", aw ? g(aw) : "–", bw ? g(bw) : "–", aw && bw ? `${aw > bw ? "+" : ""}${pct(((aw - bw) / bw) * 100, 0)}` : "–"]];
             }))} />
-          <p className="text-[13px] leading-relaxed text-grey-600">g CO₂e per tonne-km. GLEC v3.2 Table 13 values come from TCI–IIMB Supply Chain Sustainability Lab research and include a 5% distance adjustment and the load factors shown in the calculator. Refrigerated road freight is multiplied by {REEFER_UPLIFT}. Courier defaults (production TEMT): first and last mile {g(TEMT_COURIER.firstMile.wtt + TEMT_COURIER.firstMile.ttw)}, line haul {g(TEMT_COURIER.midMile.wtt + TEMT_COURIER.midMile.ttw)} g/t-km, and {TEMT_COURIER.transshipmentKgPerTonne} kg CO₂e per tonne per transshipment.</p>
+          <p className="text-[13px] leading-relaxed text-grey-600">g CO₂e per tonne-km. GLEC v3.2 Table 13 values come from TCI–IIMB Supply Chain Sustainability Lab research and include a 5% distance adjustment and the load factors shown in the calculator. Refrigerated road freight carries the production TEMT refrigeration uplift. Courier defaults (production TEMT): first and last mile {g(TEMT_COURIER.firstMile.wtt + TEMT_COURIER.firstMile.ttw)}, line haul {g(TEMT_COURIER.midMile.wtt + TEMT_COURIER.midMile.ttw)} g/t-km, and {TEMT_COURIER.transshipmentKgPerTonne} kg CO₂e per tonne per transshipment.</p>
           <Table head={["Electric truck class", "Energy proxy kWh/t-km", "At CEA grid, g/t-km"]} rows={ROAD_CLASSES.filter((item) => EV_ENERGY_PROXY_KWH_PER_TKM[item.id]).map((item) => [`${item.label} (${item.gvw})`, fmt(EV_ENERGY_PROXY_KWH_PER_TKM[item.id]!, 2), g(EV_ENERGY_PROXY_KWH_PER_TKM[item.id]! * INDIA_GRID_KG_PER_KWH)])} />
           <p className="text-[13px] text-grey-600">GLEC v3.2 Table 11 European/South American averages, used as proxies until Indian values are published. Enter measured kWh for primary data.</p>
         </div>

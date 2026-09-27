@@ -17,7 +17,7 @@ export function TourPlayer() {
       <div className="overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
         <video ref={video} className="aspect-video w-full" controls playsInline preload="metadata" poster={TOUR_VIDEO.poster} onTimeUpdate={(event) => setCurrent(event.currentTarget.currentTime)}>
           <source src={TOUR_VIDEO.src} type="video/mp4" />
-          <track kind="captions" src={TOUR_VIDEO.captions} srcLang="en" label="English" default />
+          <track kind="captions" src={TOUR_VIDEO.captions} srcLang="en" label="English" />
           Your browser cannot play this video. <a href={TOUR_VIDEO.src}>Download it</a>.
         </video>
       </div>

@@ -84,7 +84,7 @@ export const CHAPTERS: ChapterScript[] = [
     "The Copilot runs in your browser.",
     "Twenty tonnes, Mumbai to Delhi, by thirty-two foot truck.",
     "Compare that with rail.",
-    "Summarise my footprint. It calculates, compares, analyses and exports, on request.",
+    "Summarise FY 2025–26. It calculates, compares, analyses and exports, on request.",
   ] },
   { id: "help", title: "Guided tour", lines: [
     "And a fourteen-step guided tour explains every screen.",
@@ -112,6 +112,7 @@ const SPOKEN: [RegExp, string][] = [
   [/\bNIFTY 500\b/g, "nifty five hundred"],
   [/\bAI\b/g, "A I"],
   [/\bFMCG\b/g, "F M C G"],
+  [/\bFY (\d{4})–(\d{2})\b/g, "F Y $1 to $2"],
   [/\bGHG\b/g, "G H G"],
   [/\bGST\b/g, "G S T"],
   [/\bPIN\b/g, "pin"],

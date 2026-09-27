@@ -59,7 +59,7 @@ const CURSOR = `globalThis.__name = globalThis.__name || ((fn) => fn);
 })();`;
 
 // ─── Human-like input ─────────────────────────────────────────────────────
-let mouse = { x: 720, y: 420 };
+let mouse = { x: 800, y: 460 };
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
 async function moveTo(page: Page, x: number, y: number, ms = 600) {
@@ -142,8 +142,8 @@ async function click(page: Page, locator: Locator, pause = 220) {
 async function type(page: Page, locator: Locator, text: string, delay = 48) {
   await click(page, locator, 120);
   await locator.focus();
+  // Select and type over the existing value: clearing first can let number fields snap back to a default.
   await page.keyboard.press("Meta+A");
-  await page.keyboard.press("Backspace");
   events.push({ t: now(), kind: "type", ms: text.length * delay });
   await page.keyboard.type(text, { delay });
   await sleep(160);
@@ -210,7 +210,7 @@ async function main() {
   await waitForServer();
 
   const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ["--hide-scrollbars", "--force-color-profile=srgb", "--font-render-hinting=none"] });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 810 }, deviceScaleFactor: 4 / 3, acceptDownloads: true, locale: "en-IN", timezoneId: "Asia/Kolkata", colorScheme: "light" });
+  const context = await browser.newContext({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1, acceptDownloads: true, locale: "en-IN", timezoneId: "Asia/Kolkata", colorScheme: "light" });
   await context.addInitScript(CURSOR);
   const page = await context.newPage();
   debugPage = page;
@@ -231,7 +231,7 @@ async function main() {
     frames.push({ file, t: frame.metadata.timestamp ?? now() });
     cdp.send("Page.screencastFrameAck", { sessionId: frame.sessionId }).catch(() => undefined);
   });
-  await cdp.send("Page.startScreencast", { format: "jpeg", quality: 92, maxWidth: 1920, maxHeight: 1080, everyNthFrame: 1 });
+  await cdp.send("Page.startScreencast", { format: "jpeg", quality: 94, maxWidth: 1600, maxHeight: 900, everyNthFrame: 1 });
   await page.mouse.move(mouse.x, mouse.y);
   await sleep(400);
   const nav = (tour: string) => page.locator(`[data-tour="${tour}"]`).first();
@@ -475,7 +475,7 @@ async function main() {
     };
     await ask(1, "20 t Mumbai to Delhi by 32 ft truck", /Mumbai → Delhi/);
     await ask(2, "Compare that with rail", /Rail with road drayage/);
-    await ask(3, "Summarise my footprint", /Heaviest lanes/);
+    await ask(3, "Summarise FY 2025-26", /Heaviest lanes/);
     await sleep(800);
   });
 

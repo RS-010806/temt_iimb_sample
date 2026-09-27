@@ -258,3 +258,42 @@ export function nearestPort(location: LatLon, country?: string): Port {
   }
   return best;
 }
+
+// ─── Container trade lane from the route ──────────────────────────────────
+
+const REGIONS: Record<string, readonly string[]> = {
+  indiaMe: ["IN", "PK", "LK", "BD", "MV", "AE", "SA", "OM", "QA", "KW", "BH", "IR", "IQ", "YE", "JO"],
+  europe: ["NL", "BE", "DE", "GB", "FR", "IE", "DK", "SE", "NO", "FI", "PL", "EE", "LV", "LT", "PT", "ES", "IT", "GR", "MT", "CY", "HR", "SI", "RO", "BG", "TR"],
+  mediterranean: ["ES", "IT", "GR", "MT", "CY", "HR", "SI", "TR", "EG", "MA", "TN", "IL", "LB", "RO", "BG"],
+  asia: ["CN", "HK", "TW", "JP", "KR", "SG", "MY", "TH", "VN", "ID", "PH", "KH", "MM", "BN"],
+  seAsia: ["SG", "MY", "TH", "VN", "ID", "PH", "KH", "MM", "BN"],
+  africa: ["ZA", "KE", "TZ", "MZ", "NG", "GH", "CI", "SN", "DJ", "EG", "MA", "TN", "AO", "NA", "MG", "MU"],
+  oceania: ["AU", "NZ", "PG", "FJ"],
+  northAmerica: ["US", "CA", "MX"],
+  southAmerica: ["BR", "AR", "CL", "PE", "CO", "UY", "EC"],
+};
+const inRegion = (country: string, region: keyof typeof REGIONS) => REGIONS[region]!.includes(country);
+
+/**
+ * The GLEC container trade lane that best matches a voyage between two countries (ISO 3166 alpha-2).
+ * Falls back to the industry average when no published lane fits.
+ */
+export function suggestTradeLane(fromCountry?: string, toCountry?: string): string {
+  const a = (fromCountry ?? "").toUpperCase(), b = (toCountry ?? "").toUpperCase();
+  if (!a || !b) return "intra-me-india";
+  const pair = (x: keyof typeof REGIONS, y: keyof typeof REGIONS) => (inRegion(a, x) && inRegion(b, y)) || (inRegion(a, y) && inRegion(b, x));
+  if (inRegion(a, "indiaMe") && inRegion(b, "indiaMe")) return "intra-me-india";
+  if (pair("indiaMe", "europe")) return "europe-me-india";
+  if (pair("indiaMe", "asia")) return "asia-me-india";
+  if (pair("indiaMe", "africa")) return "asia-africa";
+  if (pair("indiaMe", "oceania")) return "asia-oceania";
+  if (pair("indiaMe", "southAmerica")) return "asia-south-america";
+  if (pair("asia", "mediterranean")) return "asia-med";
+  if (pair("asia", "europe")) return "asia-north-europe";
+  if (pair("asia", "africa")) return "asia-africa";
+  if (pair("asia", "oceania")) return "asia-oceania";
+  if (pair("asia", "southAmerica")) return "asia-south-america";
+  if (inRegion(a, "seAsia") && inRegion(b, "seAsia")) return "intra-se-asia";
+  if (pair("seAsia", "asia")) return "se-ne-asia";
+  return "industry-average";
+}

@@ -13,7 +13,7 @@ interface Step {
 }
 
 export const TOUR: Step[] = [
-  { path: "/app/", target: "kpi-total", title: "Your footprint at a glance", body: "Total well-to-wheel emissions for the selected financial year, with the change from last year. Every number in TEMT traces back to a factor, a source and a calculation step." },
+  { path: "/app/", target: "kpi-total", title: "Your footprint at a glance", body: "Total well-to-wheel emissions for the selected financial year, with the change from last year. Every number in TEMT traces back to a published factor and its source." },
   { path: "/app/", target: "monthly", title: "Month by month", body: "Tank-to-wheel (fuel burned in vehicles) and well-to-tank (producing that fuel or electricity), stacked per month. Hover any bar for exact values." },
   { path: "/app/", target: "mode-breakdown", title: "Where emissions come from", body: "Breakdowns by mode, business unit, lane and GHG Protocol scope, the split BRSR disclosures need." },
   { path: "/app/", target: "insights", title: "Insights and opportunities", body: "TEMT recalculates alternatives with the same engine, for example moving long road hauls to rail, and shows how much each would save." },

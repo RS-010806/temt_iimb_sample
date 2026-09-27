@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateHub, calculateLeg, calculateShipment, CalculationError, estimateLandDistanceKm, FACTORS, getPort, greatCircleKm, landPathKm, legInputSchema, PORTS,
-  ROAD_CLASSES, ROAD_FACTORS, seaRoute, shipmentInputSchema, VESSELS,
+  ROAD_CLASSES, ROAD_FACTORS, seaRoute, shipmentInputSchema, suggestTradeLane, VESSELS,
 } from "../src/index.js";
 
 describe("parity with production TEMT", () => {
@@ -203,5 +203,18 @@ describe("sea routing", () => {
     }
     expect(seaRoute("in-mumbai", "in-mumbai")).toBeUndefined();
     expect(seaRoute("in-mumbai", "xx-nowhere")).toBeUndefined();
+  });
+});
+
+describe("container trade lane from the route", () => {
+  it("picks the published GLEC lane for Indian voyages", () => {
+    expect(suggestTradeLane("IN", "NL")).toBe("europe-me-india");
+    expect(suggestTradeLane("CN", "IN")).toBe("asia-me-india");
+    expect(suggestTradeLane("IN", "IN")).toBe("intra-me-india");
+    expect(suggestTradeLane("IN", "AE")).toBe("intra-me-india");
+    expect(suggestTradeLane("IN", "US")).toBe("industry-average");
+    expect(suggestTradeLane("SG", "IT")).toBe("asia-med");
+    expect(suggestTradeLane("in", "ke")).toBe("asia-africa");
+    expect(suggestTradeLane(undefined, "NL")).toBe("intra-me-india");
   });
 });

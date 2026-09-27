@@ -19,6 +19,12 @@ import { Drawer, EmptyState, PageHeader, Select, cx, useToast } from "../../ui";
 const PAGE = 50;
 type SortKey = "date" | "wtw" | "intensity" | "tonnes";
 
+const SOURCE_LABELS: Record<ComputedShipment["source"], string> = {
+  manual: "Manual entry", import: "Imported file", chain: "Transport chain", compare: "Mode comparison", copilot: "Copilot",
+  sample: "Sample data", ewaybill: "E-way bill", "legacy-temt": "Production TEMT file",
+};
+const QUALITY_LABELS = { primary: "Primary data", modelled: "Modelled data", default: "Default values" } as const;
+
 function Detail({ row, onClose }: { row: ComputedShipment | null; onClose: () => void }) {
   const router = useRouter();
   const toast = useToast();
@@ -47,8 +53,8 @@ function Detail({ row, onClose }: { row: ComputedShipment | null; onClose: () =>
           </div>
           <StageBar ttw={result.ttwKg} wtt={result.wttKg} hub={result.hubKg} />
           <dl className="grid grid-cols-2 gap-3 text-[13px]">
-            {[["Business unit", row.businessUnit], ["Commodity", row.commodity], ["Direction", DIRECTION_LABELS[row.direction]], ["Who pays", PAID_BY_LABELS[row.paidBy]], ["Source", row.source], ["Data quality", result.dataQuality]].map(([label, value]) => (
-              <div key={label} className="rounded-lg bg-stone-50 p-3"><dt className="text-xs text-grey-600">{label}</dt><dd className="mt-0.5 font-semibold capitalize">{value}</dd></div>
+            {[["Business unit", row.businessUnit], ["Commodity", row.commodity], ["Direction", DIRECTION_LABELS[row.direction]], ["Who pays", PAID_BY_LABELS[row.paidBy]], ["Source", SOURCE_LABELS[row.source]], ["Data quality", QUALITY_LABELS[result.dataQuality]]].map(([label, value]) => (
+              <div key={label} className="rounded-lg bg-stone-50 p-3"><dt className="text-xs text-grey-600">{label}</dt><dd className="mt-0.5 font-semibold">{value}</dd></div>
             ))}
           </dl>
           <div className="grid gap-3">

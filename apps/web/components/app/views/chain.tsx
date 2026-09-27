@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Anchor, Building2, Package, Plane, Plus, Save, Ship, TrainFront, Trash2, Truck, Waves, Warehouse } from "lucide-react";
-import { calculateShipment, HUB_TYPES, IWW_VESSELS, MODE_LABELS, ROAD_CLASSES, TRADE_LANES, VESSELS, type HubCondition, type HubInput, type HubTypeId, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult, type TransportMode } from "@temt/calculator";
+import { calculateShipment, suggestTradeLane, HUB_TYPES, IWW_VESSELS, MODE_LABELS, ROAD_CLASSES, TRADE_LANES, VESSELS, type HubCondition, type HubInput, type HubTypeId, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult, type TransportMode } from "@temt/calculator";
 import { buildRecord } from "@/lib/builders";
 import { emissions, emissionsText, fmt, todayIso } from "@/lib/format";
 import { estimateDistance, hasCoords, nearestAirport, nearestIndianPort, type Place, type PlaceKind } from "@/lib/places";
@@ -25,6 +25,8 @@ interface ChainLeg {
   airService: "unknown" | "belly" | "freighter";
   seaBasis: "lane" | "vessel";
   tradeLane: string;
+  /** Set once the user picks a lane; until then it follows the route. */
+  laneEdited?: boolean;
   containerType: "dry" | "reefer";
   tonnesPerTeu: number;
   vesselId: string;
@@ -103,7 +105,7 @@ export function ChainView() {
     setTemplate("custom");
     const hubs = record.input.hubs ?? [];
     setStops([{ place: record.origin, hub: null }, ...record.input.legs.slice(0, -1).map((_, i) => ({ place: record.legMeta[i]?.to ?? record.legMeta[i + 1]?.from, hub: hubs[i] ? { type: hubs[i]!.type, condition: hubs[i]!.condition ?? "ambient" } : null })), { place: record.destination, hub: null }]);
-    setLegs(record.input.legs.map((item) => leg(item.mode, { distanceKm: item.distanceKm, edited: true, vehicleClass: item.vehicleClass ?? "gvw-30-50", fuel: item.fuel ?? "diesel", courierLeg: item.courierLeg, airService: item.airService ?? "unknown", seaBasis: item.seaBasis ?? "lane", tradeLane: item.tradeLane ?? "intra-me-india", containerType: item.containerType ?? "dry", tonnesPerTeu: item.tonnesPerTeu ?? 10, vesselId: item.vesselId ?? VESSELS[8]!.id, iwwVesselId: item.iwwVesselId ?? "mv-85-110" })));
+    setLegs(record.input.legs.map((item) => leg(item.mode, { distanceKm: item.distanceKm, edited: true, vehicleClass: item.vehicleClass ?? "gvw-30-50", fuel: item.fuel ?? "diesel", courierLeg: item.courierLeg, airService: item.airService ?? "unknown", seaBasis: item.seaBasis ?? "lane", tradeLane: item.tradeLane ?? "intra-me-india", laneEdited: true, containerType: item.containerType ?? "dry", tonnesPerTeu: item.tonnesPerTeu ?? 10, vesselId: item.vesselId ?? VESSELS[8]!.id, iwwVesselId: item.iwwVesselId ?? "mv-85-110" })));
     setTonnes(record.input.legs[0]?.tonnes);
     setRefrigerated(record.input.legs.some((item) => item.refrigerated));
     setDetails({ ref: record.ref, date: record.date, businessUnit: record.businessUnit, commodity: record.commodity, paidBy: record.paidBy });
@@ -143,12 +145,14 @@ export function ChainView() {
     // Re-run when the ends of the route or the leg modes change, not on every stop edit.
   }, [origin, destination, modeKey, stops.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep estimated distances current as stops change.
+  // Keep estimated distances current as stops change; container legs follow the route's trade lane.
   useEffect(() => {
     setLegs((current) => current.map((item, i) => {
-      if (item.edited) return item;
-      const estimate = estimateDistance(item.mode, stops[i]?.place, stops[i + 1]?.place);
-      return { ...item, distanceKm: estimate ? Math.round(estimate.km) : undefined };
+      const from = stops[i]?.place, to = stops[i + 1]?.place;
+      const lane = item.mode === "sea" && !item.laneEdited && from?.country && to?.country ? suggestTradeLane(from.country, to.country) : item.tradeLane;
+      if (item.edited) return lane === item.tradeLane ? item : { ...item, tradeLane: lane };
+      const estimate = estimateDistance(item.mode, from, to);
+      return { ...item, tradeLane: lane, distanceKm: estimate ? Math.round(estimate.km) : undefined };
     }));
   }, [stops, legs.map((item) => `${item.mode}${item.edited}`).join()]);
 
@@ -234,7 +238,7 @@ export function ChainView() {
                       {item.mode === "air" && <Field label="Aircraft"><Select value={item.airService} onChange={(airService) => setLeg(index, { airService })} options={[{ value: "unknown", label: "Unknown mix" }, { value: "belly", label: "Belly hold" }, { value: "freighter", label: "Freighter" }]} /></Field>}
                       {item.mode === "sea" && <>
                         <Field label="Basis"><Select value={item.seaBasis} onChange={(seaBasis) => setLeg(index, { seaBasis })} options={[{ value: "lane", label: "Container, trade lane" }, { value: "vessel", label: "Vessel type" }]} /></Field>
-                        {item.seaBasis === "lane" ? <Field label="Trade lane"><Select value={item.tradeLane} onChange={(tradeLane) => setLeg(index, { tradeLane })} options={TRADE_LANES.map((lane) => ({ value: lane.id, label: lane.label }))} /></Field>
+                        {item.seaBasis === "lane" ? <Field label="Trade lane"><Select value={item.tradeLane} onChange={(tradeLane) => setLeg(index, { tradeLane, laneEdited: true })} options={TRADE_LANES.map((lane) => ({ value: lane.id, label: lane.label }))} /></Field>
                           : <Field label="Vessel"><Select value={item.vesselId} onChange={(vesselId) => setLeg(index, { vesselId })} options={VESSELS.map((vessel) => ({ value: vessel.id, label: `${vessel.type}, ${vessel.size}` }))} /></Field>}
                       </>}
                       {item.mode === "iww" && <Field label="Vessel"><Select value={item.iwwVesselId} onChange={(iwwVesselId) => setLeg(index, { iwwVesselId })} options={IWW_VESSELS.map((vessel) => ({ value: vessel.id, label: vessel.label }))} /></Field>}

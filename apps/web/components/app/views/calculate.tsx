@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { AlertTriangle, ArrowLeftRight, ArrowRightLeft, BadgeCheck, ChevronDown, Fuel, GitBranch, Package, Plane, Plus, RotateCcw, Save, Ship, Snowflake, TrainFront, Truck, Waves, Zap } from "lucide-react";
-import { calculateShipment, FACTOR_SETS, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, ROAD_CLASSES, ROAD_FACTORS, SOURCES, TEU_LOADS, TRADE_LANES, VESSELS, type HubInput, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult } from "@temt/calculator";
+import { calculateShipment, suggestTradeLane, FACTOR_SETS, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, ROAD_CLASSES, ROAD_FACTORS, SOURCES, TEU_LOADS, TRADE_LANES, VESSELS, type HubInput, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult } from "@temt/calculator";
 import { buildRecord, vehicleForTonnes } from "@/lib/builders";
 import { emissions, emissionsText, fmt, todayIso } from "@/lib/format";
 import { estimateDistance, hasCoords, type Place, type PlaceKind } from "@/lib/places";
@@ -54,6 +54,8 @@ interface Form {
   airService: "unknown" | "freighter" | "belly";
   seaBasis: "lane" | "vessel";
   tradeLane: string;
+  /** Set once the user picks a lane; until then it follows the route. */
+  tradeLaneEdited?: boolean;
   containerType: "dry" | "reefer";
   tonnesPerTeu: number;
   vesselId: string;
@@ -149,7 +151,7 @@ export function CalculateView() {
         setForm((current) => ({
           ...current, mode: record.kind === "courier" ? "courier" : (leg.mode as CalcMode), origin: record.origin, destination: record.destination, distanceKm: leg.distanceKm, distanceEdited: true, tonnes: leg.tonnes, weightUnit: "t",
           vehicleClass: leg.vehicleClass ?? current.vehicleClass, vehicleAuto: false, fuel: leg.fuel ?? "diesel", refrigerated: !!leg.refrigerated, method: leg.method ?? "distance", fuelQuantity: leg.fuelQuantity, fuelUnit: leg.fuelUnit === "kg" ? "kg" : "l",
-          energyKwh: leg.energyKwh, gridFactor: leg.gridKgPerKwh, airService: leg.airService ?? "unknown", seaBasis: leg.seaBasis ?? "lane", tradeLane: leg.tradeLane ?? current.tradeLane, containerType: leg.containerType ?? "dry",
+          energyKwh: leg.energyKwh, gridFactor: leg.gridKgPerKwh, airService: leg.airService ?? "unknown", seaBasis: leg.seaBasis ?? "lane", tradeLane: leg.tradeLane ?? current.tradeLane, tradeLaneEdited: true, containerType: leg.containerType ?? "dry",
           tonnesPerTeu: leg.tonnesPerTeu ?? 10, vesselId: leg.vesselId ?? current.vesselId, iwwVesselId: leg.iwwVesselId ?? current.iwwVesselId, useCustom: !!leg.customFactor, customWtt: leg.customFactor?.wtt, customTtw: leg.customFactor?.ttw,
           firstMileKm: record.kind === "courier" ? record.input.legs[0]!.distanceKm : current.firstMileKm, lastMileKm: record.kind === "courier" ? record.input.legs[2]!.distanceKm : current.lastMileKm,
           ref: record.ref, date: record.date, businessUnit: record.businessUnit, commodity: record.commodity, direction: record.direction, paidBy: record.paidBy, notes: record.notes ?? "",
@@ -166,7 +168,14 @@ export function CalculateView() {
   }, [form.origin, form.destination, form.mode, form.distanceEdited]);
 
   // Suggest a truck class that fits the cargo until the user picks one.
-  useEffect(() => { if (form.vehicleAuto && tonnes) set({ vehicleClass: vehicleForTonnes(tonnes) }); }, [tonnes, form.vehicleAuto]);
+  // Before paint, so the result never flashes an intermediate truck class while the weight is typed.
+  useLayoutEffect(() => { if (form.vehicleAuto && tonnes) set({ vehicleClass: vehicleForTonnes(tonnes) }); }, [tonnes, form.vehicleAuto]);
+  // Container voyages use the GLEC trade lane that matches the route until the user picks one.
+  useEffect(() => {
+    if (form.mode !== "sea" || form.tradeLaneEdited || !form.origin?.country || !form.destination?.country) return;
+    const lane = suggestTradeLane(form.origin.country, form.destination.country);
+    if (lane !== form.tradeLane) set({ tradeLane: lane });
+  }, [form.mode, form.origin, form.destination, form.tradeLaneEdited]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const estimate = useMemo(() => estimateDistance(form.mode === "courier" ? "road" : form.mode, form.origin, form.destination), [form.origin, form.destination, form.mode]);
   const built = useMemo(() => buildInput(form, tonnes), [form, tonnes]);
@@ -247,7 +256,7 @@ export function CalculateView() {
           <Section n={3} title="Cargo" aside={<Segmented ariaLabel="Weight unit" size="sm" value={form.weightUnit} onChange={(weightUnit) => set({ weightUnit, tonnes: form.tonnes === undefined ? undefined : weightUnit === "kg" ? form.tonnes * (form.weightUnit === "t" ? 1000 : 1) : form.tonnes / (form.weightUnit === "kg" ? 1000 : 1) })} options={[{ value: "t", label: "Tonnes" }, { value: "kg", label: "kg" }]} />}>
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Cargo weight" htmlFor="tonnes" hint="Actual weight carried for this shipment (not vehicle capacity)."><NumberInput id="tonnes" value={form.tonnes} suffix={form.weightUnit} onChange={(value) => set({ tonnes: value })} placeholder={form.weightUnit === "t" ? "e.g. 18" : "e.g. 750"} /></Field>
-              <Field label="Temperature control" htmlFor="reefer"><div className="flex min-h-[42px] items-center"><Toggle checked={form.refrigerated} onChange={(refrigerated) => set({ refrigerated, containerType: refrigerated ? "reefer" : "dry" })} label={<span className="inline-flex items-center gap-1.5"><Snowflake size={14} aria-hidden="true" /> Refrigerated</span>} description={form.mode === "road" || form.mode === "courier" ? "Applies the ×1.21 production TEMT uplift" : form.mode === "sea" ? "Uses reefer container values" : "No effect for this mode"} /></div></Field>
+              <Field label="Temperature control" htmlFor="reefer"><div className="flex min-h-[42px] items-center"><Toggle checked={form.refrigerated} onChange={(refrigerated) => set({ refrigerated, containerType: refrigerated ? "reefer" : "dry" })} label={<span className="inline-flex items-center gap-1.5"><Snowflake size={14} aria-hidden="true" /> Refrigerated</span>} description={form.mode === "road" || form.mode === "courier" ? "Applies the production TEMT refrigeration uplift" : form.mode === "sea" ? "Uses reefer container values" : "No effect for this mode"} /></div></Field>
             </div>
           </Section>
 
@@ -311,7 +320,7 @@ export function CalculateView() {
                 <Segmented ariaLabel="Sea calculation basis" value={form.seaBasis} onChange={(seaBasis) => set({ seaBasis })} options={[{ value: "lane", label: "Container by trade lane" }, { value: "vessel", label: "Vessel type and size" }]} />
                 {form.seaBasis === "lane" ? (
                   <div className="grid gap-3 md:grid-cols-3">
-                    <Field label="Trade lane"><Select value={form.tradeLane} onChange={(tradeLane) => set({ tradeLane })} options={TRADE_LANES.map((lane) => ({ value: lane.id, label: lane.label }))} /></Field>
+                    <Field label="Trade lane" hint={form.tradeLaneEdited ? undefined : "Suggested from the route"}><Select value={form.tradeLane} onChange={(tradeLane) => set({ tradeLane, tradeLaneEdited: true })} options={TRADE_LANES.map((lane) => ({ value: lane.id, label: lane.label }))} /></Field>
                     <Field label="Container"><Segmented ariaLabel="Container type" value={form.containerType} onChange={(containerType) => set({ containerType })} options={[{ value: "dry", label: "Dry" }, { value: "reefer", label: "Reefer" }]} /></Field>
                     <Field label="Cargo per TEU"><Select value={String(form.tonnesPerTeu)} onChange={(value) => set({ tonnesPerTeu: Number(value) })} options={TEU_LOADS.map((item) => ({ value: String(item.tonnes), label: `${item.label} (${item.tonnes} t)` }))} /></Field>
                   </div>

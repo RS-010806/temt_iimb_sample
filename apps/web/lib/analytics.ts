@@ -1,5 +1,5 @@
 import { calculateLeg, ROAD_CLASSES, type DataQuality, type FactorSetId, type LegInput, type TransportMode } from "@temt/calculator";
-import { fiscalYear, todayIso } from "./format";
+import { fiscalYear, plural, todayIso } from "./format";
 import { laneKey, MODE_ORDER, scopeOf, type ComputedShipment, type ScopeKey } from "./records";
 
 export interface Filters {
@@ -279,7 +279,7 @@ export function insights(rows: ComputedShipment[]): Insight[] {
   const rail = modes.find((mode) => mode.key === "rail");
   if (rail && rail.tonneKm / tkm > 0.15) result.push({ id: "rail", tone: "ok", title: "Rail is working for you", body: `Rail carries ${Math.round((rail.tonneKm / tkm) * 100)}% of tonne-kilometres for ${Math.round(rail.share)}% of emissions.` });
   const lanes = byLane(rows);
-  if (lanes[0] && lanes.length > 3) result.push({ id: "lane", tone: "info", title: "Your heaviest lane", body: `${lanes[0].label} accounts for ${Math.round(lanes[0].share)}% of emissions across ${lanes[0].count} shipments.` });
-  if (total.errors) result.push({ id: "errors", tone: "warn", title: `${total.errors} shipments need attention`, body: "They could not be calculated. Open the ledger to fix missing distances or unsupported combinations." });
+  if (lanes[0] && lanes.length > 3) result.push({ id: "lane", tone: "info", title: "Your heaviest lane", body: `${lanes[0].label} accounts for ${Math.round(lanes[0].share)}% of emissions across ${plural(lanes[0].count, "shipment")}.` });
+  if (total.errors) result.push({ id: "errors", tone: "warn", title: `${plural(total.errors, "shipment")} ${total.errors === 1 ? "needs" : "need"} attention`, body: "They could not be calculated. Open the ledger to fix missing distances or unsupported combinations." });
   return result;
 }

@@ -1,7 +1,7 @@
 import { calculateShipment, FACTOR_SETS, greatCircleKm, ROAD_CLASSES, seaRoute, type HubInput, type LegInput, type ShipmentResult } from "@temt/calculator";
 import { applyFilters, byLane, byMode, byQuality, fiscalYears, insights, opportunities, previousPeriod, totals } from "../analytics";
 import { buildAlternatives, buildRecord, vehicleForTonnes } from "../builders";
-import { emissionsText, fmt, pct } from "../format";
+import { emissionsText, fmt, pct, plural } from "../format";
 import { estimateDistance, hasCoords, nearestAirport, nearestIndianPort, resolvePlace, type Place, type PlaceKind } from "../places";
 import { DEFAULT_LEVERS, runScenario, type Levers } from "../planner";
 import { MODE_HEX, type LegMeta, type ShipmentRecord } from "../records";
@@ -315,7 +315,7 @@ async function handle(raw: string, ctx: AgentContext, carried?: Pending): Promis
           { label: "Shipments", value: fmt(t.shipments), sub: `${fmt(t.legs)} legs` },
         ] },
         { type: "bars", title: "By mode", items: modes.map((mode) => ({ key: mode.key, label: mode.label, value: mode.wtwKg, color: MODE_HEX[mode.key as keyof typeof MODE_HEX] ?? "#636363", share: mode.share })) },
-        { type: "list", title: "Heaviest lanes", items: lanes.map((lane) => ({ title: lane.label, body: `${lane.count} shipments`, value: emissionsText(lane.wtwKg) })) },
+        { type: "list", title: "Heaviest lanes", items: lanes.map((lane) => ({ title: lane.label, body: plural(lane.count, "shipment"), value: emissionsText(lane.wtwKg) })) },
         ...insights(scope).slice(1, 3).map((item) => text(`**${item.title}.** ${item.body}`)),
       ], suggestions: ["Where can I reduce emissions?", "Export a PDF report", "How good is my data quality?"] };
     }
