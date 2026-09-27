@@ -169,3 +169,6 @@ export function analyze(input: unknown[]): AnalysisResult {
     engineVersion: ENGINE_VERSION, processingMs: performance.now() - started, calculatedAt: new Date().toISOString(),
   };
 }
+
+// TEMT engine v2: multi-mode, multi-method ISO 14083-style calculations with versioned factor sets.
+export * from "./v2/index.js";

@@ -14,3 +14,4 @@ tmp/
 .cache/
 artifacts/measurements/
 artifacts/screenshots/revision/
+.agentbridge/

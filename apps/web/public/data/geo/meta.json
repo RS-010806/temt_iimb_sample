@@ -1,0 +1,31 @@
+{
+  "built": "2026-09-27",
+  "counts": {
+    "cities": 2962,
+    "pincodes": 19238,
+    "airports": 1222
+  },
+  "sources": [
+    {
+      "dataset": "cities",
+      "source": "GeoNames cities5000",
+      "licence": "CC BY 4.0",
+      "url": "https://download.geonames.org/export/dump/",
+      "filter": "India, population >= 20000"
+    },
+    {
+      "dataset": "pincodes",
+      "source": "GeoNames postal codes (IN)",
+      "licence": "CC BY 4.0",
+      "url": "https://download.geonames.org/export/zip/",
+      "filter": "Median post-office coordinate per PIN code; snapped to the named city when it lies within 60 km (precision c), otherwise district-level (precision d)"
+    },
+    {
+      "dataset": "airports",
+      "source": "OurAirports",
+      "licence": "Public domain",
+      "url": "https://ourairports.com/data/",
+      "filter": "Indian airports with scheduled service and IATA code; large international airports"
+    }
+  ]
+}

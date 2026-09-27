@@ -1,82 +1,32 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import assert from "node:assert/strict";
-import { createServer } from "vite";
-import Papa from "papaparse";
-import type { AnalysisResult, ShipmentLeg } from "@temt/calculator";
-import type { ExportContext } from "../apps/web/lib/demo-export";
-
 /**
- * Generate the public examples through the exact functions used by the demo UI.
- * Vite loads the Next app's TS modules without creating a second calculation or
- * report implementation. Run from the repository root: npm run samples:generate.
+ * Regenerate the sample files served from /downloads with the same exporters the app uses.
+ * Run with: npm run samples:generate
  */
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { makeSampleWorkspace } from "../apps/web/lib/sample-data";
+import { compute } from "../apps/web/lib/records";
+import { buildReportModel } from "../apps/web/lib/report-model";
+import { DEFAULT_SETTINGS } from "../apps/web/lib/store";
+import { buildPdf } from "../apps/web/lib/exports/pdf";
+import { buildWorkbook } from "../apps/web/lib/exports/xlsx";
+import { buildDocx } from "../apps/web/lib/exports/docx";
+import { buildPowerBiPack } from "../apps/web/lib/exports/powerbi";
+import { templateCsv, templateXlsx } from "../apps/web/lib/import";
+
 async function main() {
-  const root = process.cwd();
-  const vite = await createServer({ root, configFile: false, logLevel: "error", server: { middlewareMode: true }, appType: "custom" });
-  try {
-    const [{ makeScenario, filteredAnalysis, DEFAULT_FILTERS }, { buildPowerBIPack, buildReportPDF, serializeCSV }, { analyze }] = await Promise.all([
-      vite.ssrLoadModule("/apps/web/lib/demo-data.ts"),
-      vite.ssrLoadModule("/apps/web/lib/demo-export.ts"),
-      vite.ssrLoadModule("/packages/calculator/src/index.ts"),
-    ]);
-    const rows = makeScenario("fmcg");
-    const result: AnalysisResult = analyze(rows);
-    assert.equal(result.errors.length, 0, "The public scenario must have no validation exceptions.");
-    assert.equal(result.totals.legCount, 32);
-    assert.equal(result.totals.shipmentCount, 24);
-    const context: ExportContext = {
-      analysis: filteredAnalysis(result, DEFAULT_FILTERS), rawRows: rows,
-      name: "Illustrative India consumer group scenario", filters: { ...DEFAULT_FILTERS },
-      synthetic: true, processing: "local",
-    };
-    const [pdf, zip, csv] = await Promise.all([
-      buildReportPDF(context),
-      buildPowerBIPack(context),
-      serializeCSV(rows.map((row: ShipmentLeg & { origin: string; destination: string }) => ({
-        shipmentId: row.shipmentId, legIndex: row.legIndex, date: row.date, subsidiary: row.subsidiary,
-        origin: row.origin, destination: row.destination, mode: row.mode, profile: row.profile,
-        tonnes: row.tonnes, kilometres: row.kilometres,
-        dataType: "synthetic scenario", scenario: "Illustrative India consumer group scenario",
-        generatedAt: context.analysis.calculatedAt,
-      }))),
-    ]);
-
-    // Verify the downloadable input can reproduce the same calculation.
-    const sample = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: "greedy" });
-    assert.equal(sample.errors.length, 0);
-    const reconstructed = sample.data.map(row => ({ ...row, legIndex: Number(row.legIndex), tonnes: Number(row.tonnes), kilometres: Number(row.kilometres) }));
-    const reconstructedAnalysis: AnalysisResult = analyze(reconstructed);
-    assert.deepEqual(reconstructedAnalysis.totals, result.totals);
-    assert.equal(reconstructedAnalysis.errors.length, 0);
-
-    const ledger = Papa.parse<Record<string, string>>(await zip.file("shipments.csv").async("string"), { header: true, skipEmptyLines: "greedy" });
-    const summary = Papa.parse<Record<string, string>>(await zip.file("summary.csv").async("string"), { header: true, skipEmptyLines: "greedy" });
-    assert.equal(ledger.errors.length, 0);
-    assert.equal(summary.errors.length, 0);
-    assert.equal(ledger.data.length, 32);
-    assert.equal(new Set(ledger.data.map(row => row.shipmentId)).size, 24);
-    assert.equal(Number(summary.data[0]?.totalEmissionsKg), result.totals.emissionsKg);
-    assert.equal(Number(summary.data[0]?.totalTonneKm), result.totals.tonneKm);
-    assert.equal(Number(summary.data[0]?.validationExceptionCount), 0);
-    const ledgerEmissions = ledger.data.reduce((total, row) => total + Number(row.emissionsKg), 0);
-    assert.ok(Math.abs(ledgerEmissions - result.totals.emissionsKg) < 1e-6, "Exported ledger must reconcile to the summary.");
-    assert.ok(ledger.data.every(row => row.dataType === "synthetic scenario"));
-    assert.ok(pdf.getNumberOfPages() >= 3, "The report must contain its ledger and factor register.");
-
-    const destination = resolve(root, "apps/web/public/downloads");
-    await mkdir(destination, { recursive: true });
-    await Promise.all([
-      writeFile(resolve(destination, "temt-example-report.pdf"), Buffer.from(pdf.output("arraybuffer"))),
-      writeFile(resolve(destination, "temt-power-bi-pack.zip"), await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" })),
-      writeFile(resolve(destination, "temt-sample-shipments.csv"), `\uFEFF${csv}`, "utf8"),
-    ]);
-    console.info(JSON.stringify({ destination, generatedAt: result.calculatedAt, engineVersion: result.engineVersion,
-      totals: result.totals, emissionsTonnes: result.totals.emissionsKg / 1000, pdfPages: pdf.getNumberOfPages(),
-      zipFiles: Object.keys(zip.files), synthetic: true }, null, 2));
-  } finally {
-    await vite.close();
-  }
+  const out = join(import.meta.dirname, "../apps/web/public/downloads");
+  mkdirSync(out, { recursive: true });
+  const settings = { ...DEFAULT_SETTINGS, organisation: { name: "Sample FMCG company (synthetic data)", revenueCrore: 12500 }, businessUnits: ["Foods", "Home Care", "Personal Care"] };
+  const rows = makeSampleWorkspace("fmcg").map((record) => compute(record, settings.factorSet));
+  const model = { ...buildReportModel(rows, settings, { fy: "FY 2025–26" }), generatedAt: "2026-09-27T09:00:00.000Z" };
+  writeFileSync(join(out, "temt-sample-report.pdf"), Buffer.from((await buildPdf(model)).output("arraybuffer")));
+  writeFileSync(join(out, "temt-sample-report.xlsx"), Buffer.from(await (await buildWorkbook(model)).xlsx.writeBuffer()));
+  writeFileSync(join(out, "temt-sample-report.docx"), Buffer.from(await (await buildDocx(model)).arrayBuffer()));
+  writeFileSync(join(out, "temt-sample-power-bi.zip"), Buffer.from(await (await buildPowerBiPack(model)).arrayBuffer()));
+  writeFileSync(join(out, "TEMT-import-template.xlsx"), Buffer.from(await templateXlsx()));
+  writeFileSync(join(out, "TEMT-import-template.csv"), await templateCsv());
+  console.log(`Sample downloads written for ${model.totals.shipments} shipments (${(model.totals.wtwKg / 1000).toFixed(1)} t CO2e).`);
 }
 
-main().catch((error: unknown) => { console.error(error); process.exitCode = 1; });
+main().catch((error) => { console.error(error); process.exit(1); });

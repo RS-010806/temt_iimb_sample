@@ -1,16 +1,35 @@
-import type { Metadata } from 'next';
-import './globals.css';
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+import { GlobalWidgets } from "@/components/global-widgets";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+const title = "TEMT | Transportation Emission Measurement Tool · IIM Bangalore";
+const description = "Measure, report and reduce freight emissions across road, rail, air, sea and inland waterways with India-specific, ISO 14083-aligned factors from the TCI–IIMB Supply Chain Sustainability Lab.";
+
 export const metadata: Metadata = {
   ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
-  title: { default: 'TEMT | Freight decisions. Backed by carbon data.', template: '%s | TEMT' },
-  description: 'Explore India-focused freight emissions intelligence. Compare modes, analyze sample shipments, and build a traceable reporting trail with the TEMT enterprise preview.',
-  openGraph: { type: 'website', title: 'TEMT | Freight decisions. Backed by carbon data.', description: 'An interactive enterprise freight emissions preview for the teams moving India.', ...(siteUrl ? { url: siteUrl, images: [{url: `${siteUrl}/og.png`, width:1536, height:1024, alt:'TEMT. Freight decisions. Backed by carbon data.'}] } : {}) },
-  twitter: { card: 'summary_large_image', title: 'TEMT | Freight decisions. Backed by carbon data.', ...(siteUrl ? {images:[`${siteUrl}/og.png`]} : {}) },
+  title: { default: title, template: "%s | TEMT · IIM Bangalore" },
+  description,
+  openGraph: { type: "website", title, description, ...(siteUrl ? { url: siteUrl, images: [{ url: `${siteUrl}/og.png`, width: 1536, height: 1024, alt: "TEMT, the Transportation Emission Measurement Tool from IIM Bangalore" }] } : {}) },
+  twitter: { card: "summary_large_image", title, description, ...(siteUrl ? { images: [`${siteUrl}/og.png`] } : {}) },
   robots: { index: true, follow: true },
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: "/favicon.svg" },
 };
-export default function RootLayout({children}: Readonly<{children: React.ReactNode}>) {
-  return <html lang="en"><head><link rel="preload" href="/fonts/barlow-condensed-600.woff2" as="font" type="font/woff2" crossOrigin="anonymous"/><link rel="preload" href="/fonts/manrope-variable.woff2" as="font" type="font/woff2" crossOrigin="anonymous"/></head><body><a className="skip-link" href="#main">Skip to content</a>{children}</body></html>;
+
+export const viewport: Viewport = { themeColor: "#740000", width: "device-width", initialScale: 1 };
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="en-IN">
+      <head>
+        <link rel="preload" href="/fonts/open-sans-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
+      <body>
+        <a className="skip-link" href="#main">Skip to content</a>
+        {children}
+        <GlobalWidgets />
+      </body>
+    </html>
+  );
 }

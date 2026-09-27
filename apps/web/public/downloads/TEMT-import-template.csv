@@ -1,0 +1,8 @@
+﻿reference,leg_no,date,business_unit,commodity,origin,destination,mode,tonnes,distance_km,vehicle_class,fuel,refrigerated,method,fuel_quantity,fuel_unit,energy_kwh,air_service,trade_lane,container_type,tonnes_per_teu,vessel_type,direction,paid_by,notes
+LR-2026-0001,1,2026-04-03,Foods,Packaged foods,Silvassa,Delhi,road,22,,32 ft,diesel,no,,,,,,,,,,inter-facility,company,
+LR-2026-0002,1,2026-04-05,Home Care,Detergents,421302,560001,road,8.5,985,gvw-12-20,cng,,,,,,,,,,,outbound,customer,
+RR-2026-0007,1,2026-04-09,Foods,,Hosur,Hosur rail terminal,road,40,28,trailer,,,,,,,,,,,,inter-facility,company,
+RR-2026-0007,2,2026-04-09,Foods,,Hosur,Guwahati,rail,40,,,,,,,,,,,,,,inter-facility,company,
+AWB-7781,1,2026-04-12,Personal Care,,DEL,BLR,air,0.8,,,,,,,,,belly,,,,,outbound,company,
+BL-5521,1,2026-04-15,Exports,,Jawaharlal Nehru Port,Rotterdam,sea,60,,,,,,,,,,europe-me-india,dry,10,,outbound,company,
+OWN-TRK-19,1,2026-04-18,Foods,,Pune,Nashik,road,12,212,,diesel,,fuel,58,l,,,,,,,inter-facility,own-fleet,"Own truck, fuel card"

@@ -1,4 +1,37 @@
-import type { Metadata } from 'next';
-import { Header, Footer } from '@/components/site-chrome';
-export const metadata: Metadata={title:'Preview privacy'};
-export default function Privacy(){return <><Header/><main id="main" className="page-width reading-page"><p className="eyebrow">PRODUCT PREVIEW · 14 SEPTEMBER 2026</p><h1>Your data in<br/>this preview.</h1><p className="lead">This public demonstration is designed for sample shipment data. It has no accounts, database, advertising trackers, or saved shipment history.</p><h2>Local processing</h2><p>The landing-page calculator and initial demo run in your browser. Choosing “Process in browser” keeps that calculation local. Closing or refreshing the page clears the shipment workspace.</p><h2>Server processing</h2><p>When you choose server analysis, the current shipment-leg records are sent over HTTPS to the preview’s Render-hosted API. It validates and calculates them in memory, returns the results, and does not write the shipment data to a database, local file, or application log.</p><p>Render may process standard infrastructure request metadata, including IP addresses and request timing, under its own policies. The API temporarily uses request IPs for rate limiting. Do not submit confidential or personal data to this public preview.</p><h2>Downloads and external links</h2><p>Reports and Power BI packs are generated in your browser and downloaded to your device. Production TEMT registration, DPIIT tools, source documents, and contact email links leave this preview and follow their destination’s policies. The contact link opens your email application; it does not submit a message automatically.</p><h2>Availability</h2><p>The preview uses free Render hosting. Its API can sleep during inactivity and may take around a minute to wake. Local analysis remains available. This preview does not promise a production service level or carry the existing TEMT platform’s certifications.</p><h2>Contact</h2><p>For TEMT product inquiries, contact <a href="mailto:aditya.gupta@iimb.ac.in">aditya.gupta@iimb.ac.in</a>, the published product contact. For this preview’s source and technical details, see <a href="https://github.com/RS-010806/temt_iimb_sample">the project repository</a>.</p></main><Footer/></>}
+import type { Metadata } from "next";
+import { Footer, Header } from "@/components/site-chrome";
+
+export const metadata: Metadata = { title: "Privacy", description: "How this TEMT workspace handles your data." };
+
+export default function PrivacyPage() {
+  return (
+    <>
+      <Header />
+      <main id="main" className="bg-paper">
+        <section className="bg-gradient-to-br from-maroon-800 to-maroon-950 py-16 text-white">
+          <div className="container-page max-w-4xl"><p className="eyebrow eyebrow-light">Privacy · updated 27 September 2026</p><h1 className="display mt-3 text-[40px] md:text-[52px]">Your data stays with you.</h1></div>
+        </section>
+        <article className="container-page prose-temt max-w-4xl py-14">
+          <h2>Where your workspace lives</h2>
+          <p>Shipments, settings and the activity log are stored in your own browser using IndexedDB (or local storage if IndexedDB is unavailable). There are no accounts, no database of your shipments on our servers, and no advertising or tracking scripts.</p>
+          <h2>When data leaves your browser</h2>
+          <ul>
+            <li><strong>Location lookups</strong> load public datasets (cities, PIN codes, airports) from this website. Your queries are not sent anywhere.</li>
+            <li><strong>Server check</strong> (Settings) sends up to 200 shipment calculations to the TEMT API, which recalculates them in memory and returns the result without storing or logging the request body. The hosting provider processes standard request metadata such as IP address for rate limiting.</li>
+            <li><strong>Exports and backups</strong> are generated in your browser and downloaded to your device.</li>
+            <li><strong>Local model</strong> (optional): if you connect a model in Settings, messages go to the address you configure, normally a program on your own computer.</li>
+          </ul>
+          <h2>The Copilot</h2>
+          <p>The built-in Copilot runs entirely in your browser. It reads your workspace to answer questions but does not send it to any AI service.</p>
+          <h2>Keeping your data safe</h2>
+          <p>Clearing your browser's site data deletes the workspace. Download a backup from Settings regularly. Do not enter personal data in shipment notes.</p>
+          <h2>Production TEMT</h2>
+          <p>The production platform at iimb.freightemissions.com operates under its own accounts, storage and ISO/IEC 27001:2022-certified information security management system.</p>
+          <h2>Contact</h2>
+          <p>TCI–IIMB Supply Chain Sustainability Lab, Indian Institute of Management Bangalore: <a href="mailto:aditya.gupta@iimb.ac.in">aditya.gupta@iimb.ac.in</a>.</p>
+        </article>
+      </main>
+      <Footer />
+    </>
+  );
+}

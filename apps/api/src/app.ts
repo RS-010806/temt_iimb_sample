@@ -4,7 +4,10 @@ import cors from "cors";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { analyze, AnalysisInputError, ENGINE_VERSION, FACTORS, MAX_LEGS } from "@temt/calculator";
+import {
+  analyze, AnalysisInputError, calculateShipment, ENGINE_V2_VERSION, ENGINE_VERSION, FACTOR_SETS, FACTORS, FUELS, GLEC_AIR, HUB_TYPES, IWW_VESSELS, MAX_LEGS,
+  RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, shipmentInputSchema, SOURCES, TEMT_AIR, TRADE_LANES, VESSELS,
+} from "@temt/calculator";
 
 export const MAX_BODY_BYTES = 2 * 1024 * 1024;
 export interface AppOptions {
@@ -28,6 +31,16 @@ export function parseAllowedOrigins(value: string | undefined): string[] {
 }
 
 const requestSchema = z.object({ rows: z.array(z.unknown()) });
+export const MAX_V2_SHIPMENTS = 1000;
+const v2Schema = z.object({ factorSet: z.enum(["glec-india", "temt-legacy"]).optional(), shipments: z.array(z.unknown()).max(MAX_V2_SHIPMENTS) });
+
+const requireJson: express.RequestHandler = (req, res, next) => {
+  if (!req.is("application/json")) {
+    res.status(415).json({ error: { code: "unsupported_media_type", message: "Send an application/json request body." } });
+    return;
+  }
+  next();
+};
 
 /** Stateless service. Request bodies are never persisted or logged. */
 export function createApp(options: AppOptions = {}) {
@@ -72,19 +85,42 @@ export function createApp(options: AppOptions = {}) {
       methodology: "Illustrative well-to-wheel estimates using published GLEC v3.2 defaults. No certification or complete reporting compliance is implied." });
   });
 
-  app.post("/api/analyze", (req, res, next) => {
-    if (!req.is("application/json")) {
-      res.status(415).json({ error: { code: "unsupported_media_type", message: "Send an application/json request body." } });
-      return;
-    }
-    next();
-  }, express.json({ limit: MAX_BODY_BYTES, strict: true }), (req, res) => {
+  app.post("/api/analyze", requireJson, express.json({ limit: MAX_BODY_BYTES, strict: true }), (req, res) => {
     const parsed = requestSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: { code: "invalid_request", message: "Provide a JSON object containing a rows array." } });
       return;
     }
     res.json(analyze(parsed.data.rows));
+  });
+
+  // Engine v2: multimodal transport chains with versioned factor sets. Same code as the browser.
+  app.get("/api/v2/factors", (_req, res) => {
+    res.json({ engineVersion: ENGINE_V2_VERSION, factorSets: FACTOR_SETS, sources: SOURCES, road: { classes: ROAD_CLASSES, factors: ROAD_FACTORS },
+      rail: RAIL_FACTORS, air: { glec: GLEC_AIR, temt: TEMT_AIR }, sea: { tradeLanes: TRADE_LANES, vessels: VESSELS }, inlandWaterways: IWW_VESSELS, hubs: HUB_TYPES, fuels: FUELS });
+  });
+
+  app.post("/api/v2/calculate", requireJson, express.json({ limit: MAX_BODY_BYTES, strict: true }), (req, res) => {
+    const parsed = v2Schema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: { code: "invalid_request", message: `Provide a JSON object with a shipments array of at most ${MAX_V2_SHIPMENTS} items.` } });
+      return;
+    }
+    const factorSet = parsed.data.factorSet ?? "glec-india";
+    const totals = { wtwKg: 0, ttwKg: 0, wttKg: 0, hubKg: 0, tonneKm: 0, shipments: 0 };
+    const results = parsed.data.shipments.map((raw, index) => {
+      const id = raw && typeof raw === "object" && "id" in raw && typeof raw.id === "string" ? raw.id.slice(0, 128) : String(index);
+      const input = shipmentInputSchema.safeParse(raw);
+      if (!input.success) return { id, error: input.error.issues.map((issue) => `${issue.path.join(".") || "shipment"}: ${issue.message}`).join(" ") };
+      try {
+        const result = calculateShipment(input.data, factorSet);
+        totals.wtwKg += result.wtwKg; totals.ttwKg += result.ttwKg; totals.wttKg += result.wttKg; totals.hubKg += result.hubKg; totals.tonneKm += result.tonneKm; totals.shipments += 1;
+        return { id, result };
+      } catch (error) {
+        return { id, error: error instanceof Error ? error.message : "Calculation failed." };
+      }
+    });
+    res.json({ engineVersion: ENGINE_V2_VERSION, factorSet, totals, results, calculatedAt: new Date().toISOString() });
   });
 
   app.use((_req, res) => {
