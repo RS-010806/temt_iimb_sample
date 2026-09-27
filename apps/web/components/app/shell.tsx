@@ -68,6 +68,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   const settings = useStore((state) => state.settings);
   const storage = useStore((state) => state.storage);
   const hydrated = useStore((state) => state.hydrated);
+  const samples = useStore((state) => state.shipments.some((row) => row.source === "sample"));
   return (
     <header className="no-print sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-stone-200 bg-paper/85 px-4 backdrop-blur-md md:px-8">
       <button type="button" className="btn btn-ghost btn-icon lg:hidden" onClick={onMenu} aria-label="Open navigation"><Menu size={20} /></button>
@@ -75,6 +76,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
         <p className="truncate text-sm font-semibold text-grey-800">{settings.organisation.name || "Your organisation"}</p>
         <p className="hidden text-xs text-grey-500 sm:block">{hydrated ? (storage === "memory" ? "Session only" : "Saved privately in this browser") : "Loading workspace…"}</p>
       </div>
+      {samples && <Link prefetch={false} href="/app/settings/#data" className="hidden rounded-full bg-[#fdf6e8] px-3 py-1.5 text-xs font-bold text-[#6b4a06] ring-1 ring-[#f0dfb5] sm:inline-flex" title="This workspace includes synthetic sample shipments">Sample data</Link>}
       <Link prefetch={false} href="/app/settings/#factors" data-tour="factor-set" className="hidden items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-grey-700 transition hover:border-maroon-300 md:inline-flex" title="Change the factor set">
         <BarChart3 size={14} className="text-maroon-600" aria-hidden="true" /> {FACTOR_SETS[settings.factorSet].short}
       </Link>
@@ -115,7 +117,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         <div className="app-content lg:pl-[264px]">
           <TopBar onMenu={() => setMenuOpen(true)} />
-          <main id="main" className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-6 md:px-8 md:pt-8">{children}</main>
+          <main id="main" className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-6 md:px-8 md:pt-8"><div key={pathname} className="page-enter">{children}</div></main>
         </div>
         <Onboarding />
       </div>

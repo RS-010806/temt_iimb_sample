@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, Calculator, Factory, FileDown, Gauge, Lightbulb, Package, Route, Sparkles, Target, Truck, Upload } from "lucide-react";
-import { applyFilters, byBusinessUnit, byLane, byMode, byMonth, byQuality, byScope, insights, opportunities, totals } from "@/lib/analytics";
+import { applyFilters, byBusinessUnit, byLane, byMode, byMonth, byQuality, byScope, fyProgress, insights, opportunities, previousPeriod, totals } from "@/lib/analytics";
 import { emissions, emissionsText, fmt, formatDate, pct } from "@/lib/format";
 import { MODE_COLORS } from "@/lib/records";
 import { makeSampleWorkspace, SAMPLE_SECTORS, type SampleSector } from "@/lib/sample-data";
 import { actions, useSettings, useStore } from "@/lib/store";
 import { setView, useView } from "@/lib/view-state";
 import { BarList, MonthlyChart, StageBar } from "../charts";
+import { QuickCalc } from "../quick-calc";
 import { AnimatedNumber, KpiTile, PageHeader, Select, cx, useToast } from "../../ui";
 import { openCopilot } from "../../copilot/copilot";
 import { startTour } from "../../copilot/tour";
@@ -36,6 +37,7 @@ function EmptyDashboard() {
   };
   return (
     <div className="grid gap-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-maroon-800 via-maroon-900 to-maroon-950 p-8 text-white md:p-12 animate-rise">
         <svg className="absolute -right-10 -top-10 h-72 w-72 text-white/[0.05]" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="90" fill="none" stroke="currentColor" strokeWidth="30" /></svg>
         <p className="eyebrow eyebrow-light">Welcome to TEMT</p>
@@ -47,6 +49,8 @@ function EmptyDashboard() {
           <button type="button" className="btn btn-outline-light btn-lg" onClick={() => { load("fmcg"); setTimeout(() => startTour(), 400); }}><Sparkles size={18} aria-hidden="true" /> Take the tour</button>
         </div>
       </section>
+      <QuickCalc />
+      </div>
       <section className="grid gap-4 md:grid-cols-4">
         {(Object.keys(SAMPLE_SECTORS) as SampleSector[]).map((sector, index) => (
           <button key={sector} type="button" onClick={() => load(sector)} className="card card-pad text-left transition hover:-translate-y-0.5 hover:border-maroon-300 animate-rise" style={{ animationDelay: `${index * 70}ms` }}>
@@ -65,13 +69,12 @@ export function DashboardView() {
   const { fy, businessUnit, rows: all } = useView();
   const settings = useSettings();
   const hydrated = useStore((state) => state.hydrated);
+  const toast = useToast();
   const rows = useMemo(() => applyFilters(all, { fy, businessUnit }), [all, fy, businessUnit]);
   const data = useMemo(() => {
     const t = totals(rows);
-    const start = fy !== "all" ? Number(fy.slice(3, 7)) : NaN;
-    const prevFy = Number.isFinite(start) ? `FY ${start - 1}–${String(start % 100).padStart(2, "0")}` : undefined;
-    const prev = prevFy ? totals(applyFilters(all, { fy: prevFy, businessUnit })) : undefined;
-    return { t, prev: prev?.shipments ? prev : undefined, prevFy, modes: byMode(rows), months: byMonth(rows, fy), units: byBusinessUnit(rows), lanes: byLane(rows).slice(0, 6), scopes: byScope(rows), quality: byQuality(rows), insights: insights(rows), opportunities: opportunities(rows, settings.factorSet).slice(0, 3), recent: [...rows].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5) };
+    const prior = previousPeriod(all, fy, { businessUnit });
+    return { t, prev: prior?.totals.shipments ? prior.totals : undefined, prevFy: prior?.label, prevShort: prior?.short, modes: byMode(rows), months: byMonth(rows, fy), units: byBusinessUnit(rows), lanes: byLane(rows).slice(0, 6), scopes: byScope(rows), quality: byQuality(rows), insights: insights(rows), opportunities: opportunities(rows, settings.factorSet).slice(0, 3), recent: [...rows].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5) };
   }, [rows, all, fy, businessUnit, settings.factorSet]);
 
   if (!hydrated) return <div className="grid gap-4"><div className="skeleton h-24" /><div className="grid grid-cols-4 gap-4">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-32" />)}</div><div className="skeleton h-80" /></div>;
@@ -83,11 +86,22 @@ export function DashboardView() {
   const baselineRows = applyFilters(all, { fy: settings.target.baseYear, businessUnit });
   const baseline = totals(baselineRows).wtwKg;
   const targetYear = Number(settings.target.targetYear.slice(3, 7)), baseYear = Number(settings.target.baseYear.slice(3, 7)), thisYear = Number(fy.slice(3, 7));
-  const expected = baseline && Number.isFinite(thisYear) && targetYear > baseYear ? baseline * (1 - (settings.target.reductionPercent / 100) * Math.min(1, Math.max(0, (thisYear - baseYear) / (targetYear - baseYear)))) : undefined;
+  const annualBudget = baseline && Number.isFinite(thisYear) && targetYear > baseYear ? baseline * (1 - (settings.target.reductionPercent / 100) * Math.min(1, Math.max(0, (thisYear - baseYear) / (targetYear - baseYear)))) : undefined;
+  // While the year is running, compare with the share of the annual budget used so far.
+  const progress = fy !== "all" ? fyProgress(fy) : { ongoing: false, fraction: 1 };
+  const expected = annualBudget !== undefined ? annualBudget * (progress.ongoing ? progress.fraction : 1) : undefined;
+  const sampleRows = all.filter((row) => row.source === "sample");
 
   return (
     <div className="grid gap-6">
-      <PageHeader eyebrow={`Overview · ${fy === "all" ? "All periods" : fy}`} title={<>{settings.organisation.name || "Your"} freight footprint</>}
+      {sampleRows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#f0dfb5] bg-[#fdf6e8] px-4 py-3 text-[13.5px] text-[#6b4a06] animate-fade" role="status">
+          <span className="badge bg-[#e39a55] text-maroon-950">Sample data</span>
+          <p className="flex-1">This workspace includes {fmt(sampleRows.length)} synthetic sample shipments for exploring TEMT. {settings.organisation.name && !settings.organisation.name.startsWith("Sample") ? `They are not ${settings.organisation.name}'s actual freight.` : "They are not any company's actual freight."}</p>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => { const removed = actions.removeShipments(sampleRows.map((row) => row.id)); toast({ tone: "info", message: `Removed ${removed.length} sample shipments.`, action: { label: "Undo", onClick: () => actions.restoreShipments(removed) } }); }}>Remove sample shipments</button>
+        </div>
+      )}
+      <PageHeader eyebrow={`Overview · ${fy === "all" ? "All periods" : fy}${progress.ongoing ? " to date" : ""}`} title={<>{settings.organisation.name || "Your"} freight footprint</>}
         description="Well-to-wheel emissions from every shipment in your workspace, calculated with the active factor set."
         actions={<><FilterBar /><Link prefetch={false} href="/app/reports/" className="btn btn-secondary"><FileDown size={16} aria-hidden="true" /> Report</Link><Link prefetch={false} href="/app/calculate/" className="btn btn-primary"><Calculator size={16} aria-hidden="true" /> Calculate</Link></>} />
 
@@ -95,28 +109,30 @@ export function DashboardView() {
         <KpiTile accent dataTour="kpi-total" label="Total emissions, well-to-wheel" value={<AnimatedNumber value={Number(headline.value.replace(/,/g, ""))} format={(v) => fmt(v, headline.unit.startsWith("t") ? 1 : 0)} />} unit={headline.unit}
           icon={<Factory size={16} />} sub={change !== undefined ? <span className="inline-flex items-center gap-1">{change <= 0 ? <ArrowDownRight size={13} aria-hidden="true" /> : <ArrowUpRight size={13} aria-hidden="true" />}{pct(Math.abs(change))} {change <= 0 ? "lower" : "higher"} than {data.prevFy}</span> : `${fmt(t.shipments)} shipments`} />
         <KpiTile label="Emission intensity" value={<AnimatedNumber value={t.intensityG} format={(v) => fmt(v, 1)} />} unit="g CO₂e/t-km" icon={<Gauge size={16} />}
-          sub={intensityChange !== undefined ? `${intensityChange <= 0 ? "▼" : "▲"} ${pct(Math.abs(intensityChange))} vs ${data.prevFy}` : `${fmt(t.kgPerTonne, 1)} kg CO₂e per tonne shipped`} />
+          sub={intensityChange !== undefined ? `${intensityChange <= 0 ? "▼" : "▲"} ${pct(Math.abs(intensityChange))} vs ${data.prevShort}` : `${fmt(t.kgPerTonne, 1)} kg CO₂e per tonne shipped`} />
         <KpiTile label="Shipments" value={<AnimatedNumber value={t.shipments} format={(v) => fmt(v)} />} unit={`· ${fmt(t.legs)} legs`} icon={<Package size={16} />} sub={`${fmt(t.tonnes, 0)} t cargo · ${fmt(t.tonneKm / 1e6, 2)} million t-km`} />
         <KpiTile label={expected ? `Target path (${settings.target.reductionPercent}% by ${settings.target.targetYear})` : "Per tonne shipped"} icon={<Target size={16} />}
           value={expected ? <span className={cx(t.wtwKg <= expected ? "text-ok" : "text-maroon-700")}>{t.wtwKg <= expected ? "On track" : "Behind"}</span> : <AnimatedNumber value={t.kgPerTonne} format={(v) => fmt(v, 1)} />} unit={expected ? undefined : "kg CO₂e/t"}
-          sub={expected ? `Budget ${emissionsText(expected)} · actual ${emissionsText(t.wtwKg)}` : settings.carbonPriceInrPerTonne ? `Internal carbon cost ₹${fmt((t.wtwKg / 1000) * settings.carbonPriceInrPerTonne)}` : "Set a target in Settings"} />
+          sub={expected ? `${progress.ongoing ? "Budget to date" : "Budget"} ${emissionsText(expected)} · actual ${emissionsText(t.wtwKg)}` : settings.carbonPriceInrPerTonne ? `Internal carbon cost ₹${fmt((t.wtwKg / 1000) * settings.carbonPriceInrPerTonne)}` : "Set a target in Settings"} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">
         <div className="card card-pad xl:col-span-2" data-tour="monthly">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2"><div><h2 className="card-title">Monthly emissions</h2><p className="card-subtitle">t CO₂e, stacked by life-cycle stage</p></div>
             <div className="flex gap-3 text-xs text-grey-700"><span className="flex items-center gap-1.5"><span className="dot" style={{ background: "var(--stage-ttw)" }} />Tank-to-wheel</span><span className="flex items-center gap-1.5"><span className="dot" style={{ background: "var(--stage-wtt)" }} />Well-to-tank</span>{t.hubKg > 0 && <span className="flex items-center gap-1.5"><span className="dot" style={{ background: "var(--stage-hub)" }} />Hubs</span>}</div></div>
-          <MonthlyChart data={data.months} height={340} target={expected ? expected / 12 : undefined} />
+          <MonthlyChart data={data.months} height={340} target={annualBudget ? annualBudget / 12 : undefined} />
         </div>
-        <div className="grid gap-4">
-          <div className="card card-pad">
-            <h2 className="card-title">Life-cycle split</h2><p className="card-subtitle mb-4">ISO 14083 well-to-wheel components</p>
-            <StageBar ttw={t.ttwKg} wtt={t.wttKg} hub={t.hubKg} />
-          </div>
-          <div className="card card-pad">
-            <h2 className="card-title">GHG Protocol scopes</h2><p className="card-subtitle mb-4">Who operates or pays for the transport</p>
-            <BarList items={data.scopes.map((item) => ({ key: item.key, label: item.label, value: item.wtwKg, share: item.share, color: item.key === "cat4" ? "var(--color-maroon-600)" : item.key === "cat9" ? "var(--color-maroon-300)" : item.key === "scope1" ? "var(--mode-air)" : "var(--mode-rail)" }))} />
-          </div>
+        <QuickCalc />
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="card card-pad">
+          <h2 className="card-title">Life-cycle split</h2><p className="card-subtitle mb-4">ISO 14083 well-to-wheel components</p>
+          <StageBar ttw={t.ttwKg} wtt={t.wttKg} hub={t.hubKg} />
+        </div>
+        <div className="card card-pad">
+          <h2 className="card-title">GHG Protocol scopes</h2><p className="card-subtitle mb-4">Who operates or pays for the transport</p>
+          <BarList items={data.scopes.map((item) => ({ key: item.key, label: item.label, value: item.wtwKg, share: item.share, color: item.key === "cat4" ? "var(--color-maroon-600)" : item.key === "cat9" ? "var(--color-maroon-300)" : item.key === "scope1" ? "var(--mode-air)" : "var(--mode-rail)" }))} />
         </div>
       </section>
 

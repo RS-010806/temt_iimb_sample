@@ -84,9 +84,9 @@ function HeroCalculator() {
     <div className="relative rounded-2xl border border-white/40 bg-white p-5 text-ink shadow-[0_30px_80px_-30px_rgba(0,0,0,.55)]">
       <div className="flex items-center justify-between gap-3"><p className="text-[13px] font-bold">Try it: compare modes</p><span className="badge badge-maroon !text-[11px]">GLEC v3.2 India</span></div>
       <div className="mt-4 grid grid-cols-[1fr_1fr_84px] gap-2">
-        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">From</span><select className={select} value={from} onChange={(event) => setFrom(event.target.value as CityId)}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
-        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">To</span><select className={select} value={to} onChange={(event) => setTo(event.target.value as CityId)}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
-        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">Tonnes</span><input className={select} type="number" min={1} max={500} value={tonnes} onChange={(event) => setTonnes(Math.max(1, Math.min(500, Number(event.target.value) || 1)))} /></label>
+        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">From</span><select aria-label="From" className={select} value={from} onChange={(event) => setFrom(event.target.value as CityId)}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
+        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">To</span><select aria-label="To" className={select} value={to} onChange={(event) => setTo(event.target.value as CityId)}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
+        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">Tonnes</span><input aria-label="Tonnes" className={select} type="number" min={1} max={500} value={tonnes} onChange={(event) => setTonnes(Math.max(1, Math.min(500, Number(event.target.value) || 1)))} /></label>
       </div>
       {result ? (
         <div className="mt-5 grid gap-3" aria-live="polite">

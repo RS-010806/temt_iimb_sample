@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
   title: { default: title, template: "%s | TEMT · IIM Bangalore" },
   description,
-  openGraph: { type: "website", title, description, ...(siteUrl ? { url: siteUrl, images: [{ url: `${siteUrl}/og.png`, width: 1536, height: 1024, alt: "TEMT, the Transportation Emission Measurement Tool from IIM Bangalore" }] } : {}) },
+  openGraph: { type: "website", title, description, ...(siteUrl ? { url: siteUrl, images: [{ url: `${siteUrl}/og.png`, width: 1200, height: 630, alt: "TEMT, the Transportation Emission Measurement Tool from IIM Bangalore" }] } : {}) },
   twitter: { card: "summary_large_image", title, description, ...(siteUrl ? { images: [`${siteUrl}/og.png`] } : {}) },
   robots: { index: true, follow: true },
   icons: { icon: "/favicon.svg" },

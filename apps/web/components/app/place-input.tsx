@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useContext, useEffect, useId, useRef, useState } from "react";
 import { Anchor, Building2, Hash, MapPin, Plane, X } from "lucide-react";
 import { searchPlaces, type Place, type PlaceKind } from "@/lib/places";
-import { cx } from "../ui";
+import { FieldIdContext, cx } from "../ui";
 
 const ICONS: Record<PlaceKind, typeof MapPin> = { city: Building2, pin: Hash, airport: Plane, port: Anchor, custom: MapPin };
 const KIND_LABEL: Record<PlaceKind, string> = { city: "City", pin: "PIN code", airport: "Airport", port: "Port", custom: "Custom" };
 
-export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placeholder = "City or PIN code", id, ariaLabel, dataTour }: { value?: Place; onChange: (place: Place | undefined) => void; kinds?: PlaceKind[]; placeholder?: string; id?: string; ariaLabel?: string; dataTour?: string }) {
+export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placeholder = "City or PIN code", id: ownId, ariaLabel, dataTour }: { value?: Place; onChange: (place: Place | undefined) => void; kinds?: PlaceKind[]; placeholder?: string; id?: string; ariaLabel?: string; dataTour?: string }) {
+  const contextId = useContext(FieldIdContext);
+  const id = ownId ?? contextId;
   const [query, setQuery] = useState(value?.label ?? "");
   const [results, setResults] = useState<Place[]>([]);
   const [open, setOpen] = useState(false);
@@ -18,7 +20,12 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
   const wrapper = useRef<HTMLDivElement>(null);
   const kindsKey = kinds.join(",");
 
-  useEffect(() => { setQuery(value?.label ?? ""); }, [value?.label]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Follow the value when it is set or cleared from outside; never wipe text the user is typing.
+  useEffect(() => {
+    if (value) setQuery(value.label);
+    else if (document.activeElement !== inputRef.current) setQuery("");
+  }, [value]);
 
   useEffect(() => {
     if (!open) return;
@@ -46,7 +53,7 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
     <div ref={wrapper} className="relative" data-tour={dataTour}>
       <div className="relative">
         <Icon size={16} className={cx("pointer-events-none absolute left-3 top-1/2 -translate-y-1/2", value ? "text-maroon-600" : "text-grey-400")} aria-hidden="true" />
-        <input id={id} className="input pl-9 pr-9" role="combobox" aria-expanded={open && options.length > 0} aria-controls={listId} aria-autocomplete="list" aria-label={ariaLabel}
+        <input ref={inputRef} id={id} className="input pl-9 pr-9" role="combobox" aria-expanded={open && options.length > 0} aria-controls={listId} aria-autocomplete="list" aria-label={ariaLabel}
           placeholder={placeholder} value={query} autoComplete="off"
           onFocus={() => setOpen(true)}
           onChange={(event) => { setQuery(event.target.value); setOpen(true); if (value) onChange(undefined); }}

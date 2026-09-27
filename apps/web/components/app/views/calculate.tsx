@@ -373,7 +373,7 @@ export function CalculateView() {
                 </dl>
                 <div className="flex flex-wrap gap-2">
                   <span className="badge badge-maroon">{SCOPE_LABELS[scopeKey].short}</span>
-                  <span className={cx("badge capitalize", result.dataQuality === "primary" ? "badge-ok" : "badge-stone")}>{result.dataQuality === "primary" && <BadgeCheck size={12} aria-hidden="true" />}{result.dataQuality} data</span>
+                  <span className={cx("badge", result.dataQuality === "primary" ? "badge-ok" : "badge-stone")}>{result.dataQuality === "primary" && <BadgeCheck size={12} aria-hidden="true" />}{result.dataQuality === "primary" ? "Primary data" : result.dataQuality === "modelled" ? "Modelled data" : "Default factors"}</span>
                   {result.legs.some((leg) => leg.uplifts.length) && <span className="badge badge-info">Adjusted</span>}
                 </div>
                 <div className="rounded-lg border border-stone-200 p-3 text-[12.5px]">

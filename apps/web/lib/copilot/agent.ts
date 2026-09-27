@@ -1,5 +1,5 @@
 import { calculateShipment, FACTOR_SETS, greatCircleKm, ROAD_CLASSES, seaRoute, type HubInput, type LegInput, type ShipmentResult } from "@temt/calculator";
-import { applyFilters, byLane, byMode, byQuality, fiscalYears, insights, opportunities, totals } from "../analytics";
+import { applyFilters, byLane, byMode, byQuality, fiscalYears, insights, opportunities, previousPeriod, totals } from "../analytics";
 import { buildAlternatives, buildRecord, vehicleForTonnes } from "../builders";
 import { emissionsText, fmt, pct } from "../format";
 import { estimateDistance, hasCoords, nearestAirport, nearestIndianPort, resolvePlace, type Place, type PlaceKind } from "../places";
@@ -269,7 +269,7 @@ async function handle(raw: string, ctx: AgentContext, carried?: Pending): Promis
       const best = practical[0]!, road = options.find((option) => option.id === "road")!;
       const saving = road.result.wtwKg - best.result.wtwKg;
       const focus = slots.mode && slots.mode !== "courier" && slots.mode !== "iww" ? options.find((option) => option.id === slots.mode) : undefined;
-      const focusLine = focus && focus.id !== "road" ? ` ${focus.label} comes to ${emissionsText(focus.result.wtwKg)}, ${focus.result.wtwKg <= road.result.wtwKg ? `${pct(((road.result.wtwKg - focus.result.wtwKg) / road.result.wtwKg) * 100, 0)} below` : `${pct(((focus.result.wtwKg - road.result.wtwKg) / road.result.wtwKg) * 100, 0)} above`} direct road.` : "";
+      const focusLine = focus && focus.id !== "road" && focus.id !== best.id ? ` ${focus.label} comes to ${emissionsText(focus.result.wtwKg)}, ${focus.result.wtwKg <= road.result.wtwKg ? `${pct(((road.result.wtwKg - focus.result.wtwKg) / road.result.wtwKg) * 100, 0)} below` : `${pct(((focus.result.wtwKg - road.result.wtwKg) / road.result.wtwKg) * 100, 0)} above`} direct road.` : "";
       return { last: buildRecord({ origin: from, destination: to, kind: "single", legs: road.input.legs, legMeta: road.legMeta, source: "copilot" }), blocks: [
         { type: "compare", title: `${fmt(tonnes, 1)} t · ${from.label} → ${to.label}`, options: options.map((option) => ({ id: option.id, label: option.label, summary: option.summary, kg: option.result.wtwKg, practical: option.practical,
           record: buildRecord({ origin: from, destination: to, kind: option.input.legs.length > 1 ? "chain" : "single", legs: option.input.legs, legMeta: option.legMeta, hubs: option.input.hubs, source: "compare" }) })) },
@@ -304,13 +304,13 @@ async function handle(raw: string, ctx: AgentContext, carried?: Pending): Promis
       const scope = applyFilters(rows, { fy });
       if (!scope.length) return { blocks: [text("Your workspace is empty. Load sample data to explore, or add your first shipment.")], suggestions: ["Load sample data", "How do I calculate a shipment?"] };
       const t = totals(scope);
-      const prevStart = fy ? Number(fy.slice(3, 7)) - 1 : undefined;
-      const prev = prevStart ? totals(applyFilters(rows, { fy: `FY ${prevStart}–${String((prevStart + 1) % 100).padStart(2, "0")}` })) : undefined;
+      const prior = previousPeriod(rows, fy);
+      const prev = prior?.totals;
       const modes = byMode(scope);
       const lanes = byLane(scope).slice(0, 3);
       return { blocks: [
         { type: "stats", items: [
-          { label: `Total, ${fy}`, value: emissionsText(t.wtwKg), sub: prev?.shipments ? `${t.wtwKg <= prev.wtwKg ? "▼" : "▲"} ${pct(Math.abs((t.wtwKg - prev.wtwKg) / prev.wtwKg) * 100)} vs previous year` : undefined },
+          { label: `Total, ${fy}`, value: emissionsText(t.wtwKg), sub: prev?.shipments ? `${t.wtwKg <= prev.wtwKg ? "▼" : "▲"} ${pct(Math.abs((t.wtwKg - prev.wtwKg) / prev.wtwKg) * 100)} vs ${prior!.short}` : undefined },
           { label: "Intensity", value: `${fmt(t.intensityG, 1)} g/t-km` },
           { label: "Shipments", value: fmt(t.shipments), sub: `${fmt(t.legs)} legs` },
         ] },

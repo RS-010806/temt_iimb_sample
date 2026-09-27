@@ -162,12 +162,15 @@ export const ARTICLES: Article[] = [
 const STOP = new Set(["the", "a", "an", "is", "are", "of", "to", "in", "on", "for", "and", "or", "what", "how", "do", "i", "my", "me", "can", "does", "it", "with", "by", "we", "our", "you", "your", "be", "this", "that", "about", "tell", "please", "explain"]);
 export const tokens = (text: string) => text.toLowerCase().replace(/[^a-z0-9₹%+.\s-]/g, " ").split(/\s+/).filter((word) => word && !STOP.has(word));
 
+// "well-to-tank", "well to tank" and "tonne–km" should all match the same keyword.
+const loose = (text: string) => ` ${text.toLowerCase().replace(/[-–—_/]+/g, " ").replace(/[^a-z0-9₹%+.\s]/g, " ").replace(/\s+/g, " ").trim()} `;
+
 export function searchKnowledge(query: string, limit = 3) {
-  const q = query.toLowerCase();
-  const words = tokens(query);
+  const q = loose(query);
+  const words = tokens(query.replace(/[-–—_/]+/g, " "));
   return ARTICLES.map((article) => {
     let score = 0;
-    for (const keyword of article.keywords) if (q.includes(keyword)) score += keyword.includes(" ") ? 6 : 4;
+    for (const keyword of article.keywords) { const k = loose(keyword).trim(); if (q.includes(k)) score += k.includes(" ") ? 6 : 4; }
     const hay = `${article.title} ${article.keywords.join(" ")}`.toLowerCase();
     for (const word of words) { if (word.length > 2 && hay.includes(word)) score += 1.2; if (article.body.toLowerCase().includes(word)) score += 0.3; }
     return { article, score };

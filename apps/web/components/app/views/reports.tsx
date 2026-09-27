@@ -80,6 +80,7 @@ export function ReportsView() {
           <h1 className="display mt-3 text-[36px] md:text-[44px]">Freight emissions report</h1>
           <p className="mt-2 text-lg text-maroon-100">{model.organisation} · {model.period}{businessUnit !== "all" ? ` · ${businessUnit}` : ""}</p>
           <p className="mt-1 text-[13px] text-maroon-200">{generatedLabel(model)}</p>
+          {model.sampleShipments > 0 && <p className="mt-3 inline-flex rounded-md bg-sand px-2.5 py-1 text-[12px] font-bold text-maroon-950">Sample data · {model.sampleShipments} synthetic shipments for demonstration</p>}
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[["Total, well-to-wheel", emissionsText(t.wtwKg), change !== undefined ? `${change <= 0 ? "▼" : "▲"} ${pct(Math.abs(change))} vs ${model.previous!.period}` : `${fmt(t.shipments)} shipments`],
               ["Emission intensity", `${fmt(t.intensityG, 1)} g/t-km`, `${fmt(t.kgPerTonne, 1)} kg CO₂e per tonne`],

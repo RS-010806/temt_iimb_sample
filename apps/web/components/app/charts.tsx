@@ -81,16 +81,26 @@ function ChartTooltip({ active, payload, label, unit = "t CO₂e", labelFormat }
   );
 }
 
+/** Round axis ticks (1, 2, 2.5 or 5 × 10ⁿ) so small totals never show duplicate labels such as 0.2, 0.2. */
+function niceAxis(max: number, count = 4) {
+  if (!(max > 0)) return { ticks: [0, 1], decimals: 0 };
+  const raw = max / count, power = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * power).find((value) => value >= raw)!;
+  const ticks = Array.from({ length: Math.ceil(max / step - 1e-9) + 1 }, (_, i) => +(i * step).toPrecision(12));
+  return { ticks, decimals: Math.max(0, -Math.floor(Math.log10(step) + 1e-9) + (step / power === 2.5 ? 1 : 0)) };
+}
+
 export function MonthlyChart({ data, height = 260, target }: { data: { key: string; ttwKg: number; wttKg: number; wtwKg: number }[]; height?: number; target?: number }) {
   const rows = data.map((item) => ({ month: item.key, ttw: item.ttwKg / 1000, wtt: item.wttKg / 1000, hub: Math.max(0, item.wtwKg - item.ttwKg - item.wttKg) / 1000 }));
   const hasHub = rows.some((row) => row.hub > 0);
+  const axis = niceAxis(Math.max(...rows.map((row) => row.ttw + row.wtt + row.hub), target !== undefined ? target / 1000 : 0));
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 8, right: 4, left: -12, bottom: 0 }} barCategoryGap="22%">
           <CartesianGrid vertical={false} />
           <XAxis dataKey="month" tickFormatter={(value: string) => monthLabel(value).split(" ")[0]!} tickLine={false} axisLine={false} />
-          <YAxis tickLine={false} axisLine={false} tickFormatter={(value: number) => fmt(value, value < 10 ? 1 : 0)} width={48} />
+          <YAxis tickLine={false} axisLine={false} ticks={axis.ticks} domain={[0, axis.ticks[axis.ticks.length - 1]!]} tickFormatter={(value: number) => fmt(value, axis.decimals)} width={48} />
           <Tooltip cursor={{ fill: "rgb(177 35 34 / .06)" }} content={<ChartTooltip labelFormat={monthLabel} />} />
           {target !== undefined && <ReferenceLine y={target / 1000} stroke="var(--color-grey-600)" strokeDasharray="4 4" label={{ value: "Monthly budget to target", position: "insideTopRight", fontSize: 11, fill: "var(--color-grey-600)" }} />}
           <Bar dataKey="ttw" name="Tank-to-wheel" stackId="s" fill="var(--stage-ttw)" radius={[0, 0, 0, 0]} />

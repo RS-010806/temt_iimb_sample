@@ -1,5 +1,5 @@
 import { ENGINE_V2_VERSION, FACTOR_SETS, SOURCES, type FactorSetId } from "@temt/calculator";
-import { applyFilters, byBusinessUnit, byLane, byMode, byMonth, byQuality, byScope, byVehicleClass, insights, opportunities, totals, type Bucket, type Filters, type Insight, type Opportunity, type Totals } from "./analytics";
+import { applyFilters, byBusinessUnit, byLane, byMode, byMonth, byQuality, byScope, byVehicleClass, insights, opportunities, previousPeriod, totals, type Bucket, type Filters, type Insight, type Opportunity, type Totals } from "./analytics";
 import { fiscalYear, formatDate } from "./format";
 import { describeLeg, DIRECTION_LABELS, MODE_LABELS, PAID_BY_LABELS, scopeOf, SCOPE_LABELS, type ComputedShipment } from "./records";
 import type { Settings } from "./store";
@@ -27,7 +27,9 @@ export interface ReportModel {
   engineVersion: string;
   filters: Filters;
   totals: Totals;
-  previous?: { period: string; totals: Totals };
+  previous?: { period: string; totals: Totals; partial?: boolean };
+  /** Synthetic sample shipments in the selection; reports label them so they can't pass as real data. */
+  sampleShipments: number;
   byMode: Bucket[];
   byMonth: Bucket[];
   byBusinessUnit: Bucket[];
@@ -55,13 +57,9 @@ export function buildReportModel(all: ComputedShipment[], settings: Settings, fi
   const rows = applyFilters(all, filters);
   const t = totals(rows);
   const period = filters.fy && filters.fy !== "all" ? filters.fy : "All periods";
-  let previous: ReportModel["previous"];
-  if (filters.fy && filters.fy !== "all") {
-    const start = Number(filters.fy.slice(3, 7));
-    const prevLabel = `FY ${start - 1}–${String(start % 100).padStart(2, "0")}`;
-    const prevRows = applyFilters(all, { ...filters, fy: prevLabel });
-    if (prevRows.length) previous = { period: prevLabel, totals: totals(prevRows) };
-  }
+  const prior = previousPeriod(all, filters.fy, filters);
+  const previous: ReportModel["previous"] = prior ? { period: prior.short, totals: prior.totals, partial: prior.partial } : undefined;
+  const sampleShipments = rows.filter((row) => row.source === "sample").length;
 
   const legs: LegRow[] = [];
   const hubs: HubRow[] = [];
@@ -116,6 +114,7 @@ export function buildReportModel(all: ComputedShipment[], settings: Settings, fi
     filters,
     totals: t,
     previous,
+    sampleShipments,
     byMode: byMode(rows),
     byMonth: byMonth(rows, filters.fy),
     byBusinessUnit: byBusinessUnit(rows),
@@ -134,6 +133,7 @@ export function buildReportModel(all: ComputedShipment[], settings: Settings, fi
     revenueIntensity: revenue ? t.wtwKg / 1000 / revenue : undefined,
     sources: [...usedSources].map((id) => SOURCES[id]).map(({ title, publisher, year, url }) => ({ title, publisher, year, url })),
     notes: [
+      ...(sampleShipments ? [`This selection includes ${sampleShipments} synthetic sample shipments generated for demonstration. They are not the organisation's actual freight.`] : []),
       "Emissions are reported well-to-wheel (WTW) in kg or tonnes CO₂e, split into tank-to-wheel (vehicle operation), well-to-tank (energy provision) and hub operations, following ISO 14083:2023 and the GLEC Framework v3.2.",
       "Default factors are estimates for typical operations. Replace them with primary fuel or energy data from carriers where available.",
       "Distances marked as estimated come from straight-line distance multiplied by network factors or from sea-lane routing; actual distances were used where supplied.",

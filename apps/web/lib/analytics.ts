@@ -1,5 +1,5 @@
 import { calculateLeg, ROAD_CLASSES, type DataQuality, type FactorSetId, type LegInput, type TransportMode } from "@temt/calculator";
-import { fiscalYear } from "./format";
+import { fiscalYear, todayIso } from "./format";
 import { laneKey, MODE_ORDER, scopeOf, type ComputedShipment, type ScopeKey } from "./records";
 
 export interface Filters {
@@ -159,6 +159,37 @@ export function byVehicleClass(rows: ComputedShipment[]): Bucket[] {
     });
   }
   return finish(map, total);
+}
+
+/** How far through an Indian financial year (April–March) today is. */
+export function fyProgress(fy: string, today = todayIso()) {
+  const start = Number(fy.slice(3, 7));
+  const first = `${start}-04-01`, last = `${start + 1}-03-31`;
+  if (!Number.isFinite(start) || today > last) return { ongoing: false, fraction: 1 };
+  if (today < first) return { ongoing: false, fraction: 0 };
+  const day = 86400000;
+  const elapsed = (Date.parse(today) - Date.parse(first)) / day + 1;
+  const length = (Date.parse(last) - Date.parse(first)) / day + 1;
+  return { ongoing: true, fraction: elapsed / length };
+}
+
+/**
+ * The previous financial year for year-on-year comparison. While the selected year is still running,
+ * the previous year is cut to the same date so a part year is never compared with a full year.
+ */
+export function previousPeriod(all: ComputedShipment[], fy: string | undefined, filters: Filters = {}, today = todayIso()) {
+  if (!fy || fy === "all") return undefined;
+  const start = Number(fy.slice(3, 7));
+  const label = `FY ${start - 1}–${String(start % 100).padStart(2, "0")}`;
+  let rows = applyFilters(all, { ...filters, fy: label });
+  const partial = fyProgress(fy, today).ongoing;
+  if (partial) {
+    const cutoff = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
+    rows = rows.filter((row) => row.date <= cutoff);
+  }
+  if (!rows.some((row) => row.result)) return undefined;
+  const through = new Date(`${today}T12:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+  return { period: label, label: partial ? `the same period of ${label} (to ${through})` : label, short: partial ? `${label} to ${through}` : label, partial, totals: totals(rows) };
 }
 
 export function fiscalYears(rows: ComputedShipment[]) {

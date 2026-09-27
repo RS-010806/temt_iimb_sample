@@ -6,14 +6,15 @@ import { Anchor, Building2, Package, Plane, Plus, Save, Ship, TrainFront, Trash2
 import { calculateShipment, HUB_TYPES, IWW_VESSELS, MODE_LABELS, ROAD_CLASSES, TRADE_LANES, VESSELS, type HubCondition, type HubInput, type HubTypeId, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult, type TransportMode } from "@temt/calculator";
 import { buildRecord } from "@/lib/builders";
 import { emissions, emissionsText, fmt, todayIso } from "@/lib/format";
-import { estimateDistance, type Place, type PlaceKind } from "@/lib/places";
+import { estimateDistance, hasCoords, nearestAirport, nearestIndianPort, type Place, type PlaceKind } from "@/lib/places";
 import { PAID_BY_LABELS, type LegMeta, type PaidBy, type ShipmentRecord } from "@/lib/records";
 import { actions, getState, useSettings } from "@/lib/store";
 import { PlaceInput } from "../place-input";
 import { StageBar } from "../charts";
 import { Field, NumberInput, PageHeader, Select, Toggle, cx, useToast } from "../../ui";
 
-interface Stop { place?: Place; hub: { type: HubTypeId; condition: HubCondition } | null }
+/** `auto` marks a stop TEMT filled in from the origin or destination; typing a place replaces it. */
+interface Stop { place?: Place; auto?: boolean; hub: { type: HubTypeId; condition: HubCondition } | null }
 interface ChainLeg {
   mode: TransportMode;
   distanceKm?: number;
@@ -116,6 +117,32 @@ export function ChainView() {
     setLegs(found.legs.map((item) => ({ ...item })));
   };
 
+  // Fill empty transfer stops from the route: nearest port for sea legs, nearest major airport for air,
+  // and origin or destination terminals or hubs otherwise. The user can replace any of them.
+  const origin = stops[0]?.place, destination = stops[stops.length - 1]?.place;
+  const modeKey = legs.map((item) => item.mode).join();
+  useEffect(() => {
+    if (!hasCoords(origin) && !hasCoords(destination)) return;
+    let cancelled = false;
+    (async () => {
+      const next = await Promise.all(stops.map(async (stop, i) => {
+        if (i === 0 || i === stops.length - 1 || (stop.place && !stop.auto)) return stop;
+        const anchor = i <= (stops.length - 1) / 2 ? origin : destination;
+        if (!hasCoords(anchor)) return stop;
+        const modes = [legs[i - 1]?.mode, legs[i]?.mode];
+        const city = anchor.label.replace(/^\d{6} · /, "").replace(/ \([A-Z]{3}\)$/, "");
+        const place: Place = modes.includes("sea") ? nearestIndianPort(anchor)
+          : modes.includes("air") ? await nearestAirport(anchor)
+          : { ...anchor, label: city };
+        return stop.place?.label === place.label ? stop : { ...stop, place, auto: true };
+      }));
+      // Merge so an edit made while an airport lookup was pending is kept.
+      if (!cancelled && next.some((stop, i) => stop !== stops[i])) setStops((current) => current.length === next.length ? current.map((stop, i) => (stop === stops[i] ? next[i]! : stop)) : current);
+    })();
+    return () => { cancelled = true; };
+    // Re-run when the ends of the route or the leg modes change, not on every stop edit.
+  }, [origin, destination, modeKey, stops.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Keep estimated distances current as stops change.
   useEffect(() => {
     setLegs((current) => current.map((item, i) => {
@@ -126,7 +153,7 @@ export function ChainView() {
   }, [stops, legs.map((item) => `${item.mode}${item.edited}`).join()]);
 
   const setLeg = (index: number, patch: Partial<ChainLeg>) => setLegs((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
-  const setStop = (index: number, patch: Partial<Stop>) => setStops((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  const setStop = (index: number, patch: Partial<Stop>) => setStops((current) => current.map((item, i) => (i === index ? { ...item, ...patch, ...("place" in patch ? { auto: false } : {}) } : item)));
   const addStop = () => { setStops((current) => [...current.slice(0, -1), { hub: { type: "transshipment", condition: "ambient" } }, current[current.length - 1]!]); setLegs((current) => [...current, leg("road")]); setTemplate("custom"); };
   const removeStop = (index: number) => { if (stops.length <= 2) return; setStops((current) => current.filter((_, i) => i !== index)); setLegs((current) => current.filter((_, i) => i !== Math.min(index, current.length - 1))); setTemplate("custom"); };
 
@@ -180,7 +207,7 @@ export function ChainView() {
             <div key={index} className="grid gap-4">
               <div className="card card-pad animate-rise">
                 <div className="flex flex-wrap items-end gap-3">
-                  <div className="min-w-[220px] flex-1"><Field label={index === 0 ? "Origin" : index === stops.length - 1 ? "Final destination" : `Stop ${index}`}><PlaceInput value={stop.place} onChange={(place) => setStop(index, { place })} kinds={kinds([legs[index - 1]?.mode, legs[index]?.mode].filter(Boolean) as TransportMode[])} ariaLabel={`Stop ${index + 1}`} /></Field></div>
+                  <div className="min-w-[220px] flex-1"><Field label={index === 0 ? "Origin" : index === stops.length - 1 ? "Final destination" : `Stop ${index}`} hint={stop.auto ? `Assumed from the ${index <= (stops.length - 1) / 2 ? "origin" : "destination"}: type the actual ${legs[index - 1]?.mode === "sea" || legs[index]?.mode === "sea" ? "port" : legs[index - 1]?.mode === "air" || legs[index]?.mode === "air" ? "airport" : "terminal or hub"} if different` : undefined}><PlaceInput value={stop.place} onChange={(place) => setStop(index, { place })} kinds={kinds([legs[index - 1]?.mode, legs[index]?.mode].filter(Boolean) as TransportMode[])} ariaLabel={`Stop ${index + 1}`} /></Field></div>
                   {index > 0 && index < stops.length - 1 && (
                     <>
                       <Field label="Hub operation"><Select value={stop.hub?.type ?? "none"} onChange={(value) => setStop(index, { hub: value === "none" ? null : { type: value as HubTypeId, condition: stop.hub?.condition ?? "ambient" } })} options={[{ value: "none", label: "No handling" }, ...(Object.keys(HUB_TYPES) as HubTypeId[]).map((key) => ({ value: key, label: HUB_TYPES[key].label }))]} /></Field>
@@ -219,7 +246,7 @@ export function ChainView() {
           ))}
           <button type="button" className="btn btn-secondary justify-self-start" onClick={addStop}><Plus size={16} aria-hidden="true" /> Add a stop before the destination</button>
         </div>
-        <aside className="xl:sticky xl:top-24 xl:self-start">
+        <aside className="min-w-0 xl:sticky xl:top-24 xl:self-start">
           <div className="overflow-hidden rounded-[var(--radius-card)] border border-stone-200 bg-white shadow-[var(--shadow-card)]">
             <div className="bg-gradient-to-br from-maroon-800 to-maroon-950 px-6 py-5 text-white">
               <p className="text-[13px] font-semibold text-maroon-100">Chain total, well-to-wheel</p>
@@ -229,8 +256,8 @@ export function ChainView() {
               <div className="grid gap-4 p-5">
                 <StageBar ttw={result.ttwKg} wtt={result.wttKg} hub={result.hubKg} />
                 <ul className="grid gap-2 text-[13px]">
-                  {result.legs.map((item, i) => <li key={i} className="flex items-center justify-between gap-3"><span className="flex items-center gap-2"><span className="dot" style={{ background: `var(--mode-${item.mode})` }} />Leg {i + 1} · {MODE_LABELS[item.mode]}</span><span className="num font-semibold">{emissionsText(item.wtwKg)}</span></li>)}
-                  {result.hubs.map((hub, i) => <li key={`h${i}`} className="flex items-center justify-between gap-3 text-grey-600"><span className="truncate">{hub.label}</span><span className="num">{emissionsText(hub.wtwKg)}</span></li>)}
+                  {result.legs.map((item, i) => <li key={i} className="flex items-center justify-between gap-3"><span className="flex items-center gap-2"><span className="dot" style={{ background: `var(--mode-${item.mode})` }} />Leg {i + 1} · {MODE_LABELS[item.mode]}</span><span className="num shrink-0 font-semibold">{emissionsText(item.wtwKg)}</span></li>)}
+                  {result.hubs.map((hub, i) => <li key={`h${i}`} className="flex items-center justify-between gap-3 text-grey-600"><span className="min-w-0 truncate" title={hub.label}>{hub.label}</span><span className="num shrink-0">{emissionsText(hub.wtwKg)}</span></li>)}
                 </ul>
                 <p className="num rounded-lg bg-stone-50 px-3 py-2 text-[12.5px] text-grey-700">{fmt(result.distanceKm, 0)} km · {fmt(result.intensityG, 1)} g/t-km · {fmt(result.kgPerTonne, 2)} kg per tonne</p>
               </div>

@@ -161,7 +161,7 @@ export function CopilotShowcase() {
   const [typing, setTyping] = useState("");
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
-  const [scripted, setScripted] = useState(false);
+  const started = useRef(false);
   const last = useRef<ShipmentRecord | undefined>(undefined);
   const counter = useRef(0);
   const scroller = useRef<HTMLDivElement>(null);
@@ -180,21 +180,21 @@ export function CopilotShowcase() {
   }, [router]);
 
   useEffect(() => {
-    if (!visible || scripted) return;
-    setScripted(true);
+    if (!visible || started.current) return;
+    started.current = true;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let cancelled = false;
     (async () => {
       for (const prompt of SHOWCASE_PROMPTS) {
-        if (!reduced) for (let i = 1; i <= prompt.length && !cancelled; i += 1) { setTyping(prompt.slice(0, i)); await new Promise((r) => setTimeout(r, 38)); }
+        if (!reduced) for (let i = 1; i <= prompt.length && !cancelled; i += 1) { setTyping(prompt.slice(0, i)); await new Promise((r) => setTimeout(r, 24)); }
         if (cancelled) return;
         setTyping("");
         await ask(prompt);
-        await new Promise((r) => setTimeout(r, reduced ? 0 : 1400));
+        await new Promise((r) => setTimeout(r, reduced ? 0 : 900));
       }
     })();
     return () => { cancelled = true; };
-  }, [visible, scripted, ask]);
+  }, [visible, ask]);
 
   const onAction = (action: CopilotAction) => {
     if (action.kind === "navigate") router.push(action.href);

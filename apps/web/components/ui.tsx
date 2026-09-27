@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Children, cloneElement, createContext, isValidElement, useCallback, useContext, useEffect, useId, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, Info, TriangleAlert, X } from "lucide-react";
 
@@ -10,17 +10,27 @@ export function cx(...values: (string | false | null | undefined)[]) {
 
 // ─── Field primitives ──────────────────────────────────────────────────────
 
+/** Lets form controls inside a Field pick up the Field's id, so every label is tied to its control. */
+export const FieldIdContext = createContext<string | undefined>(undefined);
+
 export function Field({ label, hint, error, children, htmlFor, info }: { label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode; htmlFor?: string; info?: ReactNode }) {
+  const autoId = useId();
+  const id = htmlFor ?? autoId;
+  // Plain <input>, <select> and <textarea> children get the id directly; custom controls read it from context.
+  const content = Children.map(children, (child) => isValidElement(child) && typeof child.type === "string" && ["input", "select", "textarea"].includes(child.type) && !(child.props as { id?: string }).id
+    ? cloneElement(child as ReactElement<{ id?: string }>, { id }) : child);
   return (
     <div className="field">
-      <label className="label" htmlFor={htmlFor}>{label}{info && <InfoTip>{info}</InfoTip>}</label>
-      {children}
+      <label className="label" htmlFor={id}>{label}{info && <InfoTip>{info}</InfoTip>}</label>
+      <FieldIdContext.Provider value={id}>{content}</FieldIdContext.Provider>
       {error ? <p className="error-text" role="alert">{error}</p> : hint ? <p className="hint">{hint}</p> : null}
     </div>
   );
 }
 
-export function NumberInput({ value, onChange, suffix, min = 0, step = "any", id, placeholder, invalid, ariaLabel, dataTour }: { value: number | undefined; onChange: (value: number | undefined) => void; suffix?: string; min?: number; step?: number | "any"; id?: string; placeholder?: string; invalid?: boolean; ariaLabel?: string; dataTour?: string }) {
+export function NumberInput({ value, onChange, suffix, min = 0, step = "any", id: ownId, placeholder, invalid, ariaLabel, dataTour }: { value: number | undefined; onChange: (value: number | undefined) => void; suffix?: string; min?: number; step?: number | "any"; id?: string; placeholder?: string; invalid?: boolean; ariaLabel?: string; dataTour?: string }) {
+  const contextId = useContext(FieldIdContext);
+  const id = ownId ?? contextId;
   const [text, setText] = useState(value === undefined || Number.isNaN(value) ? "" : String(value));
   const last = useRef(value);
   useEffect(() => {
@@ -35,7 +45,9 @@ export function NumberInput({ value, onChange, suffix, min = 0, step = "any", id
   );
 }
 
-export function Select<T extends string>({ value, onChange, options, id, ariaLabel, className }: { value: T; onChange: (value: T) => void; options: { value: T; label: string; disabled?: boolean }[]; id?: string; ariaLabel?: string; className?: string }) {
+export function Select<T extends string>({ value, onChange, options, id: ownId, ariaLabel, className }: { value: T; onChange: (value: T) => void; options: { value: T; label: string; disabled?: boolean }[]; id?: string; ariaLabel?: string; className?: string }) {
+  const contextId = useContext(FieldIdContext);
+  const id = ownId ?? contextId;
   return (
     <select id={id} className={cx("select", className)} value={value} aria-label={ariaLabel} onChange={(event) => onChange(event.target.value as T)}>
       {options.map((option) => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}

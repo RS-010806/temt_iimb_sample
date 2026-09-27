@@ -83,7 +83,7 @@ export function Onboarding() {
               <div className="mt-3 grid grid-cols-2 gap-1.5">
                 {(Object.keys(SAMPLE_SECTORS) as SampleSector[]).map((sector) => {
                   const Icon = SECTOR_ICONS[sector];
-                  return <button key={sector} type="button" className="btn btn-secondary btn-sm justify-start" onClick={() => sample(sector)}><Icon size={14} aria-hidden="true" />{SAMPLE_SECTORS[sector].label.split(" ")[0]}</button>;
+                  return <button key={sector} type="button" className="btn btn-secondary btn-sm min-w-0 justify-start gap-1.5 px-2.5" onClick={() => sample(sector)}><Icon size={14} className="shrink-0" aria-hidden="true" /><span className="truncate">{SAMPLE_SECTORS[sector].label.split(" ")[0]}</span></button>;
                 })}
               </div>
             </div>

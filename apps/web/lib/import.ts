@@ -128,6 +128,16 @@ async function resolve(text: string, kinds: PlaceKind[], messages: string[], lab
   return { label: text, kind: "custom" };
 }
 
+/** A port by name, or the nearest Indian port to a named city ("Cochin Port" must not become Kochi city). */
+async function resolvePort(text: string, messages: string[], label: string): Promise<Place> {
+  if (!text) { messages.push(`${label} is missing.`); return { label, kind: "custom" }; }
+  const port = await place(text, ["port"]);
+  if (port) return port;
+  const city = await place(text, ["city"]);
+  if (city && hasCoords(city)) return nearestIndianPort(city);
+  return { label: text, kind: "custom" };
+}
+
 function distanceFor(mode: TransportMode, from: Place, to: Place, given: number | undefined, messages: string[]) {
   if (given !== undefined && !Number.isNaN(given) && given > 0) return { km: given, method: "user" as const };
   const estimate = estimateDistance(mode, from, to);
@@ -251,8 +261,8 @@ async function legacyRows(format: ImportFormat, rows: Raw[], options: ImportOpti
       legs.push({ mode: "air", tonnes: t, distanceKm: dist ? Math.round(dist.km) : undefined, airService: "unknown", airScope: origin.country && destination.country && (origin.country !== "IN" || destination.country !== "IN") ? "international" : "domestic" });
       legMeta.push({ from: origin, to: destination, distanceMethod: "great-circle" });
     } else if (format === "legacy-coastal" || format === "legacy-water") {
-      origin = await resolve(str(row["origin port"]), ["port", "city"], errors, "Origin port");
-      destination = await resolve(str(row["destination port"]), ["port", "city"], errors, "Destination port");
+      origin = await resolvePort(str(row["origin port"]), errors, "Origin port");
+      destination = await resolvePort(str(row["destination port"]), errors, "Destination port");
       const { vessel, remapped } = parseVessel(str(row["vessel category"]), str(row["vessel size"]));
       if (!vessel) errors.push(`Vessel “${str(row["vessel category"])} ${str(row["vessel size"])}” is not recognised.`);
       if (remapped) messages.push("Production TEMT's “Crude tanker” size bands correspond to bulk carriers; mapped to Bulk carrier.");

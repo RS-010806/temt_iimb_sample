@@ -271,7 +271,7 @@ export function Copilot() {
 
   return (
     <>
-      {!open && (
+      {!open && !onApp && (
         <button type="button" onClick={() => setOpen(true)} data-tour="copilot-launcher" aria-label="Open TEMT Copilot"
           className="group fixed bottom-5 right-5 z-[60] flex items-center gap-2 rounded-full bg-gradient-to-br from-maroon-600 to-maroon-800 py-3 pl-3.5 pr-4 text-white shadow-[var(--shadow-float)] transition hover:-translate-y-0.5 hover:shadow-2xl">
           <span className="relative grid h-7 w-7 place-items-center rounded-full bg-white/15"><Sparkles size={16} aria-hidden="true" /><span className="absolute inset-0 animate-ping rounded-full bg-white/20 [animation-duration:2.6s]" /></span>

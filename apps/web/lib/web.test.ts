@@ -144,6 +144,8 @@ describe("copilot language understanding", () => {
     expect(splitSteps("load sample data and then export a pdf report")).toEqual(["load sample data", "export a pdf report"]);
     expect(splitSteps("compare 10 t pune to delhi")).toHaveLength(1);
     expect(searchKnowledge("what is scope 3 category 9")[0]?.article.id).toBe("scopes");
+    expect(searchKnowledge("What is well-to-tank?")[0]?.article.id).toBe("wtw");
+    expect(searchKnowledge("explain tonne-km")[0]?.article.id).toBe("tkm");
     expect(searchKnowledge("Is TEMT certified?")[0]?.article.id).toMatch(/credentials|iso14083/);
     expect(searchKnowledge("how do I use e-way bills")[0]?.article.id).toBe("howto-ewaybill");
   });

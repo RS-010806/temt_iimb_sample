@@ -1,24 +1,34 @@
-# TEMT enterprise preview
+# TEMT · Transportation Emission Measurement Tool
 
-An authorized product preview for India's enterprise sustainability and supply-chain teams. The project pairs an interactive freight-emissions landing page with a real shipment-analysis API, transparent methodology, and downloadable reporting.
+A working freight-emissions product for India's listed companies, rebuilt for the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore. It calculates well-to-wheel emissions for road, rail, air, sea and inland-waterway shipments with an ISO 14083-aligned method and India-specific factors, then turns them into dashboards, reports and reduction plans.
 
-**[Live site](https://temt-iimb-sample.onrender.com) · [Interactive demo](https://temt-iimb-sample.onrender.com/demo/) · [Case study PDF](artifacts/deliverables/TEMT-Product-Case-Study.pdf) · [Editable DOCX](artifacts/deliverables/TEMT-Product-Case-Study.docx)**
+**[Live product](https://temt-iimb-sample.onrender.com/app/) · [Landing page](https://temt-iimb-sample.onrender.com) · [Video tour](https://temt-iimb-sample.onrender.com/tour/) · [Methodology](https://temt-iimb-sample.onrender.com/methodology/)**
 
-![TEMT enterprise landing page](artifacts/screenshots/hero-desktop.jpg)
+![TEMT dashboard](artifacts/screenshots/v2/010-dashboard.jpg)
 
-## What works
+## What the product does
 
-- Four-chapter cinematic freight story, with pause controls, reduced-motion support and responsive SVG animation.
-- Integrated hero calculator using published GLEC v3.2 factors. Its exact inputs continue into the working demo.
-- Road, rail, ocean and air comparisons with explicit assumptions.
-- Four explorable sector networks and a dated official NIFTY 500 constituent directory.
-- Interactive validation pipeline with a missing-data experiment and traceable calculations.
-- Editable multi-leg shipment ledger, validated CSV import, shipment-level exceptions and filters.
-- Recharts analytics, CSV and PDF reports, and a Power BI import pack.
-- Stateless Express API with the same calculation engine as the browser.
-- Local processing when the free Render backend is waking or unavailable.
+| Area | What you can do |
+| --- | --- |
+| Calculate | Door-to-door emissions for one shipment by road (7 vehicle classes; diesel, petrol, CNG or electric), rail, air, sea (trade lane or vessel type), inland waterway and courier/PTL. Distance, fuel and energy methods. Cities, 19,000+ PIN codes, 1,200+ airports and 62 ports. |
+| Compare modes | Road, rail with drayage, air and coastal options for the same cargo, with practicality checks and savings. |
+| Transport chain | Multi-leg chains with hubs and terminals (ISO 14083 transport chain elements), five templates. |
+| Bulk import | TEMT Excel/CSV template, six production-TEMT legacy formats and GST e-way bill JSON, with row-level validation. |
+| Shipments ledger | Search, filter, edit, duplicate and audit every shipment, with a full calculation trace per leg. |
+| Dashboard and reports | Monthly trend by life-cycle stage, mode, business unit, lanes, GHG Protocol scope, data quality, targets and year-on-year comparison. |
+| Exports | PDF report, Excel workbook, Word report (all three with the BRSR Principle 6 mapping), Power BI pack (star schema, DAX, theme), CSV and JSON. |
+| Reduction planner | Air-to-road and road-to-rail shift, consolidation, electric trucks and load-factor scenarios, measured against a target. |
+| Factor library | GLEC Framework v3.2 India defaults and the production TEMT factor set, with sources; switch and restate in one click. |
+| Copilot | Plain-English and voice assistant in the browser: calculates, compares, saves, analyses, runs what-ifs, exports and explains. Optional local model via Ollama or LM Studio. |
+| Guided tour | A 14-step in-product walkthrough on sample data. |
 
-Included scenarios are synthetic; imported records are user supplied. Existing TEMT certifications apply only to the product and scope stated in their original evidence, not to this separate demonstration engine.
+Workspaces are stored privately in the browser (IndexedDB). Nothing is uploaded unless the user runs the optional server check in Settings. Sample workspaces for four sectors are synthetic and labelled as such everywhere, including on exported reports.
+
+Production TEMT was the first digital platform in India certified to ISO 14083 and holds ISO/IEC 27001:2022. Those certifications apply to the production platform and its stated scope; this rebuild follows the same method.
+
+| | |
+| --- | --- |
+| ![Compare modes](artifacts/screenshots/v2/020-compare.jpg) | ![Copilot](artifacts/screenshots/v2/040-copilot-calc-compare.jpg) |
 
 ## Run locally
 
@@ -30,52 +40,32 @@ cp apps/web/.env.example apps/web/.env.local
 npm run dev
 ```
 
-The frontend runs at http://localhost:3000 and API at http://localhost:3001. The company directory, fonts and photography are included locally. No private API key, database or login is required.
+The web app runs at http://localhost:3000 and the API at http://localhost:3001. No API key, database or login is required.
 
 ```sh
-npm test
-npm run check
-npm run build
+npm test        # engine, API and web tests
+npm run check   # type checks
+npm run build   # calculator, API and static web build
 ```
 
 ## Architecture
 
 | Workspace | Purpose |
 | --- | --- |
-| `apps/web` | Next.js App Router static export, React, Tailwind CSS, native CSS/SVG animation, Recharts and Lucide |
-| `apps/api` | Express API, CORS, rate limiting, request caps and sanitized errors |
-| `packages/calculator` | Shared TypeScript engine, Zod validation, factor registry and aggregation |
+| `packages/calculator` | Shared TypeScript engine: factor library, ISO 14083 leg and hub calculations, distance estimation, sea-lane routing, Zod schemas |
+| `apps/web` | Next.js static export with React 19, Tailwind CSS v4, Recharts, the Copilot and all exports |
+| `apps/api` | Express API using the same engine: `GET /api/health`, `GET /api/v2/factors`, `POST /api/v2/calculate` (up to 1,000 shipments), plus the earlier `/api/factors` and `/api/analyze` |
+| `video` | Remotion project and Playwright scripts for the product tour and end-to-end checks |
 
-The frontend is served from a CDN independently of the backend. Results are calculated locally as inputs change. Imported records remain in the browser unless **Run analysis** is selected. The server processes records in memory and does not persist shipment data or log request bodies.
-
-CSV import accepts a file only when every row validates; a rejected import leaves the current dataset unchanged. For ledger edits and API requests, any invalid, duplicate or missing leg excludes its entire identifiable shipment. Filters apply after validation, so filtering a complete shipment to one mode does not invalidate its remaining visible legs.
-
-`GET /api/health` reports engine availability. `GET /api/factors` returns methodology metadata. `POST /api/analyze` accepts `{ "rows": [...] }` and returns validated calculations, exceptions, aggregates and provenance. See the [API documentation](apps/api/README.md) and [calculation contract](packages/calculator/README.md).
-
-The public API caps requests at 2 MiB and 1,000 legs, with 60 requests per minute per IP for API routes. Health checks and CORS preflights are excluded from that limit. Exact browser-origin checks are CORS policy, not authentication; origin-less clients can also call the API.
+Each calculated leg records its factor, source, method, uplifts and data-quality level, so every number in a report traces back to an input and a published factor.
 
 ## Deployment
 
-[render.yaml](render.yaml) defines a free static site on Render's CDN and a free Node API in Singapore. Both build from the repository root. Public origins and build-time frontend configuration are recorded in the Blueprint. The free API can sleep after inactivity. Local results remain available during a server request; after eight seconds, **Process in browser** lets the user cancel that request. A request failure or 90-second timeout also falls back to the local engine. The UI identifies which path produced the result.
+[render.yaml](render.yaml) deploys the static site to Render's CDN and the API as a Node service. Both build from the repository root after GitHub Actions passes (source integrity check, type checks, tests and both builds). See the [deployment guide](docs/deployment.md).
 
-Follow the [deployment guide](docs/deployment.md). GitHub Actions runs source integrity checks, tests, type checks and both production builds. No paid infrastructure is required.
+## Sources
 
-## Measured validation
+- ISO 14083:2023, GLEC Framework v3.2 (Smart Freight Centre), GHG Protocol Scope 3 guidance, CEA CO₂ Baseline Database V21.0, and the production TEMT factor set. Full register: [docs/SOURCES.md](docs/SOURCES.md).
+- [Original TEMT](https://iimb.freightemissions.com/) · [DPIIT product](https://dpiit.freightemissions.com/)
 
-The published website scored **91 mobile / 100 desktop performance**, with **100 accessibility, best practices and SEO** in both Lighthouse 13.4.1 audits. Mobile LCP was 2.9 seconds and CLS was 0. These are single lab observations, not production guarantees. Validation included **112 passing automated tests**, type checks, source checks and production builds. See the verification record for test conditions and remaining automation limits.
-
-## Evidence and reproducibility
-
-- [Measured verification](docs/verification.md)
-- [UX research and design rationale](docs/ux-research.md)
-- [Example emissions PDF](https://temt-iimb-sample.onrender.com/downloads/temt-example-report.pdf)
-- [Power BI import pack](https://temt-iimb-sample.onrender.com/downloads/temt-power-bi-pack.zip)
-- [Sample shipment CSV](https://temt-iimb-sample.onrender.com/downloads/temt-sample-shipments.csv)
-- [Case-study reproduction](docs/case-study-production.md)
-- [Source register](docs/SOURCES.md)
-- [Implementation decisions](docs/implementation-notes.md)
-- [NIFTY source snapshot](docs/data/nifty500-source.csv) and [refresh script](docs/scripts/refresh-nifty500.py)
-- [Original TEMT](https://iimb.freightemissions.com/)
-- [DPIIT product](https://dpiit.freightemissions.com/)
-
-The original Apache 2.0 licence is preserved. Fonts retain their individual licences in `apps/web/public/fonts`. Freight photography is credited in the source register and public methodology page.
+The original Apache 2.0 licence is preserved. Fonts retain their licences in `apps/web/public/fonts`.

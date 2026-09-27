@@ -44,6 +44,12 @@ services:
       - path: /images/*
         name: Cache-Control
         value: public, max-age=86400
+      - path: /data/*
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /video/*
+        name: Cache-Control
+        value: public, max-age=86400
 
   - type: web
     name: temt-iimb-api

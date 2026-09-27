@@ -15,3 +15,5 @@ tmp/
 artifacts/measurements/
 artifacts/screenshots/revision/
 .agentbridge/
+__pycache__/
+.claude/

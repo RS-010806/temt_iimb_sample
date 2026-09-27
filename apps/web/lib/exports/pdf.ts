@@ -63,6 +63,10 @@ export async function buildPdf(model: ReportModel): Promise<JsPDF> {
   fill([255, 255, 255]); doc.circle(M + 3, 27, 1.2, "F"); fill(SAND); doc.circle(M + 9, 21, 1.2, "F");
   font("bold", 20, "times"); ink([255, 255, 255]); text("TEMT", M + 16, 27);
   font("normal", 7.5); ink([239, 196, 192]); text("TRANSPORTATION EMISSION MEASUREMENT TOOL · TCI–IIMB SUPPLY CHAIN SUSTAINABILITY LAB", M + 16, 32, { charSpace: 0.3 });
+  if (model.sampleShipments) {
+    fill([227, 154, 85]); doc.roundedRect(M, 42, 118, 8, 1.5, 1.5, "F");
+    font("bold", 8); ink(DARKEST); text(`SAMPLE DATA · ${model.sampleShipments} synthetic shipments for demonstration`, M + 3, 47.3);
+  }
   font("bold", 32, "times"); ink([255, 255, 255]); text(model.title, M, 66);
   font("normal", 15); text(model.organisation, M, 78);
   font("normal", 11); ink([239, 196, 192]); text(`${model.period} · ${model.factorSet.label}`, M, 86);
