@@ -2,7 +2,7 @@
 
 import { useContext, useEffect, useId, useRef, useState } from "react";
 import { Anchor, Building2, Hash, MapPin, Plane, X } from "lucide-react";
-import { searchPlaces, type Place, type PlaceKind } from "@/lib/places";
+import { loadAirports, loadCities, loadPins, searchPlaces, type Place, type PlaceKind } from "@/lib/places";
 import { FieldIdContext, cx } from "../ui";
 
 const ICONS: Record<PlaceKind, typeof MapPin> = { city: Building2, pin: Hash, airport: Plane, port: Anchor, custom: MapPin };
@@ -21,6 +21,20 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
   const kindsKey = kinds.join(",");
 
   const inputRef = useRef<HTMLInputElement>(null);
+  // Enter pressed while a search is still running: pick the first result as soon as it arrives.
+  const pendingEnter = useRef(false);
+
+  // Warm the location indexes in idle time so the first search is instant, even on slow connections.
+  useEffect(() => {
+    const warm = () => {
+      const list = kindsKey.split(",");
+      void loadCities().catch(() => undefined);
+      if (list.includes("pin")) void loadPins().catch(() => undefined);
+      if (list.includes("airport")) void loadAirports().catch(() => undefined);
+    };
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    if (idle) idle(warm); else setTimeout(warm, 400);
+  }, [kindsKey]);
   // Follow the value when it is set or cleared from outside; never wipe text the user is typing.
   useEffect(() => {
     if (value) setQuery(value.label);
@@ -34,7 +48,12 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
     let cancelled = false;
     setLoading(true);
     const timer = setTimeout(() => {
-      searchPlaces(q, kindsKey.split(",") as PlaceKind[], 8).then((found) => { if (!cancelled) { setResults(found); setCursor(0); } }).catch(() => { if (!cancelled) setResults([]); }).finally(() => { if (!cancelled) setLoading(false); });
+      searchPlaces(q, kindsKey.split(",") as PlaceKind[], 8).then((found) => {
+        if (cancelled) return;
+        setResults(found);
+        setCursor(0);
+        if (pendingEnter.current) { pendingEnter.current = false; choose(found[0] ?? { label: q, kind: "custom" }); }
+      }).catch(() => { if (!cancelled) setResults([]); }).finally(() => { if (!cancelled) setLoading(false); });
     }, 120);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [query, open, kindsKey, value?.label]);
@@ -56,10 +75,11 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
         <input ref={inputRef} id={id} className="input pl-9 pr-9" role="combobox" aria-expanded={open && options.length > 0} aria-controls={listId} aria-autocomplete="list" aria-label={ariaLabel}
           placeholder={placeholder} value={query} autoComplete="off"
           onFocus={() => setOpen(true)}
-          onChange={(event) => { setQuery(event.target.value); setOpen(true); if (value) onChange(undefined); }}
+          onChange={(event) => { setQuery(event.target.value); setOpen(true); pendingEnter.current = false; if (value) onChange(undefined); }}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); setCursor((c) => Math.min(c + 1, options.length - 1)); }
             if (event.key === "ArrowUp") { event.preventDefault(); setCursor((c) => Math.max(c - 1, 0)); }
+            if (event.key === "Enter" && open && loading && query.trim()) { event.preventDefault(); pendingEnter.current = true; return; }
             if (event.key === "Enter" && open && options[cursor]) { event.preventDefault(); choose(options[cursor]!); }
             if (event.key === "Escape") setOpen(false);
           }} />

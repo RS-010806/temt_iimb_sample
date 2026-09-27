@@ -271,5 +271,6 @@ export async function downloadAccountExport() {
 /** Best effort: keep a history of generated reports on the account. Never blocks the download. */
 export function recordReport(format: ExportFormat, model: ReportModel) {
   if (state.status !== "signed-in") return;
-  void api("/reports", { method: "POST", json: { title: model.title, period: model.period, format, shipments: model.totals.shipments, wtwKg: model.totals.wtwKg } }).catch(() => undefined);
+  // keepalive: the record still reaches the server if the user navigates away straight after the download.
+  void api("/reports", { method: "POST", keepalive: true, json: { title: model.title, period: model.period, format, shipments: model.totals.shipments, wtwKg: model.totals.wtwKg } }).catch(() => undefined);
 }
