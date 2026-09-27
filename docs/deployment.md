@@ -15,7 +15,7 @@ The static site rewrites `/api/*` to the API service, so the browser only ever t
 
 ### Keeping accounts permanently
 
-Without a database the API uses an in-memory embedded Postgres (PGlite): accounts work, but they reset whenever the free API restarts or sleeps, and the Account page says so. To keep them:
+Without a database the API keeps accounts in Node's built-in SQLite, in memory: accounts work, but they reset whenever the free API restarts or sleeps, and the Account page says so. To keep them:
 
 1. Create a free Postgres database, for example at [neon.tech](https://neon.tech) (no card needed), and copy its connection string.
 2. In Render, open **temt-iimb-api → Environment**, set `DATABASE_URL` to that string and save. Render redeploys the API.
@@ -31,7 +31,7 @@ cp apps/web/.env.example apps/web/.env.local   # points the web app at http://lo
 npm run dev
 ```
 
-The API stores local accounts in `apps/api/.data/accounts` (ignored by Git). To check the production build exactly as Render serves it, with the same headers and CSP:
+The API stores local accounts in a SQLite file under `apps/api/.data/accounts` (ignored by Git). To check the production build exactly as Render serves it, with the same headers and CSP:
 
 ```sh
 npm run build

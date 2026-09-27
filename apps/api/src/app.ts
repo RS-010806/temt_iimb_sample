@@ -20,6 +20,8 @@ export interface AppOptions {
   trustProxyHops?: number;
   /** Account storage. Defaults to DATABASE_URL, else an embedded database (see db.ts). */
   db?: DbOptions;
+  /** An already-open database, for example in tests. */
+  database?: Db;
 }
 
 export function parseAllowedOrigins(value: string | undefined): string[] {
@@ -53,7 +55,7 @@ const requireJson: express.RequestHandler = (req, res, next) => {
 export function createApp(options: AppOptions = {}) {
   const app = express();
   let dbPromise: Promise<Db> | undefined;
-  const getDb = () => (dbPromise ??= openDb(options.db ?? dbOptionsFromEnv()).catch((error: unknown) => { dbPromise = undefined; throw error; }));
+  const getDb = () => (dbPromise ??= (options.database ? Promise.resolve(options.database) : openDb(options.db ?? dbOptionsFromEnv())).catch((error: unknown) => { dbPromise = undefined; throw error; }));
   const allowedOrigins = new Set(options.allowedOrigins === undefined
     ? parseAllowedOrigins(process.env.ALLOWED_ORIGINS)
     : parseAllowedOrigins(options.allowedOrigins.join(",")));

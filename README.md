@@ -55,7 +55,7 @@ npm run build   # calculator, API and static web build
 | --- | --- |
 | `packages/calculator` | Shared TypeScript engine: factor library, ISO 14083 leg and hub calculations, distance estimation, sea-lane routing, Zod schemas |
 | `apps/web` | Next.js static export with React 19, Tailwind CSS v4, Recharts, the Copilot and all exports |
-| `apps/api` | Express API using the same engine: calculation (`/api/v2/factors`, `/api/v2/calculate`), accounts and sessions (`/api/auth/*`, `/api/account/*`), workspace sync (`/api/workspace`) and report history (`/api/reports`). Postgres via `DATABASE_URL`, or embedded PGlite locally |
+| `apps/api` | Express API using the same engine: calculation (`/api/v2/factors`, `/api/v2/calculate`), accounts and sessions (`/api/auth/*`, `/api/account/*`), workspace sync (`/api/workspace`) and report history (`/api/reports`). Postgres via `DATABASE_URL`, otherwise Node's built-in SQLite |
 | `video` | Remotion project and Playwright scripts for the product tour and end-to-end checks |
 
 Each calculated leg records what ISO 14083 asks a report to state: transport activity, distance type (SFD or GCD), method, emission intensity, factor source and data type, so every number in a report traces back to an input and a published factor.

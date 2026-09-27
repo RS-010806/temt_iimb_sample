@@ -9,7 +9,7 @@ import { downloadBlob } from "@/lib/exports/common";
 import { emissionsText, fmt, todayIso } from "@/lib/format";
 import { SAMPLE_SECTORS, type SampleSector } from "@/lib/sample-data";
 import { actions, backupPayload, restoreBackup, selectComputed, getState, useSettings, useStore } from "@/lib/store";
-import { API_BASE } from "@/lib/account";
+import { API_BASE, useAccount } from "@/lib/account";
 import { CompanyPicker, loadSample } from "../onboarding";
 import { Field, Modal, NumberInput, PageHeader, Segmented, Select, cx, useToast } from "../../ui";
 
@@ -36,6 +36,7 @@ export function SettingsView() {
   const [server, setServer] = useState<{ state: "idle" | "busy" | "ok" | "error"; message?: string }>({ state: "idle" });
   const org = settings.organisation;
   const update = actions.updateSettings;
+  const signedIn = useAccount((account) => account.status === "signed-in");
 
   const verifyServer = async () => {
     const base = API_BASE;
@@ -116,7 +117,7 @@ export function SettingsView() {
           )}
         </Card>
 
-        <Card id="data" title="Data and backup" description={`${fmt(count)} shipments stored ${storage === "indexeddb" ? "in this browser's IndexedDB" : storage === "localstorage" ? "in this browser's local storage" : "for this session only"}. Nothing is sent anywhere unless you choose.`}>
+        <Card id="data" title="Data and backup" description={`${fmt(count)} shipments stored ${storage === "indexeddb" ? "in this browser's IndexedDB" : storage === "localstorage" ? "in this browser's local storage" : "for this session only"}. ${signedIn ? "A copy syncs to your TEMT account." : "Nothing is uploaded unless you sign in to sync it or run the server check."}`}>
           <div className="grid gap-3 sm:grid-cols-2">
             <button type="button" className="btn btn-secondary justify-start" onClick={() => downloadBlob(new Blob([JSON.stringify(backupPayload(), null, 2)], { type: "application/json" }), `temt-workspace-${todayIso()}.json`)}><Download size={16} aria-hidden="true" /> Download backup</button>
             <button type="button" className="btn btn-secondary justify-start" onClick={() => restoreInput.current?.click()}><Upload size={16} aria-hidden="true" /> Restore from backup</button>

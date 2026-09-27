@@ -3,7 +3,7 @@ import request from "supertest";
 import { analyze, MAX_LEGS } from "@temt/calculator";
 import { createApp, MAX_BODY_BYTES, parseAllowedOrigins } from "../src/app.js";
 
-// Tests that touch accounts start an embedded Postgres (PGlite), which is slower on shared CI runners.
+// Account tests hash passwords with scrypt many times; shared CI runners are slower than a laptop.
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
 const origin = "https://temt.example.com";

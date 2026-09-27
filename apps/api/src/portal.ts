@@ -40,6 +40,8 @@ const workspaceSchema = z.object({
   shipments: z.array(shipmentShape).max(MAX_WORKSPACE_SHIPMENTS),
 });
 
+/** ISO timestamp, optionally offset by milliseconds. Stored as text so SQLite and Postgres sort it the same way. */
+const stamp = (offsetMs = 0) => new Date(Date.now() + offsetMs).toISOString();
 const fail = (res: Response, status: number, code: string, message: string, extra?: Record<string, unknown>) => res.status(status).json({ error: { code, message, ...extra } });
 const iso = (value: Date | string | null | undefined) => (value instanceof Date ? value.toISOString() : value ?? null);
 const publicUser = (user: UserRow) => ({ id: user.id, email: user.email, name: user.name, organisation: user.organisation, jobTitle: user.job_title, createdAt: iso(user.created_at) });
@@ -93,11 +95,12 @@ export function createPortal(getDb: () => Promise<Db>) {
   const cookieName = (req: Request) => (cookieSecure(req) ? SECURE_COOKIE : DEV_COOKIE);
   const setSession = (req: Request, res: Response, token: string) => res.append("Set-Cookie", serializeCookie(cookieName(req), token, { maxAge: SESSION_DAYS * 86_400, secure: cookieSecure(req) }));
   const clearSession = (req: Request, res: Response) => res.append("Set-Cookie", serializeCookie(cookieName(req), "", { maxAge: 0, secure: cookieSecure(req) }));
-  const log = (userId: string, kind: string, detail = "") => db.query("INSERT INTO temt_activity (user_id, kind, detail) VALUES ($1, $2, $3)", [userId, kind, detail.slice(0, 300)]);
+  const log = (userId: string, kind: string, detail = "") => db.query("INSERT INTO temt_activity (id, user_id, kind, detail, created_at) VALUES ($1, $2, $3, $4, $5)", [randomUUID(), userId, kind, detail.slice(0, 300), stamp()]);
 
   async function startSession(req: Request, res: Response, userId: string) {
     const token = newToken();
-    await db.query("INSERT INTO temt_sessions (id, user_id, token_hash, user_agent, expires_at) VALUES ($1, $2, $3, $4, now() + make_interval(days => $5::int))", [randomUUID(), userId, sha256(token), deviceOf(req), SESSION_DAYS]);
+    const at = stamp();
+    await db.query("INSERT INTO temt_sessions (id, user_id, token_hash, user_agent, created_at, last_seen_at, expires_at) VALUES ($1, $2, $3, $4, $5, $5, $6)", [randomUUID(), userId, sha256(token), deviceOf(req), at, stamp(SESSION_DAYS * 86_400_000)]);
     setSession(req, res, token);
   }
 
@@ -108,11 +111,11 @@ export function createPortal(getDb: () => Promise<Db>) {
     if (!token || token.length > 128) return next();
     const rows = await db.query<UserRow & { session_id: string; last_seen_at: Date | string }>(
       `SELECT u.*, s.id AS session_id, s.last_seen_at FROM temt_sessions s JOIN temt_users u ON u.id = s.user_id
-       WHERE s.token_hash = $1 AND s.expires_at > now()`, [sha256(token)]);
+       WHERE s.token_hash = $1 AND s.expires_at > $2`, [sha256(token), stamp()]);
     const row = rows[0];
     if (row) {
       req.auth = { user: row, sessionId: row.session_id };
-      if (Date.now() - new Date(row.last_seen_at).getTime() > 3_600_000) await db.query("UPDATE temt_sessions SET last_seen_at = now() WHERE id = $1", [row.session_id]);
+      if (Date.now() - new Date(row.last_seen_at).getTime() > 3_600_000) await db.query("UPDATE temt_sessions SET last_seen_at = $2 WHERE id = $1", [row.session_id, stamp()]);
     }
     next();
   });
@@ -122,13 +125,14 @@ export function createPortal(getDb: () => Promise<Db>) {
 
   async function tooManyFailures(emailKey: string, ip: string) {
     const rows = await db.query<{ key: string; n: string | number }>(
-      `SELECT key, count(*) AS n FROM temt_login_failures WHERE key = ANY($1::text[]) AND at > now() - make_interval(mins => $2::int) GROUP BY key`,
-      [[`email:${sha256(emailKey)}`, `ip:${ip}`], FAILURE_WINDOW_MINUTES]);
+      "SELECT key, count(*) AS n FROM temt_login_failures WHERE key IN ($1, $2) AND at > $3 GROUP BY key",
+      [`email:${sha256(emailKey)}`, `ip:${ip}`, stamp(-FAILURE_WINDOW_MINUTES * 60_000)]);
     return rows.some((row) => Number(row.n) >= (row.key.startsWith("email:") ? MAX_EMAIL_FAILURES : MAX_IP_FAILURES));
   }
   async function recordFailure(emailKey: string, ip: string) {
-    await db.query("INSERT INTO temt_login_failures (key) VALUES ($1), ($2)", [`email:${sha256(emailKey)}`, `ip:${ip}`]);
-    if (Math.random() < 0.05) await db.query("DELETE FROM temt_login_failures WHERE at < now() - interval '1 day'");
+    const at = stamp();
+    await db.query("INSERT INTO temt_login_failures (key, at) VALUES ($1, $3), ($2, $3)", [`email:${sha256(emailKey)}`, `ip:${ip}`, at]);
+    if (Math.random() < 0.05) await db.query("DELETE FROM temt_login_failures WHERE at < $1", [stamp(-86_400_000)]);
   }
 
   router.get("/auth/me", (req: AuthedRequest, res) => {
@@ -142,8 +146,8 @@ export function createPortal(getDb: () => Promise<Db>) {
     const hash = await hashPassword(secret);
     const id = randomUUID();
     const inserted = await db.query<UserRow>(
-      `INSERT INTO temt_users (id, email, email_key, name, organisation, job_title, password_hash) VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (email_key) DO NOTHING RETURNING *`, [id, address, address, name, organisation, jobTitle, hash]);
+      `INSERT INTO temt_users (id, email, email_key, name, organisation, job_title, password_hash, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+       ON CONFLICT (email_key) DO NOTHING RETURNING *`, [id, address, address, name, organisation, jobTitle, hash, stamp()]);
     const user = inserted[0];
     if (!user) return fail(res, 409, "email_taken", "An account with this email already exists. Sign in instead.");
     await startSession(req, res, user.id);
@@ -178,8 +182,8 @@ export function createPortal(getDb: () => Promise<Db>) {
     if (!parsed.success) return fail(res, 400, "invalid_request", parsed.error.issues[0]?.message ?? "Check the form and try again.");
     const { name, organisation, jobTitle } = parsed.data;
     const user = (await db.query<UserRow>(
-      `UPDATE temt_users SET name = COALESCE($2, name), organisation = COALESCE($3, organisation), job_title = COALESCE($4, job_title), updated_at = now()
-       WHERE id = $1 RETURNING *`, [req.auth!.user.id, name ?? null, organisation ?? null, jobTitle ?? null]))[0]!;
+      `UPDATE temt_users SET name = COALESCE($2, name), organisation = COALESCE($3, organisation), job_title = COALESCE($4, job_title), updated_at = $5
+       WHERE id = $1 RETURNING *`, [req.auth!.user.id, name ?? null, organisation ?? null, jobTitle ?? null, stamp()]))[0]!;
     await log(user.id, "profile_updated");
     res.json({ user: publicUser(user) });
   });
@@ -188,7 +192,7 @@ export function createPortal(getDb: () => Promise<Db>) {
     const parsed = passwordSchema.safeParse(req.body);
     if (!parsed.success) return fail(res, 400, "invalid_request", parsed.error.issues[0]?.message ?? "Check the form and try again.");
     if (!(await verifyPassword(parsed.data.current, req.auth!.user.password_hash))) return fail(res, 401, "invalid_credentials", "Your current password is incorrect.");
-    await db.query("UPDATE temt_users SET password_hash = $2, updated_at = now() WHERE id = $1", [req.auth!.user.id, await hashPassword(parsed.data.next)]);
+    await db.query("UPDATE temt_users SET password_hash = $2, updated_at = $3 WHERE id = $1", [req.auth!.user.id, await hashPassword(parsed.data.next), stamp()]);
     await db.query("DELETE FROM temt_sessions WHERE user_id = $1 AND id <> $2", [req.auth!.user.id, req.auth!.sessionId]);
     await log(req.auth!.user.id, "password_changed", "Other sessions signed out");
     res.json({ ok: true });
@@ -196,7 +200,7 @@ export function createPortal(getDb: () => Promise<Db>) {
 
   router.get("/account/sessions", requireUser, async (req: AuthedRequest, res) => {
     const rows = await db.query<{ id: string; user_agent: string; created_at: Date; last_seen_at: Date }>(
-      "SELECT id, user_agent, created_at, last_seen_at FROM temt_sessions WHERE user_id = $1 AND expires_at > now() ORDER BY last_seen_at DESC LIMIT 50", [req.auth!.user.id]);
+      "SELECT id, user_agent, created_at, last_seen_at FROM temt_sessions WHERE user_id = $1 AND expires_at > $2 ORDER BY last_seen_at DESC LIMIT 50", [req.auth!.user.id, stamp()]);
     res.json({ sessions: rows.map((row) => ({ id: row.id, device: row.user_agent, createdAt: iso(row.created_at), lastSeenAt: iso(row.last_seen_at), current: row.id === req.auth!.sessionId })) });
   });
 
@@ -217,7 +221,7 @@ export function createPortal(getDb: () => Promise<Db>) {
   });
 
   router.get("/account/activity", requireUser, async (req: AuthedRequest, res) => {
-    const rows = await db.query<{ kind: string; detail: string; created_at: Date }>("SELECT kind, detail, created_at FROM temt_activity WHERE user_id = $1 ORDER BY created_at DESC, id DESC LIMIT 60", [req.auth!.user.id]);
+    const rows = await db.query<{ kind: string; detail: string; created_at: Date }>("SELECT kind, detail, created_at FROM temt_activity WHERE user_id = $1 ORDER BY created_at DESC LIMIT 60", [req.auth!.user.id]);
     res.json({ activity: rows.map((row) => ({ kind: row.kind, detail: row.detail, at: iso(row.created_at) })) });
   });
 
@@ -270,11 +274,11 @@ export function createPortal(getDb: () => Promise<Db>) {
     }
     // Optimistic concurrency: the update only applies if nobody synced a newer version in the meantime.
     const rows = await db.query<{ version: number; updated_at: Date }>(
-      `INSERT INTO temt_workspaces AS w (user_id, version, data, shipments, bytes, device, updated_at) VALUES ($1, 1, $2::jsonb, $3, $4, $5, now())
-       ON CONFLICT (user_id) DO UPDATE SET version = w.version + 1, data = EXCLUDED.data, shipments = EXCLUDED.shipments, bytes = EXCLUDED.bytes, device = EXCLUDED.device, updated_at = now()
+      `INSERT INTO temt_workspaces AS w (user_id, version, data, shipments, bytes, device, updated_at) VALUES ($1, 1, $2, $3, $4, $5, $7)
+       ON CONFLICT (user_id) DO UPDATE SET version = w.version + 1, data = excluded.data, shipments = excluded.shipments, bytes = excluded.bytes, device = excluded.device, updated_at = excluded.updated_at
        WHERE w.version = $6
        RETURNING version, updated_at`,
-      [req.auth!.user.id, JSON.stringify(parsed), parsed.shipments.length, bytes, deviceOf(req), base]);
+      [req.auth!.user.id, JSON.stringify(parsed), parsed.shipments.length, bytes, deviceOf(req), base, stamp()]);
     const row = rows[0];
     if (!row) {
       const [current] = await db.query<{ version: number; updated_at: Date; device: string }>("SELECT version, updated_at, device FROM temt_workspaces WHERE user_id = $1", [req.auth!.user.id]);
@@ -295,7 +299,7 @@ export function createPortal(getDb: () => Promise<Db>) {
     const parsed = reportSchema.safeParse(req.body);
     if (!parsed.success) return fail(res, 400, "invalid_request", "The report record is incomplete.");
     const { title, period, format, shipments, wtwKg } = parsed.data;
-    await db.query("INSERT INTO temt_reports (id, user_id, title, period, format, shipments, wtw_kg) VALUES ($1, $2, $3, $4, $5, $6, $7)", [randomUUID(), req.auth!.user.id, title, period, format, shipments, wtwKg]);
+    await db.query("INSERT INTO temt_reports (id, user_id, title, period, format, shipments, wtw_kg, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", [randomUUID(), req.auth!.user.id, title, period, format, shipments, wtwKg, stamp()]);
     await log(req.auth!.user.id, "report_generated", `${format.toUpperCase()} · ${period}`);
     res.status(201).json({ ok: true });
   });
