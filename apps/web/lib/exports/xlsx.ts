@@ -78,6 +78,12 @@ function summarySheet(workbook: Workbook, model: ReportModel) {
     ...(yoy !== undefined ? [[`Change vs ${model.previous!.period}`, round(yoy, 1), "%"] as [string, number, string]] : []),
     ...(model.carbonCostInr ? [["Internal carbon cost", round(model.carbonCostInr, 0), "INR"] as [string, number, string]] : []),
   ], [undefined, "#,##0.00", undefined]);
+  // Counts, tonne-km and percentages read better without two forced decimals.
+  for (let r = 6; r < row - 1; r += 1) {
+    const unit = String(sheet.getCell(r, 3).value ?? "");
+    if (unit === "count" || unit === "tonne-km" || unit === "INR") sheet.getCell(r, 2).numFmt = "#,##0";
+    else if (unit === "%") sheet.getCell(r, 2).numFmt = "0.0";
+  }
   row = section(sheet, row, "By transport mode");
   row = table(sheet, row, ["Mode", "t CO2e", "Share %", "Tonne-km", "Intensity g/t-km"], model.byMode.map((item) => [item.label, round(t(item.wtwKg)), round(item.share, 1), round(item.tonneKm, 0), item.tonneKm ? round((item.wtwKg / item.tonneKm) * 1000, 1) : 0]), [undefined, "#,##0.00", "0.0", "#,##0", "0.0"]);
   row = section(sheet, row, "By GHG Protocol scope");

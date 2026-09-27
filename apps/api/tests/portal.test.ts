@@ -1,8 +1,11 @@
 import { gzipSync } from "node:zlib";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 import { createApp } from "../src/app.js";
+
+// Tests that touch accounts start an embedded Postgres (PGlite), which is slower on shared CI runners.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
 const origin = "https://temt.example.com";
 const client = { "X-TEMT-Client": "web" };

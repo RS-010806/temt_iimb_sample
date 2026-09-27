@@ -1,30 +1,27 @@
 # Deployment
 
-TEMT is one repository with three parts that build from the root: the shared calculator (`packages/calculator`), the static web app (`apps/web`) and the Express API (`apps/api`). The web app calls the API at `/api` on its own origin, so the account session cookie is always first-party.
+TEMT is one repository with three parts that build from the root: the shared calculator (`packages/calculator`), the static web app (`apps/web`) and the Express API (`apps/api`). The web app calls the API at `/api` on its own origin, so the account session cookie is always first-party. Nothing here needs a paid plan.
 
-Nothing here needs a paid plan.
+## Render
 
-## Vercel (primary)
+[`render.yaml`](../render.yaml) is a Render Blueprint with two free services:
 
-[`vercel.json`](../vercel.json) deploys the static export from `apps/web/out` and the API as one serverless function ([`api/index.mjs`](../api/index.mjs)) behind `/api/*`, with security headers and a Content-Security-Policy on every page.
+| Service | Runtime | Build | Serves |
+| --- | --- | --- | --- |
+| `temt-iimb-sample` | Static site (global CDN) | `npm ci --include=dev && npm run build:web` | `apps/web/out`, with security headers and a Content-Security-Policy |
+| `temt-iimb-api` | Node, Singapore, free plan | `npm ci --include=dev && npm run build:api` | `npm run start --workspace=@temt/api`, health check `/api/health` |
 
-1. Import `RS-010806/temt_iimb_sample` in Vercel (or run `npx vercel` in the repository). Keep the root directory as the repository root; framework preset "Other". The build and output settings come from `vercel.json`.
-2. Add a free Postgres database so accounts persist: in the Vercel project open **Storage → Create → Neon (Postgres)** and connect it to the project. This sets `DATABASE_URL`. Any Postgres connection string works.
-3. Redeploy. `GET /api/health` should report `"accounts": { "storage": "postgres", "persistent": true }`.
+The static site rewrites `/api/*` to the API service, so the browser only ever talks to `https://temt-iimb-sample.onrender.com`. Both services deploy automatically when GitHub Actions passes on `main`.
 
-Without `DATABASE_URL` the API falls back to an in-memory embedded Postgres (PGlite). Everything works, but accounts reset whenever the function restarts, and the Account page says so.
+### Keeping accounts permanently
 
-Optional environment variables:
+Without a database the API uses an in-memory embedded Postgres (PGlite): accounts work, but they reset whenever the free API restarts or sleeps, and the Account page says so. To keep them:
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | Postgres connection string for accounts, synced workspaces and report history |
-| `NEXT_PUBLIC_SITE_URL` | Public URL for metadata and the sitemap; defaults to Vercel's production URL |
-| `ALLOWED_ORIGINS` | Extra exact origins allowed to call the API cross-origin (same-origin calls need no setting) |
+1. Create a free Postgres database, for example at [neon.tech](https://neon.tech) (no card needed), and copy its connection string.
+2. In Render, open **temt-iimb-api → Environment**, set `DATABASE_URL` to that string and save. Render redeploys the API.
+3. `https://temt-iimb-sample.onrender.com/api/health` should then report `"accounts": { "storage": "postgres", "persistent": true }`.
 
-## Render (secondary)
-
-[`render.yaml`](../render.yaml) defines a static site and a Node API. The static site rewrites `/api/*` to the API service, so the browser still talks to one origin. Set `DATABASE_URL` on the API service (it is declared with `sync: false`) to keep accounts; the same Neon database can serve both deployments. Render's free API sleeps after 15 minutes idle and takes about a minute to wake.
+Other API settings are in the Blueprint: `ALLOWED_ORIGINS` (exact extra origins allowed to call the API cross-origin), `TRUST_PROXY_HOPS` and `NODE_ENV`. The free API sleeps after 15 minutes idle and takes about a minute to wake; the web app keeps working meanwhile because every calculation runs in the browser.
 
 ## Local development
 
@@ -34,10 +31,10 @@ cp apps/web/.env.example apps/web/.env.local   # points the web app at http://lo
 npm run dev
 ```
 
-The API stores local accounts in `apps/api/.data/accounts` (ignored by Git). To check the production build exactly as Vercel serves it, including headers and CSP:
+The API stores local accounts in `apps/api/.data/accounts` (ignored by Git). To check the production build exactly as Render serves it, with the same headers and CSP:
 
 ```sh
-npm run build:api && NEXT_PUBLIC_API_BASE_URL= npm run build -w @temt/web
+npm run build
 node scripts/preview-server.mjs
 ```
 
@@ -54,4 +51,4 @@ Then run the browser suite from `video/`: `BASE=http://localhost:3000 npx tsx sc
 
 ## Verification
 
-GitHub Actions checks source data, types, tests (engine, API, accounts and web) and both builds on every push. Deployments should be confirmed by opening `/api/health` and running the browser suite against the live URL.
+GitHub Actions checks source data, types, tests (engine, API, accounts and web) and both builds on every push; Render deploys only after it passes. Confirm a deployment by opening `/api/health` on the site and running the browser suite against the live URL.

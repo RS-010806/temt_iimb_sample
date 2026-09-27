@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { analyze, MAX_LEGS } from "@temt/calculator";
 import { createApp, MAX_BODY_BYTES, parseAllowedOrigins } from "../src/app.js";
+
+// Tests that touch accounts start an embedded Postgres (PGlite), which is slower on shared CI runners.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
 const origin = "https://temt.example.com";
 const row = { shipmentId: "SHIP-001", legIndex: 1, date: "2026-01-20", subsidiary: "Industrial", mode: "road", profile: "road-hcv", tonnes: 10, kilometres: 100 };
@@ -9,8 +12,9 @@ const app = () => createApp({ allowedOrigins: [origin] });
 
 describe("stateless API contract", () => {
   it("serves health and documented factors", async () => {
+    const shared = app();
     for (const route of ["/health", "/api/health"]) {
-      const response = await request(app()).get(route).expect(200);
+      const response = await request(shared).get(route).expect(200);
       expect(response.body).toMatchObject({ status: "ok", accounts: { storage: "embedded-ephemeral", persistent: false } });
       expect(response.headers["cache-control"]).toBe("no-store");
       expect(response.headers["x-powered-by"]).toBeUndefined();

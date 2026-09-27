@@ -62,7 +62,7 @@ Each calculated leg records what ISO 14083 asks a report to state: transport act
 
 ## Deployment
 
-[vercel.json](vercel.json) serves the static site and the API (as one serverless function) from a single origin, with security headers and a Content-Security-Policy. A free Neon Postgres database keeps accounts. [render.yaml](render.yaml) provides the same setup on Render. See the [deployment guide](docs/deployment.md).
+[render.yaml](render.yaml) deploys the static site to Render's CDN and the API as a free Node service; the site proxies `/api` to the API so sessions stay first-party. Both deploy from `main` after GitHub Actions passes. Set `DATABASE_URL` (for example a free Neon Postgres) on the API to keep accounts across restarts. See the [deployment guide](docs/deployment.md).
 
 ## Sources
 

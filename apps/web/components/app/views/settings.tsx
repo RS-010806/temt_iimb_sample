@@ -9,6 +9,7 @@ import { downloadBlob } from "@/lib/exports/common";
 import { emissionsText, fmt, todayIso } from "@/lib/format";
 import { SAMPLE_SECTORS, type SampleSector } from "@/lib/sample-data";
 import { actions, backupPayload, restoreBackup, selectComputed, getState, useSettings, useStore } from "@/lib/store";
+import { API_BASE } from "@/lib/account";
 import { CompanyPicker, loadSample } from "../onboarding";
 import { Field, Modal, NumberInput, PageHeader, Segmented, Select, cx, useToast } from "../../ui";
 
@@ -37,7 +38,7 @@ export function SettingsView() {
   const update = actions.updateSettings;
 
   const verifyServer = async () => {
-    const base = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
+    const base = API_BASE;
     const rows = selectComputed(getState());
     const fy = fiscalYears(rows)[0];
     const scope = applyFilters(rows, { fy }).filter((row) => row.result).slice(0, 200);

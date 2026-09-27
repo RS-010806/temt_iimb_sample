@@ -8,9 +8,11 @@ import type { ShipmentRecord } from "./records";
 
 /**
  * Optional TEMT account: sign-in, cloud copy of the workspace and report history.
- * The API is served from the site's own origin; local development points NEXT_PUBLIC_API_BASE_URL at the API.
+ * Production builds always call /api on the site's own origin (the host proxies it to the API), which keeps the
+ * session cookie first-party. Only `next dev` uses NEXT_PUBLIC_API_BASE_URL to reach the API on another port.
  */
-const API = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
+export const API_BASE = process.env.NODE_ENV === "development" ? (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "") : "";
+const API = API_BASE;
 
 export interface User { id: string; email: string; name: string; organisation: string; jobTitle: string; createdAt: string }
 export interface Storage { mode: "postgres" | "embedded-local" | "embedded-ephemeral"; persistent: boolean }
