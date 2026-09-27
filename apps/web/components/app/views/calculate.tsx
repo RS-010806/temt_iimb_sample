@@ -12,6 +12,7 @@ import { DIRECTION_LABELS, PAID_BY_LABELS, SCOPE_LABELS, scopeOf, type Direction
 import { actions, getState, useSettings, useStore } from "@/lib/store";
 import { PlaceInput } from "../place-input";
 import { StageBar } from "../charts";
+import { CalculationBasis } from "../basis";
 import { Field, InfoTip, NumberInput, PageHeader, Segmented, Select, Toggle, cx, useToast } from "../../ui";
 
 type CalcMode = "road" | "courier" | "rail" | "air" | "sea" | "iww";
@@ -127,7 +128,6 @@ export function CalculateView() {
   const router = useRouter();
   const [form, setForm] = useState<Form>(() => initialForm(settings.businessUnits[0] ?? "Operations"));
   const [editing, setEditing] = useState<ShipmentRecord | null>(null);
-  const [showTrace, setShowTrace] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const set = (patch: Partial<Form>) => setForm((current) => ({ ...current, ...patch }));
   const tonnes = form.tonnes === undefined ? undefined : form.weightUnit === "kg" ? form.tonnes / 1000 : form.tonnes;
@@ -198,7 +198,7 @@ export function CalculateView() {
 
   return (
     <div>
-      <PageHeader eyebrow={editing ? `Editing ${editing.ref}` : "Calculate"} title={editing ? "Edit shipment" : "Calculate a shipment"} description="Pick a mode, enter the route and cargo. The result updates as you type, with every step traced to its source."
+      <PageHeader eyebrow={editing ? `Editing ${editing.ref}` : "Calculate"} title={editing ? "Edit shipment" : "Calculate a shipment"} description="Pick a mode, enter the route and cargo. The result updates as you type, with its basis traced to published sources."
         actions={<><Link prefetch={false} href="/app/compare/" className="btn btn-secondary"><ArrowLeftRight size={16} aria-hidden="true" /> Compare modes</Link><Link prefetch={false} href="/app/chain/" className="btn btn-secondary"><GitBranch size={16} aria-hidden="true" /> Multimodal chain</Link></>} />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="grid gap-5">
@@ -376,21 +376,9 @@ export function CalculateView() {
                   <span className={cx("badge", result.dataQuality === "primary" ? "badge-ok" : "badge-stone")}>{result.dataQuality === "primary" && <BadgeCheck size={12} aria-hidden="true" />}{result.dataQuality === "primary" ? "Primary data" : result.dataQuality === "modelled" ? "Modelled data" : "Default factors"}</span>
                   {result.legs.some((leg) => leg.uplifts.length) && <span className="badge badge-info">Adjusted</span>}
                 </div>
-                <div className="rounded-lg border border-stone-200 p-3 text-[12.5px]">
-                  <p className="font-semibold text-ink">{result.legs[form.mode === "courier" ? 1 : 0]!.factor.label}</p>
-                  <p className="num mt-1 text-grey-600">WTT {fmt(result.legs[form.mode === "courier" ? 1 : 0]!.factor.wtt, 5)} + TTW {fmt(result.legs[form.mode === "courier" ? 1 : 0]!.factor.ttw, 5)} {result.legs[form.mode === "courier" ? 1 : 0]!.factor.unit}</p>
-                  <p className="mt-1 text-grey-500">{SOURCES[result.legs[form.mode === "courier" ? 1 : 0]!.factor.source].publisher} · {result.legs[form.mode === "courier" ? 1 : 0]!.factor.ref}</p>
-                </div>
-                {result.legs.flatMap((leg) => leg.warnings).map((warning, i) => <p key={i} className="callout callout-warn !py-2.5 text-[12.5px]"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />{warning}</p>)}
-                <div>
-                  <button type="button" className="flex items-center gap-1.5 text-[13px] font-semibold text-maroon-700" onClick={() => setShowTrace(!showTrace)} aria-expanded={showTrace}><ChevronDown size={15} className={cx("transition", showTrace && "rotate-180")} aria-hidden="true" /> How this was calculated</button>
-                  {showTrace && (
-                    <ol className="mt-3 grid gap-3 rounded-lg bg-stone-50 p-3.5 text-[12.5px] leading-relaxed text-grey-700 animate-fade">
-                      {result.legs.map((leg, i) => <li key={i}><p className="font-semibold text-ink">{result.legs.length > 1 ? `Leg ${i + 1} · ` : ""}{leg.factor.label}</p>{leg.trace.map((line, j) => <p key={j}>{line}</p>)}</li>)}
-                      {result.hubs.map((hub, i) => <li key={`h${i}`}><p className="font-semibold text-ink">{hub.label}</p>{hub.trace.map((line, j) => <p key={j}>{line}</p>)}</li>)}
-                    </ol>
-                  )}
-                </div>
+                <p className="text-[12.5px] text-grey-600">{result.legs[form.mode === "courier" ? 1 : 0]!.factor.label} · {SOURCES[result.legs[form.mode === "courier" ? 1 : 0]!.factor.source].publisher}</p>
+                {[...new Set(result.legs.flatMap((leg) => leg.warnings))].map((warning, i) => <p key={i} className="callout callout-warn !py-2.5 text-[12.5px]"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />{warning}</p>)}
+                <CalculationBasis result={result} legMeta={"legMeta" in built ? built.legMeta : undefined} />
               </div>
             )}
             <div className="grid gap-2 border-t border-stone-200 p-4 sm:grid-cols-2">

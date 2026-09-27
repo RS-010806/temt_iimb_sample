@@ -108,6 +108,8 @@
   .btn-dark:hover:not(:disabled) { background: var(--color-maroon-950); }
   .btn-secondary { background: white; border-color: var(--color-stone-300); color: var(--color-ink); }
   .btn-secondary:hover:not(:disabled) { border-color: var(--color-maroon-300); background: var(--color-maroon-50); }
+  .btn-danger { background: white; border-color: #e3b1b0; color: #8f1716; }
+  .btn-danger:hover:not(:disabled) { background: #fbeceb; border-color: #c96c6a; }
   .btn-ghost { background: transparent; color: var(--color-grey-700); }
   .btn-ghost:hover:not(:disabled) { background: var(--color-stone-100); color: var(--color-ink); }
   .btn-light { background: white; color: var(--color-maroon-800); }

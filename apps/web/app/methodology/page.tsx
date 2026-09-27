@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AIR_DISTANCE_ADJUSTMENT_KM, CIRCUITY, ENGINE_V2_VERSION, FACTOR_SETS, FUELS, GLEC_AIR, HUB_TYPES, INDIA_GRID_KG_PER_KWH, RAIL_FACTORS, REEFER_UPLIFT, ROAD_CLASSES, ROAD_FACTORS, SEA_DISTANCE_ADJUSTMENT, SOURCES } from "@temt/calculator";
+import { AIR_DISTANCE_ADJUSTMENT_KM, ENGINE_V2_VERSION, FACTOR_SETS, FUELS, GLEC_AIR, HUB_TYPES, INDIA_GRID_KG_PER_KWH, RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, SOURCES } from "@temt/calculator";
 import { Footer, Header } from "@/components/site-chrome";
 
 export const metadata: Metadata = { title: "Methodology and factors", description: "How TEMT calculates freight emissions: ISO 14083 structure, GLEC Framework v3.2 Indian factors, calculation methods, data quality and GHG Protocol scopes." };
@@ -16,7 +16,7 @@ export default function MethodologyPage() {
           <div className="container-page max-w-4xl">
             <p className="eyebrow eyebrow-light">Methodology · engine {ENGINE_V2_VERSION}</p>
             <h1 className="display mt-3 text-[40px] md:text-[54px]">Know what goes into every number.</h1>
-            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-maroon-100">TEMT follows ISO 14083:2023 and the GLEC Framework v3.2. Every emission is a published factor applied to an explicit input, and every step is shown in the calculation trace.</p>
+            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-maroon-100">TEMT follows ISO 14083:2023 and the GLEC Framework v3.2. Every emission is a published factor applied to an explicit input, and each result states its basis: activity, distance type, factor source and data quality.</p>
           </div>
         </section>
         <article className="container-page prose-temt max-w-4xl py-14">
@@ -24,7 +24,7 @@ export default function MethodologyPage() {
           <ul>
             <li><strong>Transport chains.</strong> A shipment is a sequence of transport operations (legs) and hub operations (terminals, warehouses, cross-docks), as ISO 14083 defines a transport chain element.</li>
             <li><strong>Well-to-wheel.</strong> Every leg is reported as tank-to-wheel (vehicle operation) plus well-to-tank (producing and delivering the energy). Hubs are reported as totals because default values are published that way.</li>
-            <li><strong>Traceable.</strong> Each result carries its factor, source, table reference, uplifts, data-quality label and a step-by-step trace.</li>
+            <li><strong>Traceable.</strong> Each result records its factor source, distance type, method, adjustments and data-quality label, so every figure can be followed back to an input and a published value.</li>
             <li><strong>Versioned.</strong> Factor sets can be switched without changing inputs, so years can be restated and records reconciled.</li>
           </ul>
 
@@ -40,13 +40,13 @@ export default function MethodologyPage() {
             <table className="table"><thead><tr><th>Vehicle class</th><th>Payload</th><th className="right">Load factor</th><th className="right">GLEC diesel</th><th className="right">Production TEMT diesel</th></tr></thead>
               <tbody>{ROAD_CLASSES.map((item) => { const a = ROAD_FACTORS["glec-india"][item.id]?.diesel, b = ROAD_FACTORS["temt-legacy"][item.id]?.diesel; return <tr key={item.id}><td className="font-semibold">{item.label}, {item.gvw} GVW</td><td>{item.payload}</td><td className="right num">{Math.round(item.loadFactor * 100)}%</td><td className="right num">{a ? g(a.wtt + a.ttw) : "–"}</td><td className="right num">{b ? g(b.wtt + b.ttw) : "–"}</td></tr>; })}</tbody></table>
           </div>
-          <p>GLEC v3.2 Table 13 publishes these Indian intensities from TCI–IIMB Supply Chain Sustainability Lab research, including a 5% distance adjustment. Petrol and CNG values exist for some classes. Refrigerated road legs are multiplied by {REEFER_UPLIFT}, the production TEMT uplift.</p>
+          <p>GLEC v3.2 Table 13 publishes these Indian intensities from TCI–IIMB Supply Chain Sustainability Lab research, including a 5% distance adjustment. Petrol and CNG values exist for some classes. Refrigerated road legs carry the production TEMT refrigeration uplift.</p>
 
           <h3>Rail, air, sea, inland waterways and hubs</h3>
           <ul>
             <li><strong>Rail:</strong> Indian average for mixed diesel and electric traction, {g(RAIL_FACTORS["glec-india"].wtt + RAIL_FACTORS["glec-india"].ttw)} g/t-km (GLEC v3.2).</li>
             <li><strong>Air:</strong> short-haul (≤1,500 km) and long-haul, by freighter, belly hold or unknown mix; for example unknown short-haul {g(GLEC_AIR.unknown.short.wtt + GLEC_AIR.unknown.short.ttw)} g/t-km. Distance is the great-circle distance; GLEC values include the +{AIR_DISTANCE_ADJUSTMENT_KM} km routing allowance, which the production set adds explicitly.</li>
-            <li><strong>Sea:</strong> container end-user factors by trade lane (per TEU-km, converted with the chosen cargo per TEU), or IMO-based vessel types and sizes. Non-container values are multiplied by {SEA_DISTANCE_ADJUSTMENT} when the distance is an estimated shortest route.</li>
+            <li><strong>Sea:</strong> container end-user factors by trade lane (per TEU-km, converted with the chosen cargo per TEU), or IMO-based vessel types and sizes. Non-container values include the GLEC distance adjustment when the distance is an estimated route.</li>
             <li><strong>Inland waterways:</strong> GLEC motor vessel, convoy, tanker and container vessel categories, based mainly on European operations.</li>
             <li><strong>Hubs:</strong> GLEC Table 3, for example transshipment {HUB_TYPES.transshipment.ambient} kg CO₂e per tonne, warehouse {HUB_TYPES.warehouse.ambient} kg per tonne and intermodal terminals {HUB_TYPES["container-terminal"].ambient} kg per container.</li>
           </ul>
@@ -55,7 +55,7 @@ export default function MethodologyPage() {
           <p>Fuel-based calculations use GLEC v3.2 Indian fuel factors: diesel {FUELS.diesel.ttw} kg CO₂e per kg tank-to-wheel and {FUELS.diesel.wtw} well-to-wheel (density {FUELS.diesel.density} kg/l), petrol and CNG likewise; marine and aviation fuels follow GLEC Module 1. Electricity uses the Central Electricity Authority CO₂ Baseline Database V21.0 all-India weighted average, {INDIA_GRID_KG_PER_KWH} kg CO₂ per kWh for FY 2024–25, unless you enter your supplier's factor.</p>
 
           <h2>Distances</h2>
-          <p>When you give a city or 6-digit PIN code, TEMT estimates distance from coordinates: road as straight-line distance × {CIRCUITY.road}, rail × {CIRCUITY.rail}, calibrated on Indian corridors. Air uses the great-circle distance between airports. Sea uses the shortest path through a sea-lane network, which routes west-to-east coast voyages around Sri Lanka. Estimates are typically within 10–15%; actual distances from your systems or e-way bills should replace them where available, and the ledger records which basis was used.</p>
+          <p>ISO 14083 asks for the distance type to be stated. Road, rail, waterway and sea legs use the <strong>shortest feasible distance (SFD)</strong>; air legs use the <strong>great-circle distance (GCD)</strong> between airports. When you give a city or 6-digit PIN code, TEMT estimates the SFD with its India network model, calibrated on major corridors, and routes sea legs port to port through a sea-lane network. Estimates are typically within 10–15% on the corridors we checked. Actual distances from your systems or e-way bills replace them where available, and every leg records which type was used.</p>
 
           <h2>Data quality</h2>
           <p>Each leg is labelled <strong>primary</strong> (measured fuel or electricity, or a carrier-specific intensity), <strong>modelled</strong> or <strong>default</strong> (published factor). Reports show the share of emissions on each basis, and the shipment inherits its weakest leg's label.</p>

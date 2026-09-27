@@ -100,7 +100,7 @@ export function Onboarding() {
               <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-maroon-700">Start tour <ArrowRight size={14} aria-hidden="true" /></span>
             </button>
           </div>
-          <p className="flex items-start gap-2 text-xs text-grey-600"><ShieldCheck size={15} className="mt-px shrink-0 text-maroon-600" aria-hidden="true" /> Your workspace is stored privately in this browser. Nothing is uploaded unless you run the optional server check in Settings.</p>
+          <p className="flex items-start gap-2 text-xs text-grey-600"><ShieldCheck size={15} className="mt-px shrink-0 text-maroon-600" aria-hidden="true" /> Your workspace is stored privately in this browser. It is only uploaded if you sign in to sync it or run the server check in Settings.</p>
         </div>
       ) : (
         <div className="grid gap-4">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Calculator, Factory, FileDown, Gauge, Lightbulb, Package, Route, Sparkles, Target, Truck, Upload } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Calculator, Factory, FileDown, Gauge, Lightbulb, Package, Route, Sparkles, Target, Upload } from "lucide-react";
 import { applyFilters, byBusinessUnit, byLane, byMode, byMonth, byQuality, byScope, fyProgress, insights, opportunities, previousPeriod, totals } from "@/lib/analytics";
 import { emissions, emissionsText, fmt, formatDate, pct } from "@/lib/format";
 import { MODE_COLORS } from "@/lib/records";
@@ -12,7 +12,6 @@ import { setView, useView } from "@/lib/view-state";
 import { BarList, MonthlyChart, StageBar } from "../charts";
 import { QuickCalc } from "../quick-calc";
 import { AnimatedNumber, KpiTile, PageHeader, Select, cx, useToast } from "../../ui";
-import { openCopilot } from "../../copilot/copilot";
 import { startTour } from "../../copilot/tour";
 
 export function FilterBar() {
@@ -180,7 +179,6 @@ export function DashboardView() {
                 <li key={item.id} className="flex gap-3"><span className={cx("mt-1.5 h-2 w-2 shrink-0 rounded-full", item.tone === "warn" ? "bg-amber-500" : item.tone === "ok" ? "bg-emerald-600" : item.tone === "info" ? "bg-sky-600" : "bg-maroon-600")} aria-hidden="true" /><div><p className="text-[13.5px] font-semibold">{item.title}</p><p className="text-[13px] text-grey-600">{item.body}</p></div></li>
               ))}
             </ul>
-            <button type="button" className="btn btn-ghost btn-sm mt-3 !px-0 text-maroon-700" onClick={() => openCopilot("Summarise my footprint")}><Sparkles size={14} aria-hidden="true" /> Ask the Copilot for a summary</button>
           </div>
           <div className="card card-pad">
             <h2 className="card-title">Data quality</h2><p className="card-subtitle mb-4">Share of emissions by data basis</p>
@@ -207,7 +205,6 @@ export function DashboardView() {
           </table>
         </div>
       </section>
-      <p className="flex items-center gap-2 text-xs text-grey-500"><Route size={13} aria-hidden="true" /> <Truck size={13} aria-hidden="true" /> Figures follow ISO 14083:2023 and the GLEC Framework v3.2, well-to-wheel.</p>
     </div>
   );
 }

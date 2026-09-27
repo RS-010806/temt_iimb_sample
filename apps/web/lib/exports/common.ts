@@ -35,8 +35,8 @@ export function legCsvRows(model: ReportModel) {
   return model.legs.map((leg) => ({
     shipment_ref: leg.shipmentRef, date: leg.date, fiscal_year: leg.fiscalYear, business_unit: leg.businessUnit, commodity: leg.commodity, direction: leg.direction, paid_by: leg.paidBy,
     leg_no: leg.legNo, route: leg.route, mode: leg.mode, vehicle_or_service: leg.detail, method: leg.method, ghg_scope: leg.scope, data_quality: leg.dataQuality,
-    tonnes: round(leg.tonnes, 3), distance_km: round(leg.distanceKm, 1), tonne_km: round(leg.tonneKm, 1), ttw_kgco2e: round(leg.ttwKg), wtt_kgco2e: round(leg.wttKg), wtw_kgco2e: round(leg.wtwKg), intensity_gco2e_per_tkm: round(leg.intensityG, 2),
-    factor: leg.factor, factor_wtt: leg.factorWtt, factor_ttw: leg.factorTtw, factor_unit: leg.factorUnit, factor_source: leg.source, factor_reference: leg.sourceRef, uplifts: leg.uplifts, warnings: leg.warnings,
+    tonnes: round(leg.tonnes, 3), distance_km: round(leg.distanceKm, 1), distance_type: leg.distanceType, tonne_km: round(leg.tonneKm, 1), ttw_kgco2e: round(leg.ttwKg), wtt_kgco2e: round(leg.wttKg), wtw_kgco2e: round(leg.wtwKg), intensity_gco2e_per_tkm: round(leg.intensityG, 2),
+    factor: leg.factor, factor_wtt: leg.factorWtt, factor_ttw: leg.factorTtw, factor_unit: leg.factorUnit, factor_source: leg.source, factor_reference: leg.sourceRef, adjustments: leg.adjustments, warnings: leg.warnings,
     factor_set: model.factorSet.label, engine_version: model.engineVersion,
   }));
 }

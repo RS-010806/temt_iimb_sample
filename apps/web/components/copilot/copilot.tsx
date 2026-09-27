@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, Check, ChevronDown, CircleAlert, Cpu, Mic, RotateCcw, ShieldCheck, Sparkles, X } from "lucide-react";
+import { ArrowUp, Check, CircleAlert, Cpu, Mic, RotateCcw, ShieldCheck, Sparkles, X } from "lucide-react";
 import { respond, suggestionsFor, type Block, type CopilotAction, type Pending } from "@/lib/copilot/agent";
 import { askLocalModel } from "@/lib/copilot/local-llm";
 import { emissionsText, fmt } from "@/lib/format";
@@ -11,6 +11,7 @@ import { MODE_LABELS, scopeOf, SCOPE_LABELS, type ShipmentRecord } from "@/lib/r
 import { actions, getState, hydrate, selectComputed, useStore } from "@/lib/store";
 import { applyFilters, fiscalYears, totals } from "@/lib/analytics";
 import { StageBar, BarList } from "../app/charts";
+import { CalculationBasis } from "../app/basis";
 import { cx } from "../ui";
 import { startTour } from "./tour";
 
@@ -20,6 +21,12 @@ type OpenListener = (prompt?: string) => void;
 const openListeners = new Set<OpenListener>();
 export function openCopilot(prompt?: string) {
   openListeners.forEach((listener) => listener(prompt));
+}
+
+/** The landing page's live Copilot demo hides the floating launcher while it is on screen, so only one Copilot shows. */
+const launcherListeners = new Set<(hidden: boolean) => void>();
+export function setLauncherHidden(hidden: boolean) {
+  launcherListeners.forEach((listener) => listener(hidden));
 }
 
 interface Message {
@@ -76,7 +83,6 @@ function Markdown({ text }: { text: string }) {
 // ─── Block renderers ───────────────────────────────────────────────────────
 
 function CalcCard({ block }: { block: Extract<Block, { type: "calc" }> }) {
-  const [open, setOpen] = useState(false);
   const { result, record } = block;
   const legs = result.legs;
   return (
@@ -94,15 +100,7 @@ function CalcCard({ block }: { block: Extract<Block, { type: "calc" }> }) {
           <dt className="text-grey-600">GHG scope</dt><dd className="text-right font-semibold">{SCOPE_LABELS[scopeOf(record, legs[0]?.method)].short}</dd>
           <dt className="text-grey-600">Data quality</dt><dd className="text-right font-semibold capitalize">{result.dataQuality}</dd>
         </dl>
-        <button type="button" className="flex items-center gap-1 text-left text-xs font-semibold text-maroon-700" onClick={() => setOpen(!open)} aria-expanded={open}>
-          <ChevronDown size={14} className={cx("transition", open && "rotate-180")} aria-hidden="true" /> How this was calculated
-        </button>
-        {open && (
-          <ol className="grid gap-1.5 rounded-lg bg-stone-50 p-3 text-[12px] leading-relaxed text-grey-700">
-            {legs.map((leg, i) => <li key={i}><p className="font-semibold text-ink">Leg {i + 1} · {MODE_LABELS[leg.mode]}</p>{leg.trace.map((line, j) => <p key={j}>{line}</p>)}{leg.warnings.map((warning, j) => <p key={`w${j}`} className="text-warn">{warning}</p>)}</li>)}
-            {result.hubs.map((hub, i) => <li key={`h${i}`}><p className="font-semibold text-ink">{hub.label}</p>{hub.trace.map((line, j) => <p key={j}>{line}</p>)}</li>)}
-          </ol>
-        )}
+        <CalculationBasis result={result} legMeta={record.legMeta} size="sm" />
         {block.notes.length > 0 && <ul className="grid gap-1 text-[12px] text-grey-600">{block.notes.map((note, i) => <li key={i} className="flex gap-1.5"><span aria-hidden="true">•</span>{note}</li>)}</ul>}
         {block.saved && <p className="flex items-center gap-1.5 text-xs font-semibold text-ok"><Check size={14} aria-hidden="true" /> Saved to shipments as {record.ref}</p>}
       </div>
@@ -268,14 +266,17 @@ export function Copilot() {
 
   const suggestions = messages.length ? messages[messages.length - 1]?.suggestions ?? [] : suggestionsFor(pathname);
   const onApp = pathname.startsWith("/app");
+  const [launcherHidden, setHidden] = useState(false);
+  useEffect(() => { launcherListeners.add(setHidden); return () => { launcherListeners.delete(setHidden); }; }, []);
+  useEffect(() => { setHidden(false); }, [pathname]);
 
   return (
     <>
-      {!open && !onApp && (
+      {!open && !onApp && !launcherHidden && (
         <button type="button" onClick={() => setOpen(true)} data-tour="copilot-launcher" aria-label="Open TEMT Copilot"
           className="group fixed bottom-5 right-5 z-[60] flex items-center gap-2 rounded-full bg-gradient-to-br from-maroon-600 to-maroon-800 py-3 pl-3.5 pr-4 text-white shadow-[var(--shadow-float)] transition hover:-translate-y-0.5 hover:shadow-2xl">
           <span className="relative grid h-7 w-7 place-items-center rounded-full bg-white/15"><Sparkles size={16} aria-hidden="true" /><span className="absolute inset-0 animate-ping rounded-full bg-white/20 [animation-duration:2.6s]" /></span>
-          <span className="text-sm font-semibold">{onApp ? "Ask Copilot" : "Ask TEMT"}</span>
+          <span className="text-sm font-semibold">Ask TEMT</span>
         </button>
       )}
       {open && (

@@ -138,8 +138,7 @@ export function estimateDistance(mode: TransportMode, from?: Place, to?: Place):
   const method: DistanceMethod = mode === "rail" ? "rail-estimate" : mode === "iww" ? "iww-estimate" : "road-estimate";
   const approx = from.approximate || to.approximate ? " One location is a district-level PIN estimate." : "";
   const path = landPathKm(from, to);
-  const corridor = path > gcd + 1 ? " via the Siliguri corridor" : "";
-  return { km: Math.max(1, path * circuity), method, note: `Estimated ${mode === "road" ? "road" : mode === "rail" ? "rail" : "waterway"} distance: ${Math.round(path).toLocaleString("en-IN")} km straight line${corridor} × ${circuity} network factor.${approx} Replace with the actual distance when you have it.` };
+  return { km: Math.max(1, path * circuity), method, note: `Estimated shortest feasible ${mode === "road" ? "road" : mode === "rail" ? "rail" : "waterway"} distance.${approx} Replace it with the actual distance when you have it.` };
 }
 
 /** Nearest airport for freight: a major (large or medium) airport is preferred when it is within 60 km of the closest one. */

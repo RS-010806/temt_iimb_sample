@@ -23,7 +23,7 @@ export const TOUR: Step[] = [
   { path: "/app/compare/", target: "compare-form", title: "Compare modes door to door", body: "Road, rail with drayage, air via the nearest airports and coastal shipping via the nearest ports, ranked by emissions." },
   { path: "/app/chain/", target: "chain-canvas", title: "Build multimodal chains", body: "Combine legs and hubs exactly as ISO 14083 defines a transport chain. Start from a template such as rail intermodal or export via port." },
   { path: "/app/import/", target: "import-drop", title: "Bring your data in bulk", body: "Upload CSV or Excel, production TEMT bulk templates or e-way bill JSON. Every row is validated before anything is saved." },
-  { path: "/app/shipments/", target: "ledger", title: "Your shipment ledger", body: "Search, filter, edit, duplicate or delete. Select any row to see its full calculation trace." },
+  { path: "/app/shipments/", target: "ledger", title: "Your shipment ledger", body: "Search, filter, edit, duplicate or delete. Select any row to see its calculation basis." },
   { path: "/app/reports/", target: "export-panel", title: "Reports in every format", body: "PDF, Excel, Word, CSV, JSON and a Power BI pack, each stating the factor set, methodology, data quality and BRSR mapping." },
   { path: "/app/planner/", target: "levers", title: "Plan reductions against a target", body: "Adjust levers such as rail shift, electric trucks and load factor, and watch the waterfall update against your target." },
   { path: "/app/", target: "copilot-button", title: "Ask the Copilot anything", body: "Type or speak: “20 t Pune to Delhi by 32 ft truck”, “compare modes”, “export Excel”. It runs in your browser and can restart this tour any time." },

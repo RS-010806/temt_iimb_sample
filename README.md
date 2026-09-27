@@ -21,8 +21,9 @@ A working freight-emissions product for India's listed companies, rebuilt for th
 | Factor library | GLEC Framework v3.2 India defaults and the production TEMT factor set, with sources; switch and restate in one click. |
 | Copilot | Plain-English and voice assistant in the browser: calculates, compares, saves, analyses, runs what-ifs, exports and explains. Optional local model via Ollama or LM Studio. |
 | Guided tour | A 14-step in-product walkthrough on sample data. |
+| Account (optional) | Sign in to sync the workspace across devices, keep a report history, manage sessions, and download or delete your data. |
 
-Workspaces are stored privately in the browser (IndexedDB). Nothing is uploaded unless the user runs the optional server check in Settings. Sample workspaces for four sectors are synthetic and labelled as such everywhere, including on exported reports.
+Workspaces are stored in the browser (IndexedDB) and work without an account. Signing in keeps a synced copy on the server (Postgres), with scrypt-hashed passwords, HttpOnly session cookies, CSRF checks, parameterised SQL and sign-in lockout. Sample workspaces for four sectors are synthetic and labelled as such everywhere, including on exported reports.
 
 Production TEMT was the first digital platform in India certified to ISO 14083 and holds ISO/IEC 27001:2022. Those certifications apply to the production platform and its stated scope; this rebuild follows the same method.
 
@@ -54,14 +55,14 @@ npm run build   # calculator, API and static web build
 | --- | --- |
 | `packages/calculator` | Shared TypeScript engine: factor library, ISO 14083 leg and hub calculations, distance estimation, sea-lane routing, Zod schemas |
 | `apps/web` | Next.js static export with React 19, Tailwind CSS v4, Recharts, the Copilot and all exports |
-| `apps/api` | Express API using the same engine: `GET /api/health`, `GET /api/v2/factors`, `POST /api/v2/calculate` (up to 1,000 shipments), plus the earlier `/api/factors` and `/api/analyze` |
+| `apps/api` | Express API using the same engine: calculation (`/api/v2/factors`, `/api/v2/calculate`), accounts and sessions (`/api/auth/*`, `/api/account/*`), workspace sync (`/api/workspace`) and report history (`/api/reports`). Postgres via `DATABASE_URL`, or embedded PGlite locally |
 | `video` | Remotion project and Playwright scripts for the product tour and end-to-end checks |
 
-Each calculated leg records its factor, source, method, uplifts and data-quality level, so every number in a report traces back to an input and a published factor.
+Each calculated leg records what ISO 14083 asks a report to state: transport activity, distance type (SFD or GCD), method, emission intensity, factor source and data type, so every number in a report traces back to an input and a published factor.
 
 ## Deployment
 
-[render.yaml](render.yaml) deploys the static site to Render's CDN and the API as a Node service. Both build from the repository root after GitHub Actions passes (source integrity check, type checks, tests and both builds). See the [deployment guide](docs/deployment.md).
+[vercel.json](vercel.json) serves the static site and the API (as one serverless function) from a single origin, with security headers and a Content-Security-Policy. A free Neon Postgres database keeps accounts. [render.yaml](render.yaml) provides the same setup on Render. See the [deployment guide](docs/deployment.md).
 
 ## Sources
 

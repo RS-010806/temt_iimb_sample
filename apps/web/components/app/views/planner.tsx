@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Info, RotateCcw, Sparkles, Target } from "lucide-react";
+import { Info, RotateCcw, Target } from "lucide-react";
 import { INDIA_GRID_KG_PER_KWH } from "@temt/calculator";
 import { applyFilters, totals } from "@/lib/analytics";
 import { emissionsText, fmt, pct } from "@/lib/format";
@@ -11,7 +11,6 @@ import { actions, useSettings } from "@/lib/store";
 import { useView } from "@/lib/view-state";
 import { Waterfall } from "../charts";
 import { EmptyState, KpiTile, PageHeader, Segmented, Select, cx } from "../../ui";
-import { openCopilot } from "../../copilot/copilot";
 
 function Slider({ label, value, onChange, min, max, step = 1, unit = "%", hint }: { label: string; value: number; onChange: (value: number) => void; min: number; max: number; step?: number; unit?: string; hint?: string }) {
   return (
@@ -93,7 +92,6 @@ export function PlannerView() {
             <div className="table-wrap"><table className="table"><thead><tr><th>Lever</th><th className="right">Legs</th><th className="right">Change</th><th className="right">Share of baseline</th></tr></thead>
               <tbody>{scenario.steps.map((step) => <tr key={step.id}><td className="font-semibold">{step.label}</td><td className="right num">{fmt(step.legs)}</td><td className={cx("right num font-bold", step.deltaKg < 0 ? "text-ok" : step.deltaKg > 0 ? "text-maroon-700" : "")}>{step.deltaKg > 0 ? "+" : ""}{emissionsText(step.deltaKg)}</td><td className="right num">{scenario.baselineKg ? pct((step.deltaKg / scenario.baselineKg) * 100) : "–"}</td></tr>)}</tbody></table></div>
             <ul className="mt-4 grid gap-2">{scenario.notes.map((note) => <li key={note} className="flex gap-2 text-[13px] leading-relaxed text-grey-700"><Info size={15} className="mt-0.5 shrink-0 text-maroon-600" aria-hidden="true" />{note}</li>)}</ul>
-            <button type="button" className="btn btn-ghost btn-sm mt-3 !px-0 text-maroon-700" onClick={() => openCopilot("Do electric trucks help in India?")}><Sparkles size={14} aria-hidden="true" /> Ask the Copilot about electric trucks in India</button>
           </section>
         </div>
       </div>

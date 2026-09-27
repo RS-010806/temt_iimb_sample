@@ -14,6 +14,13 @@ export interface LegMeta {
   carrier?: string;
 }
 
+/** ISO 14083 asks reports to state the distance type used: shortest feasible (SFD) or great-circle (GCD). */
+export function distanceType(method: DistanceMethod | undefined, mode: TransportMode): string {
+  if (method === "user") return "Actual (supplied)";
+  if (method === "great-circle" || method === "air-gcd-95" || (!method && mode === "air")) return "GCD";
+  return "SFD (estimated)";
+}
+
 export interface ShipmentRecord {
   id: string;
   ref: string;

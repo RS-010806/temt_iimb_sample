@@ -161,14 +161,16 @@ async function workspace(browser: Browser) {
     for (const heading of ["Monthly emissions", "By transport mode", "Heaviest lanes", "Reduction opportunities", "Data quality", "Recent shipments"]) await page.getByRole("heading", { name: heading }).waitFor();
   });
 
-  await step(page, "Calculator: road by city and PIN code, trace, save", async () => {
+  await step(page, "Calculator: road by city and PIN code, calculation basis, save", async () => {
     await page.goto(`${BASE}/app/calculate/`, { waitUntil: "networkidle" });
     await choosePlace(page, page.locator("#origin"), "Bangalore");
     await choosePlace(page, page.locator("#destination"), "400001");
     await page.locator("#tonnes").fill("18");
     await page.getByText("Well-to-wheel emissions").waitFor();
-    await page.getByRole("button", { name: "How this was calculated" }).click();
-    await page.getByText(/^Activity:/).first().waitFor();
+    await page.getByRole("button", { name: "Calculation basis" }).click();
+    await page.getByText("Distance type").first().waitFor();
+    const basis = await page.locator('[data-tour="result"]').innerText();
+    if (/×\s*1\.2|straight line|circuity/i.test(basis)) throw new Error("Calculation basis exposes internal modelling parameters");
     await shot(page, "calculator-road");
     const headline = await page.locator('[data-tour="result"] .num').first().innerText();
     await page.getByRole("button", { name: "Save to shipments" }).click();
@@ -258,12 +260,12 @@ async function workspace(browser: Browser) {
     return `${first} → ${second}`;
   });
 
-  await step(page, "Ledger: search, detail trace, duplicate, delete and undo", async () => {
+  await step(page, "Ledger: search, calculation basis, duplicate, delete and undo", async () => {
     await page.goto(`${BASE}/app/shipments/`, { waitUntil: "networkidle" });
     await page.getByLabel("Financial year").selectOption("all");
     await page.getByLabel("Search shipments").fill("LR-2026-1001");
     await page.getByRole("cell", { name: "LR-2026-1001", exact: true }).first().click();
-    await page.getByText("Legs and calculation trace").waitFor();
+    await page.getByText("Factor source").first().waitFor();
     await shot(page, "ledger-drawer");
     await page.getByRole("button", { name: "Duplicate" }).click();
     await toast(/Duplicated/);
@@ -401,6 +403,103 @@ async function mobile(browser: Browser) {
   await context.close();
 }
 
+async function accounts(browser: Browser) {
+  const email = `e2e-${Date.now()}@example.com`;
+  const password = "freight emissions 2026";
+  const deviceA = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+  const deviceB = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const a = await deviceA.newPage();
+  const b = await deviceB.newPage();
+  watch(a, "account-a");
+  watch(b, "account-b");
+  const shipmentsCount = async (page: Page) => Number((await page.locator('a[href="/app/shipments/"] .num').first().innerText().catch(() => "0")).replace(/\D/g, "") || 0);
+  const dismissOnboarding = async (page: Page) => { const dialog = page.getByRole("dialog", { name: "Welcome to TEMT" }); if (await dialog.isVisible().catch(() => false)) await dialog.getByRole("button", { name: "Close dialog" }).click(); };
+
+  await step(a, "Account: create an account; the sample workspace syncs and matches the server", async () => {
+    await a.goto(`${BASE}/app/`, { waitUntil: "networkidle" });
+    await a.getByRole("dialog").getByRole("button", { name: "Automotive" }).click();
+    await a.getByText("Total emissions, well-to-wheel").waitFor();
+    await a.getByRole("link", { name: "Sign in" }).click();
+    await a.getByRole("heading", { name: "Sign in to TEMT" }).waitFor();
+    await shot(a, "account-sign-in");
+    await a.getByRole("group", { name: "Account" }).getByRole("button", { name: "Create account" }).click();
+    await a.getByLabel("Your name").fill("Asha Rao");
+    await a.getByLabel("Organisation").fill("Sample Automotive Ltd");
+    await a.getByLabel("Work email").fill(email);
+    await a.getByLabel("Password", { exact: true }).fill(password);
+    await a.locator('form button[type="submit"]').click();
+    await a.getByRole("heading", { name: "Asha Rao" }).waitFor();
+    await a.getByText("Matches this browser").waitFor({ timeout: 20000 });
+    await shot(a, "account-signed-in", true);
+    return `${await shipmentsCount(a)} shipments synced`;
+  });
+
+  await step(a, "Account: exported reports are recorded in the report history", async () => {
+    await a.goto(`${BASE}/app/reports/`, { waitUntil: "networkidle" });
+    await download(a, () => a.getByRole("button", { name: /CSV/ }).first().click());
+    await a.goto(`${BASE}/app/account/`, { waitUntil: "networkidle" });
+    await a.getByRole("cell", { name: /CSV/ }).first().waitFor({ timeout: 10000 });
+  });
+
+  await step(b, "Account: signing in on a second device brings the workspace across", async () => {
+    await b.goto(`${BASE}/app/account/`, { waitUntil: "networkidle" });
+    await dismissOnboarding(b);
+    await b.getByLabel("Work email").fill(email);
+    await b.getByLabel("Password", { exact: true }).fill("wrong password here");
+    await b.locator('form button[type="submit"]').click();
+    await b.getByText("Email or password is incorrect.").waitFor();
+    await b.getByLabel("Password", { exact: true }).fill(password);
+    await b.locator('form button[type="submit"]').click();
+    await b.getByText("Matches this browser").waitFor({ timeout: 20000 });
+    const countA = await shipmentsCount(a), countB = await shipmentsCount(b);
+    if (!countB || countA !== countB) throw new Error(`Device B has ${countB} shipments, device A ${countA}`);
+    return `${countB} shipments on the second device`;
+  });
+
+  await step(a, "Account: edits sync; a conflicting edit asks which copy to keep", async () => {
+    // Device A signs out and edits offline; device B deletes a shipment and syncs.
+    await a.getByRole("button", { name: "Sign out" }).first().click();
+    await a.getByRole("dialog").getByRole("button", { name: "Sign out" }).click();
+    await a.getByRole("heading", { name: "Sign in to TEMT" }).waitFor();
+    await b.goto(`${BASE}/app/shipments/`, { waitUntil: "networkidle" });
+    await b.getByLabel("Financial year").selectOption("all");
+    await b.locator("tbody tr").first().click();
+    await b.getByRole("button", { name: "Delete" }).click();
+    await b.getByRole("button", { name: /^Account: .*Synced/ }).waitFor({ timeout: 15000 });
+    await b.waitForTimeout(500);
+    await a.goto(`${BASE}/app/calculate/`, { waitUntil: "networkidle" });
+    await choosePlace(a, a.locator("#origin"), "Pune");
+    await choosePlace(a, a.locator("#destination"), "Chennai");
+    await a.locator("#tonnes").fill("9");
+    await a.getByText("Well-to-wheel emissions").waitFor();
+    await a.getByRole("button", { name: "Save to shipments" }).click();
+    await a.getByText(/^Saved /).first().waitFor({ timeout: 10000 });
+    // Navigate immediately: the save must survive a reload that starts within the batching delay.
+    await a.goto(`${BASE}/app/account/`, { waitUntil: "networkidle" });
+    await a.getByLabel("Work email").fill(email);
+    await a.getByLabel("Password", { exact: true }).fill(password);
+    await a.locator('form button[type="submit"]').click();
+    await a.getByRole("dialog", { name: "Your account has a different copy of this workspace" }).waitFor({ timeout: 20000 });
+    await shot(a, "account-conflict");
+    await a.getByRole("button", { name: /Combine both/ }).click();
+    await a.getByText("Matches this browser").waitFor({ timeout: 20000 });
+    return `merged to ${await shipmentsCount(a)} shipments`;
+  });
+
+  await step(b, "Account: sessions list, sign out other devices, change password", async () => {
+    await b.goto(`${BASE}/app/account/`, { waitUntil: "networkidle" });
+    await b.getByText("This browser").first().waitFor();
+    await b.getByRole("button", { name: "Sign out other sessions" }).click();
+    await b.getByText(/Signed out \d+ other session/).waitFor();
+    await a.reload({ waitUntil: "networkidle" });
+    await a.getByRole("heading", { name: "Sign in to TEMT" }).waitFor({ timeout: 15000 });
+    await shot(b, "account-security", true);
+  });
+
+  await deviceA.close();
+  await deviceB.close();
+}
+
 async function main() {
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(join(OUT, "downloads"), { recursive: true });
@@ -410,6 +509,7 @@ async function main() {
   if (!only || only === "landing") await landing(browser);
   if (!only || only === "app") await workspace(browser);
   if (!only || only === "mobile") await mobile(browser);
+  if (!only || only === "accounts") await accounts(browser);
   await browser.close();
   const failed = results.filter((result) => !result.ok);
   writeFileSync(join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), passed: results.length - failed.length, failed: failed.length, results, consoleErrors }, null, 2));

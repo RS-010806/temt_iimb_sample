@@ -50,7 +50,7 @@ function emit() {
   for (const listener of listeners) listener();
 }
 
-function subscribe(listener: () => void) {
+export function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
@@ -115,6 +115,10 @@ function lsSet(key: string, value: unknown) {
   }
 }
 
+function lsRemove(key: string) {
+  try { localStorage.removeItem(LS_PREFIX + key); } catch { /* storage blocked */ }
+}
+
 let hydrating: Promise<void> | undefined;
 export function hydrate() {
   if (typeof window === "undefined") return Promise.resolve();
@@ -131,6 +135,9 @@ export function hydrate() {
       settings = lsGet("settings");
       activity = lsGet("activity");
     }
+    // A journal means the last session closed before its final save finished: it holds the newest state.
+    const journal = lsGet<{ shipments: ShipmentRecord[]; settings: Settings; activity: ActivityEntry[] }>("journal");
+    if (journal && Array.isArray(journal.shipments)) ({ shipments, settings, activity } = journal);
     state = {
       hydrated: true,
       storage,
@@ -139,29 +146,51 @@ export function hydrate() {
       activity: Array.isArray(activity) ? activity : [],
     };
     emit();
+    if (journal) void save();
   })();
   return hydrating;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
+let pendingSave = false;
+let flushRegistered = false;
 function persist() {
   if (typeof window === "undefined" || !state.hydrated) return;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    const snapshot = state;
-    if (snapshot.storage === "indexeddb") {
-      try {
-        await Promise.all([idbSet("shipments", snapshot.shipments), idbSet("settings", snapshot.settings), idbSet("activity", snapshot.activity)]);
-        return;
-      } catch {
-        state = { ...state, storage: "localstorage" };
-        emit();
-      }
+  pendingSave = true;
+  // Save straight away if the tab is hidden, reloaded or closed before the short batching delay ends.
+  if (!flushRegistered) {
+    flushRegistered = true;
+    const flush = () => {
+      if (!pendingSave) return;
+      clearTimeout(saveTimer);
+      // IndexedDB writes can be cut off while a page unloads; a synchronous journal survives and is replayed on load.
+      lsSet("journal", { shipments: state.shipments, settings: state.settings, activity: state.activity });
+      void save();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+  }
+  saveTimer = setTimeout(() => void save(), 250);
+}
+
+async function save() {
+  pendingSave = false;
+  const snapshot = state;
+  if (snapshot.storage === "indexeddb") {
+    try {
+      await Promise.all([idbSet("shipments", snapshot.shipments), idbSet("settings", snapshot.settings), idbSet("activity", snapshot.activity)]);
+      if (!pendingSave) lsRemove("journal");
+      return;
+    } catch {
+      state = { ...state, storage: "localstorage" };
+      emit();
     }
-    lsSet("shipments", snapshot.shipments);
-    lsSet("settings", snapshot.settings);
-    lsSet("activity", snapshot.activity);
-  }, 250);
+  }
+  lsSet("shipments", snapshot.shipments);
+  lsSet("settings", snapshot.settings);
+  lsSet("activity", snapshot.activity);
+  if (!pendingSave) lsRemove("journal");
 }
 
 function set(patch: Partial<State>, log?: { action: string; detail: string }) {
@@ -226,6 +255,22 @@ export function useComputed() {
 
 export function useSettings() {
   return useStore((current) => current.settings);
+}
+
+// ─── Account sync ──────────────────────────────────────────────────────────
+
+/** The part of the workspace that syncs to a signed-in account. */
+export function workspaceSnapshot() {
+  return { settings: state.settings, shipments: state.shipments };
+}
+
+/** Replace this browser's workspace with the copy from the account. */
+export function applyRemoteWorkspace(data: { settings?: Partial<Settings>; shipments?: unknown }, detail: string) {
+  const shipments = (Array.isArray(data.shipments) ? data.shipments : []).filter((item): item is ShipmentRecord => !!item && typeof item === "object" && "id" in item && "input" in item && "origin" in item);
+  const remote = data.settings ?? {};
+  const settings: Settings = { ...DEFAULT_SETTINGS, ...remote, organisation: { ...DEFAULT_SETTINGS.organisation, ...remote.organisation }, target: { ...DEFAULT_SETTINGS.target, ...remote.target }, copilot: { ...DEFAULT_SETTINGS.copilot, ...remote.copilot } };
+  set({ shipments, settings }, { action: "Synced from account", detail });
+  return shipments.length;
 }
 
 // ─── Backup and restore ────────────────────────────────────────────────────

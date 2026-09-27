@@ -4,6 +4,8 @@ import cors from "cors";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
+import { dbOptionsFromEnv, openDb, type Db, type DbOptions } from "./db.js";
+import { createPortal } from "./portal.js";
 import {
   analyze, AnalysisInputError, calculateShipment, ENGINE_V2_VERSION, ENGINE_VERSION, FACTOR_SETS, FACTORS, FUELS, GLEC_AIR, HUB_TYPES, IWW_VESSELS, MAX_LEGS,
   RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, shipmentInputSchema, SOURCES, TEMT_AIR, TRADE_LANES, VESSELS,
@@ -16,6 +18,8 @@ export interface AppOptions {
   rateLimitWindowMs?: number;
   /** Number of reverse proxies controlled by the hosting platform. Defaults to zero. */
   trustProxyHops?: number;
+  /** Account storage. Defaults to DATABASE_URL, else an embedded database (see db.ts). */
+  db?: DbOptions;
 }
 
 export function parseAllowedOrigins(value: string | undefined): string[] {
@@ -42,9 +46,14 @@ const requireJson: express.RequestHandler = (req, res, next) => {
   next();
 };
 
-/** Stateless service. Request bodies are never persisted or logged. */
+/**
+ * Calculation endpoints are stateless. Account endpoints store only what a signed-in user syncs.
+ * Request bodies are never logged.
+ */
 export function createApp(options: AppOptions = {}) {
   const app = express();
+  let dbPromise: Promise<Db> | undefined;
+  const getDb = () => (dbPromise ??= openDb(options.db ?? dbOptionsFromEnv()).catch((error: unknown) => { dbPromise = undefined; throw error; }));
   const allowedOrigins = new Set(options.allowedOrigins === undefined
     ? parseAllowedOrigins(process.env.ALLOWED_ORIGINS)
     : parseAllowedOrigins(options.allowedOrigins.join(",")));
@@ -54,7 +63,9 @@ export function createApp(options: AppOptions = {}) {
   app.use((req, res, next) => {
     res.setHeader("Cache-Control", "no-store");
     const origin = req.get("origin");
-    if (origin !== undefined && !allowedOrigins.has(origin)) {
+    // Same-origin requests (the web app and API served from one host, as on Vercel) are always allowed.
+    const sameOrigin = origin !== undefined && (() => { try { return new URL(origin).host === req.get("host"); } catch { return false; } })();
+    if (origin !== undefined && !sameOrigin && !allowedOrigins.has(origin)) {
       res.status(403).json({ error: { code: "origin_not_allowed", message: "This origin is not allowed." } });
       return;
     }
@@ -62,19 +73,22 @@ export function createApp(options: AppOptions = {}) {
   });
   app.use(cors({
     origin(origin, callback) { callback(null, origin === undefined || allowedOrigins.has(origin)); },
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type"],
-    credentials: false,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "X-TEMT-Client", "X-TEMT-Base-Version"],
+    // Only the exact origins in ALLOWED_ORIGINS (for example the local web app) may send the session cookie.
+    credentials: true,
     maxAge: 600,
   }));
 
-  app.get(["/health", "/api/health"], (_req, res) => {
-    res.json({ status: "ok", engineVersion: ENGINE_VERSION, persistence: "none" });
+  app.get(["/health", "/api/health"], async (_req, res) => {
+    const db = await getDb().catch(() => undefined);
+    res.json({ status: "ok", engineVersion: ENGINE_V2_VERSION, accounts: db ? { storage: db.mode, persistent: db.persistent } : { storage: "unavailable", persistent: false } });
   });
 
   app.use("/api", rateLimit({
     windowMs: options.rateLimitWindowMs ?? 60_000,
-    limit: options.rateLimitMax ?? 60,
+    // Generous per-IP ceiling: many employees can share one office IP. Sign-in has its own stricter limits.
+    limit: options.rateLimitMax ?? 600,
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: { error: { code: "rate_limit_exceeded", message: "Too many requests. Please try again shortly." } },
@@ -113,7 +127,9 @@ export function createApp(options: AppOptions = {}) {
       const input = shipmentInputSchema.safeParse(raw);
       if (!input.success) return { id, error: input.error.issues.map((issue) => `${issue.path.join(".") || "shipment"}: ${issue.message}`).join(" ") };
       try {
-        const result = calculateShipment(input.data, factorSet);
+        const full = calculateShipment(input.data, factorSet);
+        // Publish results and their basis (factor, source, data type), not the engine's internal working.
+        const result = { ...full, legs: full.legs.map(({ trace: _trace, ...leg }) => leg), hubs: full.hubs.map(({ trace: _trace, ...hub }) => hub) };
         totals.wtwKg += result.wtwKg; totals.ttwKg += result.ttwKg; totals.wttKg += result.wttKg; totals.hubKg += result.hubKg; totals.tonneKm += result.tonneKm; totals.shipments += 1;
         return { id, result };
       } catch (error) {
@@ -122,6 +138,8 @@ export function createApp(options: AppOptions = {}) {
     });
     res.json({ engineVersion: ENGINE_V2_VERSION, factorSet, totals, results, calculatedAt: new Date().toISOString() });
   });
+
+  app.use("/api", createPortal(getDb));
 
   app.use((_req, res) => {
     res.status(404).json({ error: { code: "not_found", message: "Endpoint not found." } });
@@ -149,7 +167,7 @@ export function createApp(options: AppOptions = {}) {
       res.status(400).json({ error: { code: "invalid_request", message: "The request could not be read." } });
       return;
     }
-    res.status(500).json({ error: { code: "internal_error", message: "The analysis could not be completed. Please try again." } });
+    res.status(500).json({ error: { code: "internal_error", message: "The request could not be completed. Please try again." } });
   };
   app.use(errorHandler);
   return app;

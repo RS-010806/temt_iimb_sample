@@ -11,7 +11,7 @@ describe("stateless API contract", () => {
   it("serves health and documented factors", async () => {
     for (const route of ["/health", "/api/health"]) {
       const response = await request(app()).get(route).expect(200);
-      expect(response.body).toMatchObject({ status: "ok", persistence: "none" });
+      expect(response.body).toMatchObject({ status: "ok", accounts: { storage: "embedded-ephemeral", persistent: false } });
       expect(response.headers["cache-control"]).toBe("no-store");
       expect(response.headers["x-powered-by"]).toBeUndefined();
       expect(response.headers["x-content-type-options"]).toBe("nosniff");
@@ -85,7 +85,8 @@ describe("CORS and request limits", () => {
   it("allows an exact origin and permits its JSON preflight", async () => {
     const response = await request(app()).post("/api/analyze").set("Origin", origin).send({ rows: [] }).expect(200);
     expect(response.headers["access-control-allow-origin"]).toBe(origin);
-    expect(response.headers["access-control-allow-credentials"]).toBeUndefined();
+    // Credentials are allowed only for exact, configured origins (the web app in local development).
+    expect(response.headers["access-control-allow-credentials"]).toBe("true");
     const preflight = await request(app()).options("/api/analyze").set("Origin", origin)
       .set("Access-Control-Request-Method", "POST").set("Access-Control-Request-Headers", "Content-Type").expect(204);
     expect(preflight.headers["access-control-allow-origin"]).toBe(origin);

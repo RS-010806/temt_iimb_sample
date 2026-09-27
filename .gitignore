@@ -17,3 +17,7 @@ artifacts/screenshots/revision/
 .agentbridge/
 __pycache__/
 .claude/
+# iCloud Drive conflict copies (e.g. "engine 2.ts")
+* [0-9].*
+* [0-9]
+.data/

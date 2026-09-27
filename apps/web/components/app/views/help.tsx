@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { BookOpen, Calculator, ChevronDown, Compass, FileText, Mail, PlayCircle, Search, Sparkles, Upload } from "lucide-react";
+import { BookOpen, Calculator, ChevronDown, Compass, FileText, Mail, PlayCircle, Search, Upload } from "lucide-react";
 import { ARTICLES, searchKnowledge, type Article } from "@/lib/copilot/knowledge";
 import { PageHeader, cx } from "../../ui";
-import { openCopilot } from "../../copilot/copilot";
 import { startTour } from "../../copilot/tour";
 
 function Body({ text }: { text: string }) {
@@ -48,7 +47,6 @@ export function HelpView() {
           <p className="mt-3 max-w-lg text-[15px] text-maroon-100">Fourteen steps across the overview, calculator, comparisons, chains, import, reports and planner, with sample data loaded if your workspace is empty.</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="button" className="btn btn-light" onClick={() => startTour()}><Compass size={17} aria-hidden="true" /> Start the tour</button>
-            <button type="button" className="btn btn-outline-light" onClick={() => openCopilot()}><Sparkles size={17} aria-hidden="true" /> Ask the Copilot</button>
             <Link prefetch={false} href="/tour/" className="btn btn-outline-light"><PlayCircle size={17} aria-hidden="true" /> Watch the video</Link>
           </div>
         </div>

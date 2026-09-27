@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { respond, type Block, type CopilotAction } from "@/lib/copilot/agent";
 import type { ShipmentRecord } from "@/lib/records";
 import { actions } from "@/lib/store";
-import { BlockView, openCopilot } from "../copilot/copilot";
+import { BlockView, openCopilot, setLauncherHidden } from "../copilot/copilot";
 import { ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Braces, Calculator, Check, ChevronDown, Database, FileArchive, FileSpreadsheet, FileText, FileType2, GitBranch, Landmark, Layers, Lock, PlayCircle, Route, ScrollText, Sheet, ShieldCheck, Sparkles, Target, Upload, X } from "lucide-react";
 import { AnimatedNumber, Reveal, cx, useInView } from "../ui";
 
@@ -96,7 +96,7 @@ export function ProductModules() {
   return (
     <section id="product" className="scroll-mt-24 bg-white py-20 md:py-28">
       <div className="container-page">
-        <SectionHeading eyebrow="The product" title="Everything from one shipment to a board report." body="One workspace for sustainability, logistics and finance teams. Nothing to install, no account needed to start, and your data stays in your browser." />
+        <SectionHeading eyebrow="The product" title="Everything from one shipment to a board report." body="One workspace for sustainability, logistics and finance teams. Nothing to install and no account needed to start: your data stays in your browser, with optional secure sync when you sign in." />
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MODULES.map((item, index) => {
             const Icon = item.icon;
@@ -166,6 +166,14 @@ export function CopilotShowcase() {
   const counter = useRef(0);
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => { scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" }); }, [messages, typing, busy]);
+  // Only one Copilot on screen: hide the floating launcher while this live demo is visible.
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => setLauncherHidden(!!entry?.isIntersecting), { threshold: 0.15 });
+    observer.observe(node);
+    return () => { observer.disconnect(); setLauncherHidden(false); };
+  }, [ref]);
 
   const ask = useCallback(async (prompt: string) => {
     setMessages((list) => [...list, { id: ++counter.current, role: "user", text: prompt }]);
@@ -209,7 +217,7 @@ export function CopilotShowcase() {
         <div>
           <SectionHeading eyebrow="TEMT Copilot" title={<>An assistant that <span className="italic text-maroon-700">does the work</span>, not just the talking.</>} body="Ask in plain English, or speak. The Copilot calculates, compares, saves shipments, finds reductions, runs what-ifs, exports reports and explains every term, using the same engine as the rest of TEMT." />
           <ul className="mt-8 grid gap-3 text-[15px]">
-            {["Runs entirely in your browser: shipment data never leaves your device", "Understands Indian freight language: 32 ft, MXL, PIN codes, quintals, FY 2025–26", "Remembers context: “compare that with rail” refers to your last shipment", "Multi-step: “load sample data, then export a PDF” runs as a plan", "Optional local AI model (Ollama or LM Studio) for open conversation; numbers always come from the TEMT engine"].map((line) => (
+            {["Runs entirely in your browser: your questions and shipments are never sent to an AI service", "Understands Indian freight language: 32 ft, MXL, PIN codes, quintals, FY 2025–26", "Remembers context: “compare that with rail” refers to your last shipment", "Multi-step: “load sample data, then export a PDF” runs as a plan", "Optional local AI model (Ollama or LM Studio) for open conversation; numbers always come from the TEMT engine"].map((line) => (
               <li key={line} className="flex gap-3"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-maroon-600 text-white"><Check size={12} aria-hidden="true" /></span>{line}</li>
             ))}
           </ul>
@@ -352,7 +360,7 @@ export function ComparisonTeaser() {
 
 const FAQ = [
   { q: "Is TEMT free to use?", a: "Yes. Open the workspace and start calculating; no account is needed. For enterprise onboarding on the production platform, contact the TCI–IIMB Supply Chain Sustainability Lab." },
-  { q: "Where is my data stored?", a: "In your own browser (IndexedDB). Nothing is uploaded unless you choose the server check or export a file. Download a backup to move your workspace to another device." },
+  { q: "Where is my data stored?", a: "In your own browser (IndexedDB) by default. If you sign in, a copy syncs to your TEMT account so you can use it on other devices; you can download or delete that copy at any time. Without an account, nothing is uploaded unless you run the server check." },
   { q: "Which factors does TEMT use?", a: "By default the GLEC Framework v3.2 India defaults, whose Indian road intensities come from the TCI–IIMB Lab's own research. You can switch to the production TEMT factor set to reconcile with existing records. Every factor is listed with its source table." },
   { q: "Can I bring my existing TEMT data?", a: "Yes. The bulk importer reads the production TEMT bulk templates for road, courier, rail, air, coastal and international water, as well as GST e-way bill JSON and the new TEMT template." },
   { q: "Does this complete our BRSR?", a: "It covers freight: Scope 3 Categories 4 and 9 and own-fleet Scope 1 and 2, with a Principle 6 mapping. BRSR also needs your site-level emissions and other disclosures." },

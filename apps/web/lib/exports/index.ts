@@ -1,6 +1,7 @@
 import type { Filters } from "../analytics";
 import { buildReportModel, reportFileStem, type ReportModel } from "../report-model";
 import { actions, getState, selectComputed } from "../store";
+import { recordReport } from "../account";
 import { exportCsv, exportJson, EXPORT_FORMATS, type ExportFormat } from "./common";
 
 export { EXPORT_FORMATS, type ExportFormat };
@@ -14,6 +15,7 @@ export async function exportReport(format: ExportFormat, model: ReportModel) {
   else if (format === "docx") await (await import("./docx")).exportDocx(model, stem);
   else await (await import("./powerbi")).exportPowerBi(model, stem);
   actions.log("Report exported", `${EXPORT_FORMATS.find((item) => item.id === format)?.label} · ${model.period}`);
+  recordReport(format, model);
 }
 
 /** Export the current workspace from anywhere (used by the Copilot). */

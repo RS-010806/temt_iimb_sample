@@ -30,7 +30,7 @@ export function Header() {
           <p className="truncate">TCI–IIMB Supply Chain Sustainability Lab · Indian Institute of Management Bangalore</p>
           <div className="hidden items-center gap-5 sm:flex">
             <a href="https://www.iimb.ac.in/node/11590" target="_blank" rel="noreferrer" className="hover:text-white">IIMB</a>
-            <a href="https://iimb.freightemissions.com/login" className="hover:text-white">Production TEMT sign-in</a>
+            <a href="https://iimb.freightemissions.com/" className="hover:text-white">Production TEMT</a>
           </div>
         </div>
       </div>
@@ -41,6 +41,7 @@ export function Header() {
             {LINKS.map((link) => <Link key={link.href} prefetch={false} href={link.href} className="transition hover:text-maroon-700">{link.label}</Link>)}
           </nav>
           <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <Link prefetch={false} href="/app/account/" className="btn btn-ghost hidden sm:inline-flex">Sign in</Link>
             <Link prefetch={false} href="/app/" className="btn btn-primary">Open TEMT <ArrowUpRight size={16} aria-hidden="true" /></Link>
             <button type="button" className="btn btn-ghost btn-icon lg:hidden" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? "Close menu" : "Open menu"}>{open ? <X size={20} /> : <Menu size={20} />}</button>
           </div>

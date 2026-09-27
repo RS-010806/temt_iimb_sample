@@ -64,8 +64,8 @@ export const ARTICLES: Article[] = [
   },
   {
     id: "reefer", kind: "concept", title: "Refrigerated freight",
-    keywords: ["reefer", "refrigerated", "cold chain", "temperature controlled", "frozen", "chilled", "1.21"],
-    body: "Temperature-controlled road freight uses more fuel. TEMT applies the production TEMT uplift of **×1.21** to refrigerated road legs, and uses GLEC reefer container values at sea. Tick “Refrigerated” on the leg.",
+    keywords: ["reefer", "refrigerated", "cold chain", "temperature controlled", "frozen", "chilled"],
+    body: "Temperature-controlled road freight uses more fuel. TEMT applies the production TEMT refrigeration uplift to refrigerated road legs and uses GLEC reefer container values at sea. Tick “Refrigerated” on the leg.",
   },
   {
     id: "air", kind: "concept", title: "How air freight is calculated",
@@ -96,8 +96,8 @@ export const ARTICLES: Article[] = [
   },
   {
     id: "distance", kind: "product", title: "How TEMT estimates distance without maps",
-    keywords: ["distance", "pin code", "pincode", "google maps", "route", "km", "estimate distance", "circuity", "how far"],
-    body: "Type a city (aliases like Bombay or Gurgaon work) or a 6-digit PIN code. TEMT estimates road distance as straight-line × 1.22 and rail × 1.15, calibrated on Indian corridors (for example Delhi–Bengaluru by road). Air uses great-circle distance, sea uses the port network. Estimates are typically within 10–15%; **type the actual distance** whenever you have it from your transport management system or e-way bill.",
+    keywords: ["distance", "pin code", "pincode", "google maps", "route", "km", "estimate distance", "how far", "sfd", "gcd"],
+    body: "Type a city (aliases like Bombay or Gurgaon work) or a 6-digit PIN code. TEMT estimates the shortest feasible road, rail or waterway distance with an India network model calibrated on major corridors, uses the great-circle distance for air and routes sea legs port to port. Estimates are typically within 10–15% on the corridors we checked; **type the actual distance** whenever you have it from your transport management system or e-way bill.",
   },
   {
     id: "howto-calculate", kind: "howto", title: "Calculate a shipment",
@@ -143,9 +143,9 @@ export const ARTICLES: Article[] = [
   },
   {
     id: "privacy", kind: "product", title: "Where is my data stored?",
-    keywords: ["privacy", "data", "stored", "secure", "security", "confidential", "cloud", "server", "upload", "backup", "local"],
-    body: "Your workspace lives **privately in this browser** (IndexedDB). Nothing is uploaded unless you choose server analysis or export a file. The Copilot also runs in your browser. Use **Settings → Backup** to download a workspace file and restore it on another device. Clearing browser data removes the workspace, so keep a backup.",
-    actions: [{ label: "Backup and restore", href: "/app/settings/#data" }],
+    keywords: ["privacy", "data", "stored", "secure", "security", "confidential", "cloud", "server", "upload", "backup", "local", "account", "sign in", "sync"],
+    body: "Your workspace lives **privately in this browser** (IndexedDB). It is uploaded only if you **sign in**, which keeps a copy in your TEMT account (sent over HTTPS) and syncs it across devices, or if you run the server check. The Copilot runs in your browser. Without an account, use **Settings → Backup** to move a workspace file between devices.",
+    actions: [{ label: "Account and sync", href: "/app/account/" }, { label: "Backup and restore", href: "/app/settings/#data" }],
   },
   {
     id: "credentials", kind: "product", title: "TEMT's credentials",

@@ -37,8 +37,7 @@ export function SettingsView() {
   const update = actions.updateSettings;
 
   const verifyServer = async () => {
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
-    if (!base) { setServer({ state: "error", message: "No API is configured for this deployment." }); return; }
+    const base = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
     const rows = selectComputed(getState());
     const fy = fiscalYears(rows)[0];
     const scope = applyFilters(rows, { fy }).filter((row) => row.result).slice(0, 200);

@@ -1,14 +1,15 @@
 import { ENGINE_V2_VERSION, FACTOR_SETS, SOURCES, type FactorSetId } from "@temt/calculator";
 import { applyFilters, byBusinessUnit, byLane, byMode, byMonth, byQuality, byScope, byVehicleClass, insights, opportunities, previousPeriod, totals, type Bucket, type Filters, type Insight, type Opportunity, type Totals } from "./analytics";
 import { fiscalYear, formatDate } from "./format";
-import { describeLeg, DIRECTION_LABELS, MODE_LABELS, PAID_BY_LABELS, scopeOf, SCOPE_LABELS, type ComputedShipment } from "./records";
+import { adjustmentName } from "./adjustments";
+import { describeLeg, distanceType, DIRECTION_LABELS, MODE_LABELS, PAID_BY_LABELS, scopeOf, SCOPE_LABELS, type ComputedShipment } from "./records";
 import type { Settings } from "./store";
 
 export interface LegRow {
   shipmentRef: string; date: string; fiscalYear: string; businessUnit: string; commodity: string; direction: string; paidBy: string;
   legNo: number; route: string; mode: string; detail: string; method: string; scope: string; dataQuality: string;
   tonnes: number; distanceKm: number; tonneKm: number; ttwKg: number; wttKg: number; wtwKg: number; intensityG: number;
-  factor: string; factorWtt: number; factorTtw: number; factorUnit: string; source: string; sourceRef: string; uplifts: string; warnings: string;
+  distanceType: string; factor: string; factorWtt: number; factorTtw: number; factorUnit: string; source: string; sourceRef: string; adjustments: string; warnings: string;
 }
 
 export interface HubRow { shipmentRef: string; date: string; hub: string; type: string; wtwKg: number; basis: string }
@@ -72,15 +73,16 @@ export function buildReportModel(all: ComputedShipment[], settings: Settings, fi
         shipmentRef: row.ref, date: row.date, fiscalYear: fiscalYear(row.date), businessUnit: row.businessUnit, commodity: row.commodity, direction: DIRECTION_LABELS[row.direction], paidBy: PAID_BY_LABELS[row.paidBy],
         legNo: index + 1, route: described.route, mode: described.mode, detail: described.detail, method: METHOD[leg.method] ?? leg.method, scope: SCOPE_LABELS[scopeOf(row, leg.method)].short, dataQuality: QUALITY[leg.dataQuality] ?? leg.dataQuality,
         tonnes: leg.tonnes, distanceKm: leg.distanceKm, tonneKm: leg.tonneKm, ttwKg: leg.ttwKg, wttKg: leg.wttKg, wtwKg: leg.wtwKg, intensityG: leg.intensityG,
+        distanceType: distanceType(row.legMeta[index]?.distanceMethod, leg.mode),
         factor: leg.factor.label, factorWtt: leg.factor.wtt, factorTtw: leg.factor.ttw, factorUnit: leg.factor.unit, source: SOURCES[leg.factor.source].publisher, sourceRef: leg.factor.ref,
-        uplifts: leg.uplifts.map((uplift) => `${uplift.label} ×${uplift.multiplier}`).join("; "), warnings: leg.warnings.join(" "),
+        adjustments: leg.uplifts.map((uplift) => adjustmentName(uplift.label)).join("; "), warnings: leg.warnings.join(" "),
       });
       const key = `${leg.factor.label}|${leg.factor.wtt}|${leg.factor.ttw}`;
       const entry = factorMap.get(key) ?? { factor: leg.factor.label, wtt: leg.factor.wtt, ttw: leg.factor.ttw, unit: leg.factor.unit, source: SOURCES[leg.factor.source].publisher, ref: leg.factor.ref, legs: 0 };
       entry.legs += 1;
       factorMap.set(key, entry);
     });
-    result?.hubs.forEach((hub) => hubs.push({ shipmentRef: row.ref, date: row.date, hub: hub.label, type: hub.type, wtwKg: hub.wtwKg, basis: hub.trace.join(" ") }));
+    result?.hubs.forEach((hub) => hubs.push({ shipmentRef: row.ref, date: row.date, hub: hub.label, type: hub.type, wtwKg: hub.wtwKg, basis: `${SOURCES[hub.source].publisher} default hub intensity` }));
     return {
       ref: row.ref, date: row.date, fiscalYear: fiscalYear(row.date), businessUnit: row.businessUnit, commodity: row.commodity, origin: row.origin.label, destination: row.destination.label,
       direction: DIRECTION_LABELS[row.direction], paidBy: PAID_BY_LABELS[row.paidBy], modes: [...new Set(row.input.legs.map((leg) => MODE_LABELS[leg.mode]))].join(" + "), legs: row.input.legs.length,
@@ -136,7 +138,7 @@ export function buildReportModel(all: ComputedShipment[], settings: Settings, fi
       ...(sampleShipments ? [`This selection includes ${sampleShipments} synthetic sample shipments generated for demonstration. They are not the organisation's actual freight.`] : []),
       "Emissions are reported well-to-wheel (WTW) in kg or tonnes CO₂e, split into tank-to-wheel (vehicle operation), well-to-tank (energy provision) and hub operations, following ISO 14083:2023 and the GLEC Framework v3.2.",
       "Default factors are estimates for typical operations. Replace them with primary fuel or energy data from carriers where available.",
-      "Distances marked as estimated come from straight-line distance multiplied by network factors or from sea-lane routing; actual distances were used where supplied.",
+      "Distance type follows ISO 14083: road, rail, waterway and sea legs use the shortest feasible distance (SFD), estimated with TEMT's India network and sea-lane models unless an actual distance was supplied; air legs use the great-circle distance (GCD) with the GLEC routing allowance.",
       "Scope classification follows the GHG Protocol: own fleet → Scope 1/2; purchased transport → Scope 3 Category 4; customer-paid downstream transport → Scope 3 Category 9.",
       "Production TEMT's ISO 14083 and ISO/IEC 27001:2022 certifications apply to that platform and its stated scope.",
     ],

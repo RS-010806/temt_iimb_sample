@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Copy, Database, Download, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
-import { MODE_LABELS, SOURCES, type TransportMode } from "@temt/calculator";
+import { MODE_LABELS, type TransportMode } from "@temt/calculator";
 import { applyFilters, totals } from "@/lib/analytics";
 import { emissionsText, fmt, formatDate, todayIso, uid } from "@/lib/format";
 import { DIRECTION_LABELS, MODE_COLORS, PAID_BY_LABELS, scopeOf, SCOPE_LABELS, type ComputedShipment, type ScopeKey } from "@/lib/records";
@@ -12,6 +12,7 @@ import { actions, useSettings } from "@/lib/store";
 import { setView, useView } from "@/lib/view-state";
 import { downloadBlob } from "@/lib/exports/common";
 import { StageBar } from "../charts";
+import { BasisBody } from "../basis";
 import { FilterBar } from "./dashboard";
 import { Drawer, EmptyState, PageHeader, Select, cx, useToast } from "../../ui";
 
@@ -51,18 +52,17 @@ function Detail({ row, onClose }: { row: ComputedShipment | null; onClose: () =>
             ))}
           </dl>
           <div className="grid gap-3">
-            <h3 className="font-bold">Legs and calculation trace</h3>
+            <h3 className="font-bold">Legs</h3>
             {result.legs.map((leg, index) => (
               <div key={index} className="rounded-xl border border-stone-200 p-4">
                 <div className="flex items-center justify-between gap-3"><p className="flex items-center gap-2 font-semibold"><span className="dot" style={{ background: MODE_COLORS[leg.mode] }} />Leg {index + 1} · {MODE_LABELS[leg.mode]}</p><p className="num font-bold">{emissionsText(leg.wtwKg)}</p></div>
-                <p className="mt-1 text-xs text-grey-600">{row.legMeta[index]?.from?.label ?? "–"} → {row.legMeta[index]?.to?.label ?? "–"} · {SCOPE_LABELS[scopeOf(row, leg.method)].short} · source {SOURCES[leg.factor.source].publisher}</p>
-                <ol className="mt-3 grid gap-1 rounded-lg bg-stone-50 p-3 text-[12.5px] leading-relaxed text-grey-700">{leg.trace.map((line, i) => <li key={i}>{line}</li>)}</ol>
-                {leg.warnings.map((warning, i) => <p key={i} className="mt-2 text-[12px] text-warn">{warning}</p>)}
+                <p className="mt-1 text-xs text-grey-600">{row.legMeta[index]?.from?.label ?? "–"} → {row.legMeta[index]?.to?.label ?? "–"} · {fmt(leg.distanceKm, 0)} km · {SCOPE_LABELS[scopeOf(row, leg.method)].short}</p>
               </div>
             ))}
             {result.hubs.map((hub, index) => (
-              <div key={`h${index}`} className="rounded-xl border border-stone-200 p-4"><div className="flex justify-between gap-3"><p className="font-semibold">{hub.label}</p><p className="num font-bold">{emissionsText(hub.wtwKg)}</p></div><p className="mt-2 text-[12.5px] text-grey-700">{hub.trace.join(" ")}</p></div>
+              <div key={`h${index}`} className="flex justify-between gap-3 rounded-xl border border-stone-200 p-4"><p className="min-w-0 font-semibold">{hub.label}</p><p className="num shrink-0 font-bold">{emissionsText(hub.wtwKg)}</p></div>
             ))}
+            <BasisBody result={result} legMeta={row.legMeta} />
           </div>
           {row.notes && <p className="text-[13px] text-grey-600">Notes: {row.notes}</p>}
         </div>
