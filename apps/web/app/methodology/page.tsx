@@ -103,7 +103,7 @@ export default function MethodologyPage() {
           </ul>
 
           <h2>Sources</h2>
-          <ul>{Object.values(SOURCES).map((source) => <li key={source.id}>{source.publisher} ({source.year}). <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a>.</li>)}</ul>
+          <ul>{[SOURCES.temt, ...Object.values(SOURCES).filter((source) => source.id !== "temt")].map((source) => <li key={source.id}>{source.publisher} ({source.year}). <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a>.</li>)}</ul>
           <p>Location data: GeoNames (CC BY 4.0) for cities and PIN codes; OurAirports (public domain) for airports. Company directory: NSE Indices NIFTY 500 constituents, retrieved 14 September 2026. Calculation engine {ENGINE_V2_VERSION}.</p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link prefetch={false} href="/app/factors/" className="btn btn-primary">Open the factor library <ArrowRight size={16} aria-hidden="true" /></Link>

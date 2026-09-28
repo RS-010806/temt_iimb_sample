@@ -109,7 +109,7 @@ export function FactorsView() {
       )}
       {tab === "sources" && (
         <ul className="grid gap-3 animate-fade">
-          {Object.values(SOURCES).map((source) => (
+          {[SOURCES.temt, ...Object.values(SOURCES).filter((source) => source.id !== "temt")].map((source) => (
             <li key={source.id} className="card card-pad">
               <a href={source.url} target="_blank" rel="noreferrer" className="flex items-start justify-between gap-3 font-bold hover:text-maroon-700">{source.title}<ExternalLink size={15} className="mt-1 shrink-0" aria-hidden="true" /></a>
               <p className="mt-1 text-[13px] text-grey-600">{source.publisher} · {source.year}</p>
