@@ -66,7 +66,7 @@ export function createApp(options: AppOptions = {}) {
   app.use((req, res, next) => {
     res.setHeader("Cache-Control", "no-store");
     const origin = req.get("origin");
-    // Same-origin requests (the web app and API served from one host, as on Vercel) are always allowed.
+    // Same-origin requests (the web app and API served from one host) are always allowed.
     const sameOrigin = origin !== undefined && (() => { try { return new URL(origin).host === req.get("host"); } catch { return false; } })();
     if (origin !== undefined && !sameOrigin && !allowedOrigins.has(origin)) {
       res.status(403).json({ error: { code: "origin_not_allowed", message: "This origin is not allowed." } });

@@ -29,6 +29,9 @@ services:
         source: /api/*
         destination: https://temt-iimb-api.onrender.com/api/*
     headers:
+      - path: /manifest.webmanifest
+        name: Content-Type
+        value: application/manifest+json
       - path: /*
         name: X-Content-Type-Options
         value: nosniff

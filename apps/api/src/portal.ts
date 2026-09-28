@@ -10,7 +10,7 @@ import { cleanText, dummyHash, hashPassword, newToken, parseCookies, serializeCo
 const SESSION_DAYS = 30;
 const SECURE_COOKIE = "__Host-temt_session";
 const DEV_COOKIE = "temt_session";
-/** Compressed upload limit (Vercel functions accept 4.5 MB bodies) and the decompressed workspace ceiling. */
+/** Compressed workspace upload limit and the decompressed workspace ceiling. */
 export const MAX_WORKSPACE_UPLOAD = 4 * 1024 * 1024;
 export const MAX_WORKSPACE_BYTES = 40 * 1024 * 1024;
 export const MAX_WORKSPACE_SHIPMENTS = 50_000;

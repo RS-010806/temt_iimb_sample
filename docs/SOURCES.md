@@ -1,17 +1,16 @@
 # Evidence and source register
 
-Research reviewed: 14 September 2026. This register separates published product evidence, the company-name snapshot, illustrative demo inputs and implementation documentation.
+Research reviewed: 14 September 2026; attribution and credentials rechecked against IIM Bangalore's pages on 28 September 2026. The product does not link to the earlier TEMT site it replaces. This register separates published product evidence, the company-name snapshot, illustrative demo inputs and implementation documentation.
 
 ## Product context
 
 | Source | Supports | Boundary in this preview |
 | --- | --- | --- |
-| [IIM Bangalore TEMT website](https://iimb.freightemissions.com/) | Existing freight-emissions product and its public presentation. | The showcase is a separate implementation; it does not connect to private product APIs. |
-| [DPIIT TEMT website](https://dpiit.freightemissions.com/) | Public DPIIT-facing TEMT portal. | The hostname alone is not proof of government endorsement or a live integration in this showcase. |
+| [IIM Bangalore: TEMT](https://www.iimb.ac.in/node/11590) | TEMT developed by the TCI–IIMB Supply Chain Sustainability Lab; first in India to achieve ISO 14083 certification (December 2024); ISO/IEC 27001:2022 certified by SGS. | The certifications apply to the certified platform and scope; this rebuild has not been separately audited. |
+| [TCI–IIMB Supply Chain Sustainability Lab](https://www.iimb.ac.in/tci-supply-chain-sustainability-lab) | The lab founded by TCI and IIM Bangalore in 2023 as part of the Supply Chain Management Centre (SCMC). | Attribute TEMT to the lab within SCMC, IIM Bangalore. |
 | [IIM Bangalore: DPIIT adoption](https://www.iimb.ac.in/node/14281) | IIMB's account of DPIIT adoption, dated 4 September 2025, and the ULIP context. | Attribute the published account to IIMB. This is evidence about the existing product. |
-| [SGS verification statement](https://dpiit.freightemissions.com/certification.pdf) | Published verification for TEMT v1.3, dated 1 October 2024, referring to ISO 14083. | The verification applies to the version and scope in that statement. The demo estimator and this new website are not certified. |
+| SGS verification statement (published with the earlier TEMT) | Verification for TEMT v1.3, dated 1 October 2024, referring to ISO 14083. | The verification applies to the version and scope in that statement. The demo estimator and this new website are not certified. |
 | [IIM Bangalore: CAT](https://www.iimb.ac.in/node/11573) | Carbon Accounting Tool and Scope 1, 2 and 3 accounting context. | Do not describe the freight estimator as a complete organizational carbon inventory. |
-| [IIM Bangalore: reported ISO 27001 certification](https://www.iimb.ac.in/node/11590) | IIMB's published certification report. | Do not transfer an organization's reported certification to this codebase, deployment or simulated service. |
 | [Smart Freight Centre: GLEC v3.2](https://smartfreightcentre.org/news/13311209) | Freight-emissions methodology and version context. | Illustrative factors in the showcase must retain their own assumptions and labels; do not imply independent validation. |
 | [SEBI BRSR reference, January 2026](https://www.sebi.gov.in/sebi_data/attachdocs/jan-2026/1769776024792.pdf) | Current disclosure context relevant to Indian listed enterprises. | Sector personalization is not a claim that every NIFTY 500 company has identical reporting obligations. The export is a demo output, not a compliance filing. |
 | [NITI Aayog transport scenarios, 2026](https://www.niti.gov.in/sites/default/files/2026-02/Scenarios-Towards-Viksit-Bharat-and-Net-Zero-Sectoral-Insights-Transport.pdf) | Transport-sector context, including road's approximately 66% share of freight activity in the 2025 baseline. | Preserve the activity measure and baseline year beside any statistic. Do not describe it as freight emissions share. |
