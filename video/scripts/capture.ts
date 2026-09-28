@@ -237,17 +237,21 @@ async function main() {
   const nav = (tour: string) => page.locator(`[data-tour="${tour}"]`).first();
 
   await chapter("landing", async (at) => {
-    await hover(page, page.getByRole("heading", { level: 1 }), 400);
-    await select(page, page.getByLabel("From", { exact: true }), "chennai");
-    await select(page, page.getByLabel("To", { exact: true }), "kolkata");
-    await type(page, page.getByLabel("Tonnes", { exact: true }), "25", 90);
-    await sleep(900);
+    await hover(page, page.getByRole("heading", { level: 1 }), 500);
+    // Step through the hero walkthrough: a shipment, its footprint, cleaner modes, the report.
+    const steps = page.getByRole("list", { name: "What TEMT does" });
+    await hover(page, steps.getByRole("button", { name: /Enter a shipment/ }), 1300);
+    for (const label of [/Get its footprint/, /Compare modes/, /Report it/]) await click(page, steps.getByRole("button", { name: label }), 1500);
     await at(1, -0.3);
     const top = await page.evaluate(() => window.scrollY);
     const y = async (text: string) => top + ((await page.getByText(text).first().boundingBox())?.y ?? 0) - 110;
-    await smoothScrollTo(page, await y("Credentials held by the production TEMT platform"), 1300);
-    await sleep(900);
-    await smoothScrollTo(page, await y("Everything from one shipment to a board report."), 1500);
+    await smoothScrollTo(page, await y("Credentials of the TEMT platform"), 1200);
+    await sleep(700);
+    await smoothScrollTo(page, await y("Everything from one shipment to a board report."), 1200);
+    await sleep(500);
+    await select(page, page.getByLabel("From", { exact: true }), "chennai");
+    await select(page, page.getByLabel("To", { exact: true }), "kolkata");
+    await sleep(700);
   });
 
   await chapter("onboarding", async (at) => {
@@ -283,7 +287,8 @@ async function main() {
     const card = page.locator('[data-tour="quick-calc"]');
     await click(page, card.getByRole("radio", { name: "Rail" }), 400);
     const text = await card.innerText();
-    if (!/85% below road/.test(text)) log(`  quick calculator says: ${text.replace(/\s+/g, " ").slice(0, 200)}`);
+    if (!/84% below road/.test(text)) log("  narration says 84%; check the quick calculator");
+    log(`  quick calculator says: ${text.replace(/\s+/g, " ").slice(0, 260)}`);
     await hover(page, card.getByText(/below road/).first(), 600);
     void at;
   });
@@ -373,8 +378,13 @@ async function main() {
     await type(page, page.getByLabel("Work email"), "asha.rao@example.com", 35);
     await type(page, page.getByLabel("Password", { exact: true }), "freight emissions 2026", 30);
     await click(page, page.locator('form button[type="submit"]'), 300);
+    // Back in the workspace; the account menu shows the sync status.
+    const menu = page.getByRole("button", { name: /^Account: / });
+    await menu.waitFor({ timeout: 20000 });
+    await at(1, -0.6);
+    await click(page, menu, 500);
+    await click(page, page.getByRole("menuitem", { name: "Account and security" }), 400);
     await page.getByText("Matches this browser").waitFor({ timeout: 20000 });
-    await at(1, -0.3);
     await hover(page, page.getByText("Matches this browser"), 900);
     await reveal(page, page.getByText("Active sessions"));
     await hover(page, page.getByText("Active sessions"), 900);
@@ -448,14 +458,13 @@ async function main() {
 
   await chapter("factors", async (at) => {
     await click(page, nav("nav-factors"), 500);
-    await smoothScrollTo(page, 420, 1100);
-    await sleep(500);
-    await click(page, nav("factor-set"), 600);
-    await click(page, page.getByRole("button", { name: "TEMT production", exact: true }), 1400);
-    await click(page, page.getByRole("button", { name: "GLEC v3.2 India", exact: true }), 500);
+    await hover(page, page.getByText("Calculations use TEMT's emission factors"), 1400);
+    await click(page, page.getByText("Show GLEC v3.2 for comparison"), 500);
+    await reveal(page, page.getByRole("columnheader", { name: "GLEC v3.2 WTW" }));
+    await hover(page, page.getByRole("columnheader", { name: "GLEC v3.2 WTW" }), 1200);
     await at(1, -0.3);
-    await smoothScrollTo(page, 0, 700);
-    await hover(page, page.getByLabel("Search NIFTY 500 companies"), 500);
+    await click(page, nav("nav-settings"), 500);
+    await hover(page, page.getByLabel("Search NIFTY 500 companies"), 600);
     await reveal(page, page.getByRole("button", { name: "Download backup" }));
     await hover(page, page.getByRole("button", { name: "Download backup" }), 700);
     await hover(page, page.getByText("Built-in (no setup)"), 700);

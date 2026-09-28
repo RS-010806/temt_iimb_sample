@@ -7,26 +7,26 @@ export interface ChapterScript { id: string; title?: string; lines: string[] }
 export const INTRO: ChapterScript = {
   id: "intro",
   lines: [
-    "This is TEMT, the Transportation Emission Measurement Tool from the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore.",
+    "This is TEMT, the Transportation Emission Measurement Tool from IIM Bangalore's Supply Chain Management Centre.",
     "Here is the whole product, end to end.",
   ],
 };
 
 export const CHAPTERS: ChapterScript[] = [
   { id: "landing", title: "The website", lines: [
-    "The website's hero calculator is live: two cities and a weight, and it compares road, rail, air and coastal shipping with the same engine as the product.",
-    "Below are the credentials, and every module you're about to see.",
+    "The website opens with a live walkthrough of what TEMT does: enter a shipment, get its footprint, compare cleaner modes, and report it.",
+    "Below are the credentials, every module, and a lane comparison anyone can try.",
   ] },
   { id: "onboarding", title: "Getting started", lines: [
-    "Open TEMT and start with your company, the guided tour, or a sample workspace.",
-    "We'll load the FMCG sample, labelled as sample data everywhere.",
+    "Open the app, and start with your company, the guided tour, or a sample workspace.",
+    "Let's load the FMCG sample, labelled as sample data everywhere.",
   ] },
   { id: "dashboard", title: "Overview", lines: [
     "The overview shows the year's well-to-wheel emissions, intensity per tonne-kilometre, and progress against your target.",
     "Each month splits into tank-to-wheel and well-to-tank, as ISO 14083 requires, followed by modes, business units, lanes and reduction opportunities.",
   ] },
   { id: "quick", title: "Quick calculate", lines: [
-    "The quick calculator compares every practical mode, door to door. Pune to Kolkata by rail is about eighty-five percent lower than by truck.",
+    "The quick calculator compares every practical mode, door to door. Pune to Kolkata by rail is about eighty-four percent lower than by truck.",
   ] },
   { id: "calculator", title: "Calculator", lines: [
     "The full calculator covers road, courier, rail, air, sea and inland waterways.",
@@ -45,13 +45,13 @@ export const CHAPTERS: ChapterScript[] = [
     "Real freight is often multimodal. The chain builder links legs and hubs in one shipment: here, a factory to the gateway port by trailer, then a container ship, with terminal handling counted as a hub operation.",
   ] },
   { id: "import", title: "Bulk import", lines: [
-    "Bulk import reads the TEMT template, six production TEMT formats and GST e-way bills, and checks every row before anything is saved.",
+    "Bulk import reads the TEMT template, six formats from earlier TEMT versions and GST e-way bills, and checks every row before anything is saved.",
   ] },
   { id: "ledger", title: "Shipment ledger", lines: [
     "Every shipment lands in the ledger. Search, filter, and open any one to see its legs and calculation basis.",
   ] },
   { id: "account", title: "Account and sync", lines: [
-    "Accounts are optional. Sign in, and your workspace syncs securely across devices.",
+    "Accounts are optional. Sign in on its own page, and your workspace syncs securely across devices.",
     "The server recalculates it independently, and your sessions and report history live here.",
   ] },
   { id: "reports", title: "Reports", lines: [
@@ -77,12 +77,12 @@ export const CHAPTERS: ChapterScript[] = [
     "The reduction planner tests rail shift, air to road, consolidation, electric trucks and load factors, and measures each lever against your target.",
   ] },
   { id: "factors", title: "Factors and settings", lines: [
-    "The factor library lists every value and its source. Switch between GLEC v3.2 India defaults and the production TEMT set, and every shipment recalculates.",
+    "The factor library lists every value TEMT applies, with its source: TEMT's own India-specific factors first, and the GLEC defaults alongside for comparison.",
     "Settings hold your NIFTY 500 company, targets, backups, and an optional local AI model.",
   ] },
   { id: "copilot", title: "TEMT Copilot", lines: [
     "The Copilot runs in your browser.",
-    "Twenty tonnes, Mumbai to Delhi, by thirty-two foot truck.",
+    "Twenty tonnes from Mumbai to Delhi by thirty-two foot truck.",
     "Compare that with rail.",
     "Summarise FY 2025–26. It calculates, compares, analyses and exports, on request.",
   ] },
@@ -94,12 +94,12 @@ export const CHAPTERS: ChapterScript[] = [
 export const OUTRO: ChapterScript = {
   id: "outro",
   lines: [
-    "TEMT: India-specific factors, an ISO 14083-aligned method, and reports that stand up to scrutiny.",
+    "TEMT: India-specific factors, ISO 14083 certification, and reports that stand up to scrutiny.",
     "Measure your next shipment today.",
   ],
 };
 
-/** Spoken form: acronyms and units the voice would otherwise misread. Captions keep the written form. */
+/** Spoken form for the neural voice: acronyms spelled out, and units it would otherwise misread. Captions keep the written form. */
 const SPOKEN: [RegExp, string][] = [
   [/TCI–IIMB/g, "T C I, I I M B"],
   [/\bTEMT\b/g, "T E M T"],
@@ -118,10 +118,14 @@ const SPOKEN: [RegExp, string][] = [
   [/\bPIN\b/g, "pin"],
   [/\bPDF\b/g, "P D F"],
   [/\bCSV\b/g, "C S V"],
-  [/\bJSON\b/g, "jay-sonn"],
+  [/\bJSON\b/g, "jay-son"],
   [/\bDAX\b/g, "dax"],
   [/Power BI/g, "Power B I"],
   [/tonne-kilometre/g, "tonne kilometre"],
+  // Indian place names the voice mispronounces, respelt phonetically (checked with VERIFY=1).
+  [/\bPune\b/g, "Poonay"],
+  [/\bKolkata\b/g, "Kolkahta"],
+  [/\bDelhi\b/g, "Dell-ee"],
   [/well-to-wheel/g, "well to wheel"],
   [/tank-to-wheel/g, "tank to wheel"],
   [/well-to-tank/g, "well to tank"],

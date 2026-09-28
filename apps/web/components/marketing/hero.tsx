@@ -97,7 +97,7 @@ function ProductWalkthrough() {
           ))}
         </ol>
 
-        <div className="relative h-[292px] px-4 pb-4 pt-3 sm:h-[300px] sm:px-5">
+        <div className="relative h-[318px] px-4 pb-4 pt-3 sm:h-[300px] sm:px-5">
           {/* 1. Enter a shipment */}
           <div className={cx("hero-stage", stage === 0 && "is-active")}>
             <div className="grid grid-cols-2 gap-2.5">
@@ -109,7 +109,7 @@ function ProductWalkthrough() {
               ))}
             </div>
             <p className="mt-3 flex items-center gap-2 text-[12.5px] text-grey-600"><Check size={14} className="text-ok" aria-hidden="true" /> Distance found automatically: about {fmt(data.roadKm, 0)} km by road</p>
-            <p className="mt-1.5 flex items-center gap-2 text-[12.5px] text-grey-600"><Check size={14} className="text-ok" aria-hidden="true" /> Cities, 6-digit PIN codes, ports and airports</p>
+            <p className="mt-1.5 hidden items-center gap-2 text-[12.5px] text-grey-600 sm:flex"><Check size={14} className="text-ok" aria-hidden="true" /> Cities, 6-digit PIN codes, ports and airports</p>
             <div className="absolute inset-x-0 bottom-0">
               <div className={cx("relative flex h-11 items-center justify-center gap-2 rounded-lg bg-maroon-700 text-[14px] font-semibold text-white", stage === 0 && !reduced && "hero-press")} style={{ animationDuration: `${STAGE_MS}ms` }}>
                 <Calculator size={16} aria-hidden="true" /> Calculate emissions
@@ -135,7 +135,7 @@ function ProductWalkthrough() {
               <span className="rounded-full bg-stone-100 px-2.5 py-1 text-grey-700">{fmt(data.road.intensityG, 1)} g CO₂e per tonne-km</span>
               <span className="rounded-full bg-stone-100 px-2.5 py-1 text-grey-700">ISO 14083 basis recorded</span>
             </div>
-            <dl className="absolute inset-x-0 bottom-0 grid grid-cols-3 gap-2 border-t border-stone-200 pt-3 text-[11.5px]">
+            <dl className="absolute inset-x-0 bottom-0 hidden grid-cols-3 gap-2 border-t border-stone-200 pt-3 text-[11.5px] sm:grid">
               {[["Distance", `${fmt(data.roadKm, 0)} km, shortest feasible`], ["Emission factor", "TEMT, India-specific"], ["Data type", "Default, upgradeable to fuel data"]].map(([term, value]) => (
                 <div key={term}><dt className="font-semibold uppercase tracking-[0.06em] text-grey-500">{term}</dt><dd className="mt-0.5 leading-snug text-grey-800">{value}</dd></div>
               ))}

@@ -67,10 +67,10 @@ function Intro({ duration }: { duration: number }) {
           Transportation Emission <span style={{ fontStyle: "italic", color: SAND }}>Measurement</span> Tool
         </div>
         <div style={{ fontSize: 26, marginTop: 22, color: "#f0dcd9", opacity: interpolate(frame, [2 * fps, 3 * fps], [0, 1], clamp) }}>
-          TCI–IIMB Supply Chain Sustainability Lab · Product walkthrough
+          Supply Chain Management Centre · Product walkthrough
         </div>
         <div style={{ display: "flex", gap: 14, marginTop: 44, opacity: interpolate(frame, [2.8 * fps, 3.8 * fps], [0, 1], clamp) }}>
-          {["ISO 14083 method", "GLEC v3.2 India factors", "BRSR-ready reports", "Secure accounts"].map((chip) => (
+          {["ISO 14083 certified", "India-specific factors", "BRSR-ready reports", "Secure accounts"].map((chip) => (
             <span key={chip} style={{ border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", borderRadius: 999, padding: "10px 22px", fontSize: 21, fontWeight: 600 }}>{chip}</span>
           ))}
         </div>
@@ -89,9 +89,9 @@ function Outro({ duration }: { duration: number }) {
       <Route progress={interpolate(frame, [0, 2.4 * fps], [0, 1], { ...clamp, easing: ease })} />
       <div style={{ scale: interpolate(frame, [0, 1 * fps], [0.94, 1], { ...clamp, easing: ease }) }}><Logo size={110} /></div>
       <div style={{ fontFamily: "Playfair", fontSize: 76, marginTop: 30 }}>Measure your next shipment.</div>
-      <div style={{ fontSize: 28, marginTop: 20, color: "#f0dcd9" }}>India-specific factors · ISO 14083-aligned method · reports that stand up to scrutiny</div>
+      <div style={{ fontSize: 28, marginTop: 20, color: "#f0dcd9" }}>India-specific factors · ISO 14083 certified · reports that stand up to scrutiny</div>
       <div style={{ marginTop: 46, fontSize: 30, fontWeight: 700, background: "white", color: MAROON, padding: "16px 34px", borderRadius: 14, opacity: interpolate(frame, [1 * fps, 1.8 * fps], [0, 1], clamp) }}>temt-iimb-sample.onrender.com</div>
-      <div style={{ marginTop: 40, fontSize: 20, color: "#e3bdb9" }}>TEMT · TCI–IIMB Supply Chain Sustainability Lab · Indian Institute of Management Bangalore</div>
+      <div style={{ marginTop: 40, fontSize: 20, color: "#e3bdb9" }}>TEMT · TCI–IIMB Supply Chain Sustainability Lab · Supply Chain Management Centre, IIM Bangalore</div>
     </AbsoluteFill>
   );
 }
