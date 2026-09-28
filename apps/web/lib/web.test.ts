@@ -8,7 +8,7 @@ import { DEFAULT_LEVERS, runScenario } from "./planner";
 import { compute, scopeOf } from "./records";
 import { buildReportModel } from "./report-model";
 import { makeSampleWorkspace, SAMPLE_SECTORS, type SampleSector } from "./sample-data";
-import { DEFAULT_SETTINGS } from "./store";
+import { DEFAULT_SETTINGS, normaliseSettings } from "./store";
 
 const city = (label: string, lat: number, lon: number): Place => ({ label, kind: "city", lat, lon, country: "IN" });
 
@@ -16,7 +16,7 @@ describe("sample workspaces", () => {
   for (const sector of Object.keys(SAMPLE_SECTORS) as SampleSector[]) {
     it(`${sector}: calculates every shipment under both factor sets and improves year on year`, () => {
       const records = makeSampleWorkspace(sector);
-      for (const set of ["glec-india", "temt-legacy"] as const) {
+      for (const set of ["glec-india", "temt"] as const) {
         const rows = records.map((record) => compute(record, set));
         expect(rows.filter((row) => row.error)).toEqual([]);
         const previous = totals(applyFilters(rows, { fy: "FY 2024–25" })), current = totals(applyFilters(rows, { fy: "FY 2025–26" }));
@@ -27,11 +27,11 @@ describe("sample workspaces", () => {
   }
 
   it("is deterministic and mode shares add up", () => {
-    const a = makeSampleWorkspace("fmcg").map((record) => compute(record, "glec-india"));
-    const b = makeSampleWorkspace("fmcg").map((record) => compute(record, "glec-india"));
+    const a = makeSampleWorkspace("fmcg").map((record) => compute(record, "temt"));
+    const b = makeSampleWorkspace("fmcg").map((record) => compute(record, "temt"));
     expect(totals(a).wtwKg).toBeCloseTo(totals(b).wtwKg, 6);
     expect(byMode(a).reduce((sum, bucket) => sum + bucket.share, 0)).toBeCloseTo(100, 6);
-    for (const item of opportunities(a, "glec-india")) expect(item.savingKg).toBeGreaterThanOrEqual(0);
+    for (const item of opportunities(a, "temt")) expect(item.savingKg).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -45,7 +45,7 @@ describe("scope classification", () => {
 });
 
 describe("report model", () => {
-  const rows = makeSampleWorkspace("pharma").map((record) => compute(record, "glec-india"));
+  const rows = makeSampleWorkspace("pharma").map((record) => compute(record, "temt"));
   const model = buildReportModel(rows, { ...DEFAULT_SETTINGS, organisation: { name: "Test", revenueCrore: 1000 } }, { fy: "FY 2025–26" });
   it("agrees with the analytics totals and itemises every leg", () => {
     expect(model.totals.wtwKg).toBeCloseTo(totals(applyFilters(rows, { fy: "FY 2025–26" })).wtwKg, 6);
@@ -77,7 +77,7 @@ describe("imports", () => {
     expect(parseDate("not a date")).toBeUndefined();
   });
 
-  it("maps truck descriptions and production TEMT labels to classes", () => {
+  it("maps truck descriptions and earlier TEMT labels to classes", () => {
     expect(parseVehicle("32 ft MXL", 20).id).toBe("gvw-30-50");
     expect(parseVehicle("Medium Commercial Vehicles - 2 | GVW 5 to 12 MT | Payload Capacity 3.5 to 8 MT", 5).id).toBe("gvw-5-12");
     expect(parseVehicle("Small Commercial Vehicles | GVW < 3.5 MT | Payload Capacity 0.5 to 2 MT", 1).id).toBe("gvw-3.5");
@@ -85,7 +85,7 @@ describe("imports", () => {
     expect(parseVehicle("", 9)).toEqual({ id: "gvw-12-20", guessed: true });
   });
 
-  it("detects production TEMT templates and corrects the crude-tanker label", () => {
+  it("detects earlier TEMT templates and corrects the crude-tanker label", () => {
     expect(detectFormat(["Start Date", "End Date", "Origin", "Destination", "Vehicle Category", "Fuel", "Load"])).toBe("legacy-road");
     expect(detectFormat(["Start Date", "End Date", "Origin", "First Mile Vehicle", "First Mile Fuel"])).toBe("legacy-courier");
     expect(detectFormat(["Start Date", "End Date", "Origin Port", "Destination Port", "Vessel Category", "Vessel Size", "Load in MT", "Distance in Nautical Miles"])).toBe("legacy-water");
@@ -111,11 +111,11 @@ describe("distance estimates", () => {
 
 describe("planner", () => {
   it("never double counts legs and reduces emissions with default levers", () => {
-    const rows = applyFilters(makeSampleWorkspace("materials").map((record) => compute(record, "glec-india")), { fy: "FY 2025–26" });
-    const scenario = runScenario(rows, "glec-india", DEFAULT_LEVERS);
+    const rows = applyFilters(makeSampleWorkspace("materials").map((record) => compute(record, "temt")), { fy: "FY 2025–26" });
+    const scenario = runScenario(rows, "temt", DEFAULT_LEVERS);
     expect(scenario.affectedLegs).toBeLessThanOrEqual(scenario.totalLegs);
     expect(scenario.resultKg).toBeLessThan(scenario.baselineKg);
-    const none = runScenario(rows, "glec-india", { ...DEFAULT_LEVERS, railShift: 0, airToRoad: 0, consolidate: 0, evShare: 0, loadFactorGain: 0 });
+    const none = runScenario(rows, "temt", { ...DEFAULT_LEVERS, railShift: 0, airToRoad: 0, consolidate: 0, evShare: 0, loadFactorGain: 0 });
     expect(none.resultKg).toBeCloseTo(none.baselineKg, 6);
   });
 });
@@ -130,7 +130,7 @@ describe("copilot language understanding", () => {
     ["export excel for FY 2025-26", "export", { format: "xlsx", fy: "FY 2025–26" }],
     ["summarise my footprint for FY26", "summary", { fy: "FY 2025–26" }],
     ["what if we shift 40% of road to rail", "scenario", { percent: 40 }],
-    ["switch to production TEMT factors", "factor-set", { factorSet: "temt-legacy" }],
+    ["switch to TEMT factors", "factor-set", { factorSet: "temt" }],
     ["load sample pharma data", "sample", { sector: "pharma" }],
     ["give me a tour", "tour", {}],
     ["open reports", "navigate", { page: "/app/reports/" }],
@@ -148,5 +148,14 @@ describe("copilot language understanding", () => {
     expect(searchKnowledge("explain tonne-km")[0]?.article.id).toBe("tkm");
     expect(searchKnowledge("Is TEMT certified?")[0]?.article.id).toMatch(/credentials|iso14083/);
     expect(searchKnowledge("how do I use e-way bills")[0]?.article.id).toBe("howto-ewaybill");
+  });
+});
+
+describe("settings", () => {
+  it("defaults to TEMT's factors and moves earlier workspaces onto them", () => {
+    expect(DEFAULT_SETTINGS.factorSet).toBe("temt");
+    expect(normaliseSettings({ factorSet: "glec-india" }).factorSet).toBe("temt");
+    expect(normaliseSettings({ factorSet: "temt-legacy" as never, factorSetVersion: 2 }).factorSet).toBe("temt");
+    expect(normaliseSettings({ factorSet: "glec-india", factorSetVersion: 2 }).factorSet).toBe("glec-india");
   });
 });

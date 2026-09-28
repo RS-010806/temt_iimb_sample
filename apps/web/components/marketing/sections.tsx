@@ -9,6 +9,7 @@ import { actions } from "@/lib/store";
 import { BlockView, openCopilot, setLauncherHidden } from "../copilot/copilot";
 import { ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Braces, Calculator, Check, ChevronDown, Database, FileArchive, FileSpreadsheet, FileText, FileType2, GitBranch, Landmark, Layers, Lock, PlayCircle, Route, ScrollText, Sheet, ShieldCheck, Sparkles, Target, Upload, X } from "lucide-react";
 import { AnimatedNumber, Reveal, cx, useInView } from "../ui";
+import { FAQ } from "./faq-data";
 
 export function SectionHeading({ eyebrow, title, body, center = false, light = false }: { eyebrow: string; title: ReactNode; body?: ReactNode; center?: boolean; light?: boolean }) {
   return (
@@ -21,17 +22,17 @@ export function SectionHeading({ eyebrow, title, body, center = false, light = f
 }
 
 const CREDENTIALS = [
-  { icon: BadgeCheck, title: "First in India to certify its platform to ISO 14083", body: "TEMT's methodology was validated by SGS against ISO 14083:2023, the international standard for transport-chain emissions.", href: "https://dpiit.freightemissions.com/certification.pdf" },
-  { icon: Lock, title: "ISO/IEC 27001:2022 information security", body: "Production TEMT's information security management system is certified by SGS.", href: "https://www.iimb.ac.in/node/11590" },
-  { icon: Landmark, title: "Adopted by DPIIT and integrated with ULIP", body: "Hosted on the Department for Promotion of Industry and Internal Trade platform as a national digital resource.", href: "https://www.iimb.ac.in/node/14281" },
-  { icon: ScrollText, title: "The source of GLEC's Indian road factors", body: "GLEC Framework v3.2 publishes Indian truck intensities from TCI–IIMB Supply Chain Sustainability Lab research.", href: "https://smartfreightcentre.org/news/13311209" },
+  { icon: BadgeCheck, title: "First in India certified to ISO 14083", body: "In December 2024 TEMT became the first platform in India certified to ISO 14083:2023, the international standard for transport-chain emissions.", href: "https://www.iimb.ac.in/node/11590" },
+  { icon: Lock, title: "ISO/IEC 27001:2022 information security", body: "TEMT's information security management system is certified by SGS.", href: "https://www.iimb.ac.in/node/11590" },
+  { icon: Landmark, title: "Adopted by DPIIT, integrated with ULIP", body: "Recognised by the Department for Promotion of Industry and Internal Trade as a national digital resource; its emission factors API runs on ULIP.", href: "https://www.iimb.ac.in/node/14281" },
+  { icon: ScrollText, title: "Built on IIM Bangalore research", body: "Developed by the TCI–IIMB Supply Chain Sustainability Lab at the Supply Chain Management Centre, whose research supplies India's truck emission factors.", href: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab" },
 ];
 
 export function Credentials() {
   return (
     <section className="border-b border-stone-200 bg-white">
       <div className="container-page grid gap-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-grey-600 sm:col-span-2 lg:col-span-4">Credentials held by the production TEMT platform (iimb.freightemissions.com)</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-grey-600 sm:col-span-2 lg:col-span-4">Credentials of the TEMT platform</p>
         {CREDENTIALS.map((item, index) => {
           const Icon = item.icon;
           return (
@@ -60,7 +61,7 @@ export function ProblemStats() {
     { value: 14, suffix: "%", label: "of India's greenhouse gas emissions come from transport", source: "IIM Bangalore" },
     { value: 40, suffix: "%", label: "of transport CO₂ comes from moving freight", source: "IIM Bangalore" },
     { value: 4, suffix: "×", label: "projected rise in transport emissions between 2016 and 2050 without intervention", source: "IIM Bangalore" },
-    { value: 66, suffix: "%", label: "of India's freight activity moves by road", source: "NITI Aayog, 2026" },
+    { value: 1.17, suffix: " bn t", decimals: 2, label: "of CO₂ from Indian transport by 2050 if nothing changes", source: "IIM Bangalore" },
   ];
   return (
     <section className="bg-paper py-20 md:py-28">
@@ -69,7 +70,7 @@ export function ProblemStats() {
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (
             <Reveal key={stat.label} delay={index * 100} className="rounded-2xl border border-stone-200 bg-white p-6">
-              <p className="display text-[52px] leading-none text-maroon-700"><Counter value={stat.value} suffix={stat.suffix} /></p>
+              <p className="display text-[52px] leading-none text-maroon-700"><Counter value={stat.value} suffix={stat.suffix} decimals={(stat as { decimals?: number }).decimals ?? 0} /></p>
               <p className="mt-4 text-[14.5px] leading-relaxed text-grey-800">{stat.label}</p>
               <p className="mt-3 text-[12px] font-semibold uppercase tracking-wide text-grey-500">{stat.source}</p>
             </Reveal>
@@ -84,12 +85,12 @@ const MODULES = [
   { icon: Calculator, title: "Calculate any shipment", body: "Road (7 truck classes, diesel, CNG, petrol or electric), courier and PTL, rail, air, sea and inland waterways. Road can also use measured fuel or electricity.", href: "/app/calculate/" },
   { icon: Route, title: "Compare modes door to door", body: "Road, rail with drayage, air via airports and coastal shipping via ports, ranked by emissions for the same cargo.", href: "/app/compare/" },
   { icon: GitBranch, title: "Build multimodal chains", body: "Legs and hubs, exactly as ISO 14083 defines a transport chain, with templates for intermodal, export, air express and courier.", href: "/app/chain/" },
-  { icon: Upload, title: "Import in bulk", body: "TEMT template, your existing production TEMT files, or GST e-way bill JSON. Distances from city names or PIN codes.", href: "/app/import/" },
+  { icon: Upload, title: "Import in bulk", body: "The TEMT template, files exported from earlier TEMT versions, or GST e-way bill JSON. Distances from city names or PIN codes.", href: "/app/import/" },
   { icon: BarChart3, title: "See the whole network", body: "Monthly trends, modes, business units, lanes, GHG scopes and data quality, filtered by financial year.", href: "/app/" },
   { icon: FileText, title: "Report in every format", body: "PDF, Excel and Word reports with methodology and BRSR mapping, plus CSV, JSON and a Power BI pack for your own tools.", href: "/app/reports/" },
   { icon: Target, title: "Plan reductions", body: "Rail shift, electric trucks, consolidation and loading levers, recalculated on your own shipments against your target.", href: "/app/planner/" },
   { icon: Sparkles, title: "Ask the Copilot", body: "Type “20 t Mumbai to Delhi by 32 ft truck” or “export Excel”. It calculates, compares, analyses and exports inside your browser, and can use a local AI model.", href: "/app/" },
-  { icon: Layers, title: "Versioned factor library", body: "GLEC v3.2 India defaults or the production TEMT set, every value with its source table. Switch and restate instantly.", href: "/app/factors/" },
+  { icon: Layers, title: "Transparent factor library", body: "TEMT's India-specific emission factors, each with its source and version, so auditors can check any number.", href: "/app/factors/" },
 ];
 
 export function ProductModules() {
@@ -260,7 +261,7 @@ export function ReportsSection() {
     <section className="bg-white py-20 md:py-28">
       <div className="container-page grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
-          <SectionHeading eyebrow="Reports" title="From the dispatch desk to the boardroom." body="The PDF, Excel and Word reports carry the factor set and engine version, the data-quality split, a GHG Protocol scope table and a BRSR Principle 6 mapping. CSV, JSON and the Power BI pack carry the same leg-level figures with factor, scope and data quality, so every team reads one version of the truth." />
+          <SectionHeading eyebrow="Reports" title="From the dispatch desk to the boardroom." body="The PDF, Excel and Word reports carry the emission factor sources and engine version, the data-quality split, a GHG Protocol scope table and a BRSR Principle 6 mapping. CSV, JSON and the Power BI pack carry the same leg-level figures with factor, scope and data quality, so every team reads one version of the truth." />
           <Link prefetch={false} href="/app/reports/" className="btn btn-primary btn-lg mt-8">See a sample report <ArrowRight size={17} aria-hidden="true" /></Link>
           <p className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[13.5px] font-semibold text-maroon-700">
             <span className="text-grey-600">Download samples:</span>
@@ -336,7 +337,7 @@ export function ComparisonTeaser() {
     ["Platform certified to ISO 14083 in India", true, "Global", false],
     ["Adopted by the Government of India (DPIIT, ULIP)", true, false, false],
     ["Legs, hubs and multimodal chains", true, true, "Partial"],
-    ["Reads production TEMT files and e-way bills", true, false, false],
+    ["Reads earlier TEMT files and GST e-way bills", true, false, false],
     ["Copilot that runs in your browser, with an optional local AI model", true, false, "Cloud AI"],
     ["BRSR scope and Principle 6 mapping", true, false, true],
     ["Free to start, no account", true, "Limited", false],
@@ -357,15 +358,6 @@ export function ComparisonTeaser() {
     </section>
   );
 }
-
-const FAQ = [
-  { q: "Is TEMT free to use?", a: "Yes. Open the workspace and start calculating; no account is needed. For enterprise onboarding on the production platform, contact the TCI–IIMB Supply Chain Sustainability Lab." },
-  { q: "Where is my data stored?", a: "In your own browser (IndexedDB) by default. If you sign in, a copy syncs to your TEMT account so you can use it on other devices; you can download or delete that copy at any time. Without an account, nothing is uploaded unless you run the server check." },
-  { q: "Which factors does TEMT use?", a: "By default the GLEC Framework v3.2 India defaults, whose Indian road intensities come from the TCI–IIMB Lab's own research. You can switch to the production TEMT factor set to reconcile with existing records. Every factor is listed with its source table." },
-  { q: "Can I bring my existing TEMT data?", a: "Yes. The bulk importer reads the production TEMT bulk templates for road, courier, rail, air, coastal and international water, as well as GST e-way bill JSON and the new TEMT template." },
-  { q: "Does this complete our BRSR?", a: "It covers freight: Scope 3 Categories 4 and 9 and own-fleet Scope 1 and 2, with a Principle 6 mapping. BRSR also needs your site-level emissions and other disclosures." },
-  { q: "How accurate are estimated distances?", a: "Road and rail distances are estimated from city or PIN-code locations with network factors calibrated on Indian corridors, typically within 10–15%. Enter actual distances from your TMS or e-way bills whenever you have them." },
-];
 
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
@@ -398,7 +390,7 @@ export function FinalCta() {
         </div>
         <div className="flex flex-wrap gap-3">
           <Link prefetch={false} href="/app/" className="btn btn-light btn-lg">Open TEMT <ArrowRight size={18} aria-hidden="true" /></Link>
-          <a href="mailto:aditya.gupta@iimb.ac.in?subject=TEMT%20enterprise%20onboarding" className="btn btn-outline-light btn-lg"><ShieldCheck size={18} aria-hidden="true" /> Enterprise onboarding</a>
+          <a href="mailto:scmc.office@iimb.ac.in?subject=TEMT%20enterprise%20onboarding" className="btn btn-outline-light btn-lg"><ShieldCheck size={18} aria-hidden="true" /> Enterprise onboarding</a>
         </div>
       </div>
     </section>

@@ -101,7 +101,7 @@ export function DashboardView() {
         </div>
       )}
       <PageHeader eyebrow={`Overview · ${fy === "all" ? "All periods" : fy}${progress.ongoing ? " to date" : ""}`} title={<>{settings.organisation.name || "Your"} freight footprint</>}
-        description="Well-to-wheel emissions from every shipment in your workspace, calculated with the active factor set."
+        description="Well-to-wheel emissions from every shipment in your workspace, calculated with TEMT's India-specific emission factors."
         actions={<><FilterBar /><Link prefetch={false} href="/app/reports/" className="btn btn-secondary"><FileDown size={16} aria-hidden="true" /> Report</Link><Link prefetch={false} href="/app/calculate/" className="btn btn-primary"><Calculator size={16} aria-hidden="true" /> Calculate</Link></>} />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

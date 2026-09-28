@@ -38,7 +38,8 @@ export function parseAllowedOrigins(value: string | undefined): string[] {
 
 const requestSchema = z.object({ rows: z.array(z.unknown()) });
 export const MAX_V2_SHIPMENTS = 1000;
-const v2Schema = z.object({ factorSet: z.enum(["glec-india", "temt-legacy"]).optional(), shipments: z.array(z.unknown()).max(MAX_V2_SHIPMENTS) });
+// "temt-legacy" is the earlier name of TEMT's own factor set, still accepted from older clients.
+const v2Schema = z.object({ factorSet: z.enum(["temt", "glec-india", "temt-legacy"]).transform((id) => (id === "temt-legacy" ? "temt" : id)).optional(), shipments: z.array(z.unknown()).max(MAX_V2_SHIPMENTS) });
 
 const requireJson: express.RequestHandler = (req, res, next) => {
   if (!req.is("application/json")) {
@@ -122,7 +123,7 @@ export function createApp(options: AppOptions = {}) {
       res.status(400).json({ error: { code: "invalid_request", message: `Provide a JSON object with a shipments array of at most ${MAX_V2_SHIPMENTS} items.` } });
       return;
     }
-    const factorSet = parsed.data.factorSet ?? "glec-india";
+    const factorSet = parsed.data.factorSet ?? "temt";
     const totals = { wtwKg: 0, ttwKg: 0, wttKg: 0, hubKg: 0, tonneKm: 0, shipments: 0 };
     const results = parsed.data.shipments.map((raw, index) => {
       const id = raw && typeof raw === "object" && "id" in raw && typeof raw.id === "string" ? raw.id.slice(0, 128) : String(index);

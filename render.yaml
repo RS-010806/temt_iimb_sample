@@ -92,6 +92,6 @@ services:
         value: https://temt-iimb-sample.onrender.com
       - key: TRUST_PROXY_HOPS
         value: "1"
-      # Optional: a free Postgres connection string (for example Neon) keeps accounts across restarts.
+      # Supabase session-pooler connection string (see docs/deployment.md); keeps accounts across restarts.
       - key: DATABASE_URL
         sync: false

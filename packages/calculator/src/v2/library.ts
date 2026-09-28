@@ -4,7 +4,8 @@ import type { SourceId } from "./sources.js";
  * TEMT factor library. All intensities are kg CO2e per tonne-kilometre unless a unit says otherwise.
  * WTT = well-to-tank (energy provision), TTW = tank-to-wheel (vehicle operation), WTW = WTT + TTW.
  */
-export type FactorSetId = "glec-india" | "temt-legacy";
+/** `temt` is TEMT's own, ISO 14083-validated factor set and the default; `glec-india` is offered for comparison. */
+export type FactorSetId = "temt" | "glec-india";
 export type TransportMode = "road" | "rail" | "air" | "sea" | "iww";
 export type RoadClassId = "gvw-3.5" | "gvw-3-5" | "gvw-5-12" | "gvw-12-20" | "gvw-20-30" | "gvw-30-50" | "trailer-30-60";
 export type RoadFuel = "diesel" | "petrol" | "cng" | "electric";
@@ -28,22 +29,22 @@ export interface FactorSet {
 }
 
 export const FACTOR_SETS: Readonly<Record<FactorSetId, FactorSet>> = Object.freeze({
+  temt: {
+    id: "temt",
+    label: "TEMT emission factors",
+    short: "TEMT factors",
+    description: "TEMT's India-specific emission factors, validated through its ISO 14083 certification. Where TEMT does not publish its own value, such as container trade lanes, inland waterways and most hub operations, the ISO 14083-aligned GLEC Framework v3.2 default is used.",
+  },
   "glec-india": {
     id: "glec-india",
-    label: "GLEC Framework v3.2 · India defaults",
-    short: "GLEC v3.2 India",
-    description: "Latest published defaults (October 2025). Indian road intensities originate from TCI–IIMB Supply Chain Sustainability Lab research; rail, air, sea, inland waterway and hub values follow GLEC Module 2.",
-  },
-  "temt-legacy": {
-    id: "temt-legacy",
-    label: "Production TEMT factor set",
-    short: "TEMT production",
-    description: "The values used by the production TEMT platform. Use this set to reconcile with shipments already recorded in TEMT or to restate a prior year.",
+    label: "GLEC Framework v3.2 (for comparison)",
+    short: "GLEC v3.2",
+    description: "Smart Freight Centre's GLEC Framework v3.2 defaults, whose Indian road values come from TCI–IIMB research. Use this set to compare with partners who report on GLEC defaults.",
   },
 });
 
 export const ENGINE_V2_VERSION = "temt-engine-2.0.0";
-/** Road refrigeration uplift applied by production TEMT to temperature-controlled road freight. */
+/** Road refrigeration uplift applied by TEMT to temperature-controlled road freight. */
 export const REEFER_UPLIFT = 1.21;
 /** Air distance is great-circle distance plus 95 km (GLEC / ISO 14083 distance adjustment). */
 export const AIR_DISTANCE_ADJUSTMENT_KM = 95;
@@ -51,7 +52,7 @@ export const AIR_DISTANCE_ADJUSTMENT_KM = 95;
 export const SEA_DISTANCE_ADJUSTMENT = 1.15;
 
 const g = (wtt: number, ttw: number, ref: string): Intensity => ({ wtt: wtt / 1000, ttw: ttw / 1000, source: "glec-3.2", ref });
-const t = (wtt: number, ttw: number, ref: string): Intensity => ({ wtt, ttw, source: "temt-production", ref });
+const t = (wtt: number, ttw: number, ref: string): Intensity => ({ wtt, ttw, source: "temt", ref });
 
 // ─── Road ──────────────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ export const ROAD_FACTORS: Readonly<Record<FactorSetId, RoadTable>> = Object.fre
     "gvw-30-50": { diesel: g(15.4, 50.9, "Table 13") },
     "trailer-30-60": { diesel: g(12.8, 42.3, "Table 13") },
   },
-  "temt-legacy": {
+  "temt": {
     "gvw-3.5": { diesel: t(0.053, 0.179, "Road vehicle table"), petrol: t(0.051, 0.156, "Road vehicle table"), cng: t(0.075, 0.181, "Road vehicle table") },
     "gvw-3-5": { diesel: t(0.041, 0.138, "Road vehicle table") },
     "gvw-5-12": { diesel: t(0.027, 0.089, "Road vehicle table"), cng: t(0.034, 0.083, "Road vehicle table") },
@@ -112,7 +113,7 @@ export const EV_ENERGY_PROXY_KWH_PER_TKM: Readonly<Partial<Record<RoadClassId, n
 /** CEA V21.0 all-India weighted average, FY 2024–25. Electricity has no tank-to-wheel emissions. */
 export const INDIA_GRID_KG_PER_KWH = 0.71;
 
-// ─── Courier / part-truckload (production TEMT three-leg model) ────────────
+// ─── Courier / part-truckload (TEMT three-leg model) ────────────
 
 export const TEMT_COURIER = Object.freeze({
   firstMile: t(0.067, 0.224, "Courier first-mile default"),
@@ -126,7 +127,7 @@ export const TEMT_COURIER = Object.freeze({
 
 export const RAIL_FACTORS: Readonly<Record<FactorSetId, Intensity>> = Object.freeze({
   "glec-india": g(6.4, 4.1, "Module 2, rail, Region: India (mixed diesel/electric traction)"),
-  "temt-legacy": t(0.0062, 0.0041, "Rail default"),
+  "temt": t(0.0062, 0.0041, "Rail default"),
 });
 
 // ─── Air ───────────────────────────────────────────────────────────────────
@@ -169,7 +170,7 @@ export const TRADE_LANES: readonly TradeLane[] = Object.freeze([
   { id: "industry-average", label: "Industry average (lane unknown)", dry: { wtt: 12.7, ttw: 59 }, reefer: { wtt: 25.3, ttw: 117 } },
 ]);
 
-/** Average cargo mass per TEU used to convert TEU-km intensities (production TEMT options). */
+/** Average cargo mass per TEU used to convert TEU-km intensities (TEMT options). */
 export const TEU_LOADS = Object.freeze([
   { id: "light", label: "Lightweight cargo", tonnes: 6 },
   { id: "average", label: "Average cargo", tonnes: 10 },
@@ -183,7 +184,7 @@ export interface Vessel {
   size: string;
   /** GLEC Tables 14–17, VLSFO, g CO2e per t-km, before the 15% distance adjustment. */
   glec?: { wtt: number; ttw: number };
-  /** Production TEMT TTW factor, kg CO2e per t-km; WTT is taken as one fifth of TTW. */
+  /** TEMT TTW factor, kg CO2e per t-km; WTT is taken as one fifth of TTW. */
   temtTtw?: number;
 }
 

@@ -1,0 +1,10 @@
+/** Landing-page questions, shared with the FAQPage structured data. */
+export const FAQ = [
+  { q: "Is TEMT free to use?", a: "Yes. Open the workspace and start calculating; no account is needed. For enterprise onboarding, write to the Supply Chain Management Centre at scmc.office@iimb.ac.in." },
+  { q: "Where is my data stored?", a: "In your own browser (IndexedDB) by default. If you sign in, a copy syncs to your TEMT account so you can use it on other devices; you can download or delete that copy at any time. Without an account, nothing is uploaded unless you run the server check." },
+  { q: "Which emission factors does TEMT use?", a: "TEMT's own India-specific factors, developed from research at IIM Bangalore's TCI–IIMB Supply Chain Sustainability Lab and validated through its ISO 14083 certification. For categories TEMT does not cover itself, such as container trade lanes, it uses ISO 14083-aligned international defaults. Every value is listed with its source in the factor library." },
+  { q: "Can I bring my existing TEMT data?", a: "Yes. The bulk importer reads the bulk templates of earlier TEMT versions for road, courier, rail, air, coastal and international water, as well as GST e-way bill JSON and the new TEMT template." },
+  { q: "Does this complete our BRSR?", a: "It covers freight: Scope 3 Categories 4 and 9 and own-fleet Scope 1 and 2, with a Principle 6 mapping. BRSR also needs your site-level emissions and other disclosures." },
+  { q: "How accurate are estimated distances?", a: "Road and rail distances are estimated from city or PIN-code locations with a model calibrated on Indian corridors, typically within 10–15%. Enter actual distances from your TMS or e-way bills whenever you have them." },
+  { q: "Who built TEMT?", a: "The TCI–IIMB Supply Chain Sustainability Lab, part of the Supply Chain Management Centre at IIM Bangalore, founded with Transport Corporation of India in 2023. TEMT was certified to ISO 14083 in December 2024 and adopted by DPIIT." },
+];

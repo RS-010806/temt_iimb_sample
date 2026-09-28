@@ -97,7 +97,7 @@ function summarySheet(workbook: Workbook, model: ReportModel) {
 export async function buildWorkbook(model: ReportModel) {
   const ExcelJS = (await import("exceljs")).default;
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "TEMT · TCI–IIMB Supply Chain Sustainability Lab";
+  workbook.creator = "TEMT · TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore";
   workbook.created = new Date(model.generatedAt);
   workbook.title = `${model.title} ${model.period}`;
   summarySheet(workbook, model);

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Cloud, CloudOff, LoaderCircle, LogIn, LogOut, RefreshCw, UserRound } from "lucide-react";
 import { loadAccount, resolveConflict, retrySync, signOut, useAccount, type AccountState } from "@/lib/account";
@@ -39,6 +40,7 @@ const reopenConflict = () => reopenListeners.forEach((listener) => listener());
 /** Top-bar account entry: sign in, or the signed-in user's menu with sync status. */
 export function AccountMenu() {
   const account = useAccount((value) => value);
+  const pathname = usePathname() ?? "/app/";
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { void loadAccount(); }, []);
@@ -52,7 +54,7 @@ export function AccountMenu() {
 
   if (account.status === "loading" || account.status === "unavailable") return null;
   if (account.status === "signed-out") {
-    return <Link prefetch={false} href="/app/account/" className="btn btn-secondary btn-sm" data-tour="account"><LogIn size={15} aria-hidden="true" /> <span className="hidden sm:inline">Sign in</span></Link>;
+    return <Link prefetch={false} href={`/signin/?next=${encodeURIComponent(pathname)}`} className="btn btn-secondary btn-sm" data-tour="account"><LogIn size={15} aria-hidden="true" /> <span className="hidden sm:inline">Sign in</span></Link>;
   }
   const user = account.user!;
   return (

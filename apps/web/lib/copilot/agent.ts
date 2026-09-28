@@ -61,7 +61,7 @@ export function suggestionsFor(pathname: string): string[] {
   if (pathname.startsWith("/app/reports")) return ["Export an Excel workbook", "How does this map to BRSR?", "Create a Power BI pack"];
   if (pathname.startsWith("/app/planner")) return ["What if we move 40% of long road hauls to rail?", "Do electric trucks help in India?", "Where can I reduce emissions?"];
   if (pathname.startsWith("/app/chain")) return ["What counts as a hub?", "How are courier shipments calculated?", "Compare 10 t Pune to Guwahati"];
-  if (pathname.startsWith("/app/factors")) return ["Where do the Indian factors come from?", "Switch to the production TEMT factors", "What is ISO 14083?"];
+  if (pathname.startsWith("/app/factors")) return ["Where do the Indian factors come from?", "Compare with the GLEC v3.2 factors", "What is ISO 14083?"];
   if (pathname.startsWith("/app")) return ["Summarise my footprint", "Where can I reduce emissions?", "Export a PDF report"];
   return ["What is TEMT?", "Calculate 10 t Pune to Delhi", "Give me a tour"];
 }

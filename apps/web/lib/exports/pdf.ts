@@ -26,7 +26,7 @@ const W = 210, H = 297, M = 16;
 export async function buildPdf(model: ReportModel): Promise<JsPDF> {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
-  doc.setProperties({ title: `${model.title} ${model.period}`, subject: `${model.organisation} freight emissions`, author: "TEMT", creator: "TEMT · TCI–IIMB Supply Chain Sustainability Lab" });
+  doc.setProperties({ title: `${model.title} ${model.period}`, subject: `${model.organisation} freight emissions`, author: "TEMT", creator: "TEMT · TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore" });
   const text = (value: string, x: number, y: number, opts?: Parameters<JsPDF["text"]>[3]) => doc.text(pdfSafe(value), x, y, opts);
   const fill = (color: RGB) => doc.setFillColor(color[0], color[1], color[2]);
   const ink = (color: RGB) => doc.setTextColor(color[0], color[1], color[2]);
@@ -62,7 +62,7 @@ export async function buildPdf(model: ReportModel): Promise<JsPDF> {
   stroke([255, 255, 255]); doc.setLineWidth(0.6); doc.circle(M + 6, 24, 6, "S");
   fill([255, 255, 255]); doc.circle(M + 3, 27, 1.2, "F"); fill(SAND); doc.circle(M + 9, 21, 1.2, "F");
   font("bold", 20, "times"); ink([255, 255, 255]); text("TEMT", M + 16, 27);
-  font("normal", 7.5); ink([239, 196, 192]); text("TRANSPORTATION EMISSION MEASUREMENT TOOL · TCI–IIMB SUPPLY CHAIN SUSTAINABILITY LAB", M + 16, 32, { charSpace: 0.3 });
+  font("normal", 7.5); ink([239, 196, 192]); text("TRANSPORTATION EMISSION MEASUREMENT TOOL · IIM BANGALORE", M + 16, 32, { charSpace: 0.3 });
   if (model.sampleShipments) {
     fill([227, 154, 85]); doc.roundedRect(M, 42, 118, 8, 1.5, 1.5, "F");
     font("bold", 8); ink(DARKEST); text(`SAMPLE DATA · ${model.sampleShipments} synthetic shipments for demonstration`, M + 3, 47.3);
@@ -108,7 +108,7 @@ export async function buildPdf(model: ReportModel): Promise<JsPDF> {
   y = Math.max(y + 4, 262);
   stroke(STONE); doc.setLineWidth(0.3); doc.line(M, y, W - M, y);
   font("normal", 7.5); ink(GREY);
-  wrap(`${generatedLabel(model)}. Prepared with TEMT, developed by the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore. Emissions follow ISO 14083:2023 and the GLEC Framework v3.2 on a well-to-wheel basis. Production TEMT's ISO 14083 and ISO/IEC 27001:2022 certifications apply to that platform and its stated scope.`, W - 2 * M).forEach((line, index) => text(line, M, y + 5 + index * 3.6));
+  wrap(`${generatedLabel(model)}. Prepared with TEMT, developed by the TCI–IIMB Supply Chain Sustainability Lab, Supply Chain Management Centre, IIM Bangalore. Emissions are quantified to ISO 14083:2023 on a well-to-wheel basis with TEMT's India-specific emission factors.`, W - 2 * M).forEach((line, index) => text(line, M, y + 5 + index * 3.6));
 
   // ─── Monthly profile and insights ───────────────────────────────────────
   doc.addPage();
@@ -215,7 +215,7 @@ export async function buildPdf(model: ReportModel): Promise<JsPDF> {
     font("normal", 7); ink(GREY);
     if (page > 1) { text(`TEMT · ${model.title}`, M, 12); text(`${model.organisation} · ${model.period}`, W - M, 12, { align: "right" }); stroke(STONE); doc.setLineWidth(0.2); doc.line(M, 14, W - M, 14); }
     text(`Page ${page} of ${pages}`, W - M, H - 8, { align: "right" });
-    if (page > 1) text("iimb.ac.in · TCI–IIMB Supply Chain Sustainability Lab", M, H - 8);
+    if (page > 1) text("TEMT · Supply Chain Management Centre, IIM Bangalore", M, H - 8);
   }
   return doc;
 }

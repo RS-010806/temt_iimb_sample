@@ -4,6 +4,7 @@ export const TOUR_VIDEO = {
   poster: "/video/temt-tour-poster.jpg",
   captions: "/video/temt-tour.vtt",
   durationSeconds: 287,
+  published: "2026-09-28",
   chapters: [
     { at: 0, title: "TEMT from IIM Bangalore" },
     { at: 14, title: "The website" },

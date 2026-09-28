@@ -1,108 +1,200 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BadgeCheck, Building2, Landmark, PlayCircle, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, BadgeCheck, Building2, Calculator, Check, MousePointer2, FileSpreadsheet, FileText, Landmark, PlayCircle, ShieldCheck, TrainFront, Truck, Plane, BarChart3 } from "lucide-react";
 import { calculateLeg, estimateLandDistanceKm, greatCircleKm } from "@temt/calculator";
 import { vehicleForTonnes } from "@/lib/builders";
 import { emissions, fmt, pct } from "@/lib/format";
 import { cx } from "../ui";
 
-const CITIES = [
-  { id: "mumbai", name: "Mumbai", lat: 19.07, lon: 72.88 }, { id: "delhi", name: "Delhi", lat: 28.65, lon: 77.23 }, { id: "bengaluru", name: "Bengaluru", lat: 12.97, lon: 77.59 },
-  { id: "chennai", name: "Chennai", lat: 13.09, lon: 80.28 }, { id: "kolkata", name: "Kolkata", lat: 22.56, lon: 88.36 }, { id: "hyderabad", name: "Hyderabad", lat: 17.38, lon: 78.46 },
-  { id: "ahmedabad", name: "Ahmedabad", lat: 23.03, lon: 72.59 }, { id: "pune", name: "Pune", lat: 18.52, lon: 73.86 }, { id: "nagpur", name: "Nagpur", lat: 21.15, lon: 79.08 },
-  { id: "guwahati", name: "Guwahati", lat: 26.18, lon: 91.75 }, { id: "jaipur", name: "Jaipur", lat: 26.92, lon: 75.79 }, { id: "lucknow", name: "Lucknow", lat: 26.84, lon: 80.92 },
-  { id: "kochi", name: "Kochi", lat: 9.94, lon: 76.26 }, { id: "ludhiana", name: "Ludhiana", lat: 30.91, lon: 75.85 }, { id: "bhubaneswar", name: "Bhubaneswar", lat: 20.27, lon: 85.83 },
-  { id: "indore", name: "Indore", lat: 22.72, lon: 75.83 }, { id: "visakhapatnam", name: "Visakhapatnam", lat: 17.69, lon: 83.22 }, { id: "patna", name: "Patna", lat: 25.59, lon: 85.14 },
-] as const;
-type CityId = (typeof CITIES)[number]["id"];
-const MINOR = [[31.63, 74.87], [30.73, 76.78], [27.18, 78.02], [25.32, 82.97], [23.26, 77.41], [21.17, 72.83], [22.3, 70.8], [19.99, 73.79], [15.85, 74.5], [15.3, 74.12], [12.3, 76.64], [11.0, 76.96], [9.92, 78.12], [8.52, 76.94], [16.51, 80.65], [18.11, 83.4], [21.25, 81.63], [23.34, 85.31], [24.8, 93.94], [27.47, 94.91], [34.08, 74.8], [26.45, 74.63], [24.58, 73.71], [29.95, 78.16], [26.2, 78.18], [22.72, 88.48], [10.79, 78.7], [14.44, 79.99], [12.91, 74.86], [20.94, 72.95]];
+// ─── The live walkthrough: one shipment, calculated by the real engine ────
+const MUMBAI = { lat: 19.07, lon: 72.88 };
+const DELHI = { lat: 28.65, lon: 77.23 };
+const TONNES = 20;
+const STAGES = ["Enter a shipment", "Get its footprint", "Compare modes", "Report it"] as const;
+const STAGE_MS = 4600;
 
-const W = 460, H = 520;
-const project = (lat: number, lon: number) => ({ x: ((lon - 67.5) / (97.5 - 67.5)) * W, y: ((37 - lat) / (37 - 6.5)) * H });
-const LANES: [CityId, CityId, string][] = [["mumbai", "delhi", "var(--color-maroon-300)"], ["delhi", "kolkata", "#8fb4e3"], ["chennai", "kolkata", "#7fd1c4"], ["bengaluru", "mumbai", "var(--color-maroon-300)"], ["delhi", "bengaluru", "#e8c07a"], ["ahmedabad", "kolkata", "#8fb4e3"], ["chennai", "hyderabad", "var(--color-maroon-300)"], ["mumbai", "kochi", "#7fd1c4"], ["delhi", "guwahati", "#8fb4e3"], ["nagpur", "chennai", "var(--color-maroon-300)"]];
-
-function curve(a: CityId, b: CityId) {
-  const p = CITIES.find((city) => city.id === a)!, q = CITIES.find((city) => city.id === b)!;
-  const A = project(p.lat, p.lon), B = project(q.lat, q.lon);
-  const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
-  const dx = B.x - A.x, dy = B.y - A.y;
-  const bend = 0.18;
-  return `M${A.x.toFixed(1)},${A.y.toFixed(1)} Q${(mx - dy * bend).toFixed(1)},${(my + dx * bend).toFixed(1)} ${B.x.toFixed(1)},${B.y.toFixed(1)}`;
+function useShipment() {
+  return useMemo(() => {
+    const roadKm = estimateLandDistanceKm("road", MUMBAI, DELHI);
+    const road = calculateLeg({ mode: "road", tonnes: TONNES, distanceKm: roadKm, vehicleClass: "gvw-30-50" });
+    const drayage = calculateLeg({ mode: "road", tonnes: TONNES, distanceKm: 30, vehicleClass: vehicleForTonnes(TONNES) }).wtwKg * 2;
+    const rail = calculateLeg({ mode: "rail", tonnes: TONNES, distanceKm: estimateLandDistanceKm("rail", MUMBAI, DELHI) }).wtwKg + drayage;
+    const air = calculateLeg({ mode: "air", tonnes: TONNES, distanceKm: greatCircleKm(MUMBAI, DELHI) }).wtwKg;
+    return { roadKm, road, options: [
+      { id: "road", label: "Road, 32 ft truck", icon: Truck, kg: road.wtwKg, color: "var(--mode-road)" },
+      { id: "rail", label: "Rail with drayage", icon: TrainFront, kg: rail, color: "var(--mode-rail)" },
+      { id: "air", label: "Air cargo", icon: Plane, kg: air, color: "var(--mode-air)" },
+    ] };
+  }, []);
 }
 
-export function FreightNetwork({ className }: { className?: string }) {
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className={className} role="img" aria-label="Animated freight lanes between major Indian cities">
-      <defs>
-        <radialGradient id="hub-glow"><stop offset="0%" stopColor="#efc4c0" stopOpacity=".55" /><stop offset="100%" stopColor="#efc4c0" stopOpacity="0" /></radialGradient>
-      </defs>
-      {MINOR.map(([lat, lon], i) => { const p = project(lat!, lon!); return <circle key={i} cx={p.x} cy={p.y} r="1.6" fill="#efc4c0" opacity=".35" />; })}
-      {LANES.map(([a, b, color], i) => (
-        <g key={`${a}-${b}`}>
-          <path id={`lane-${i}`} d={curve(a, b)} fill="none" stroke={color} strokeOpacity=".5" strokeWidth="1.3" strokeDasharray="2 5" className="lane-dash" />
-          <circle r="3" fill={color} className="motion-safe-only">
-            <animateMotion dur={`${6 + (i % 4) * 1.7}s`} repeatCount="indefinite" begin={`${i * 0.6}s`}><mpath href={`#lane-${i}`} /></animateMotion>
-          </circle>
-        </g>
-      ))}
-      {CITIES.map((city, i) => {
-        const p = project(city.lat, city.lon);
-        const major = i < 6;
-        return (
-          <g key={city.id}>
-            {major && <circle cx={p.x} cy={p.y} r="16" fill="url(#hub-glow)" className="hub-pulse" style={{ animationDelay: `${i * 0.4}s` }} />}
-            <circle cx={p.x} cy={p.y} r={major ? 4 : 2.8} fill="white" />
-            {major && <text x={city.lon < 78 ? p.x - 8 : p.x + 8} y={p.y + 4} textAnchor={city.lon < 78 ? "end" : "start"} fill="#fcf3f2" fontSize="11" fontWeight="600" fontFamily="var(--font-sans)">{city.name}</text>}
-          </g>
-        );
-      })}
-      <style>{`.lane-dash{animation:lane 1.6s linear infinite}@keyframes lane{to{stroke-dashoffset:-14}}.hub-pulse{transform-box:fill-box;transform-origin:center;animation:hub 3.2s ease-in-out infinite}@keyframes hub{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:.9;transform:scale(1.25)}}@media (prefers-reduced-motion:reduce){.motion-safe-only{display:none}.lane-dash,.hub-pulse{animation:none}}`}</style>
-    </svg>
-  );
+function useCountUp(target: number, active: boolean, ms = 1100) {
+  const [value, setValue] = useState(active ? target : 0);
+  useEffect(() => {
+    if (!active) { setValue(0); return; }
+    let frame = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / ms);
+      setValue(target * (1 - (1 - p) ** 3));
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, active, ms]);
+  return value;
 }
 
-function HeroCalculator() {
-  const [from, setFrom] = useState<CityId>("mumbai");
-  const [to, setTo] = useState<CityId>("delhi");
-  const [tonnes, setTonnes] = useState(20);
-  const result = useMemo(() => {
-    const a = CITIES.find((city) => city.id === from)!, b = CITIES.find((city) => city.id === to)!;
-    if (from === to) return null;
-    const gcd = greatCircleKm(a, b);
-    const roadKm = estimateLandDistanceKm("road", a, b);
-    const road = calculateLeg({ mode: "road", tonnes, distanceKm: roadKm, vehicleClass: vehicleForTonnes(tonnes) }).wtwKg;
-    const rail = calculateLeg({ mode: "rail", tonnes, distanceKm: estimateLandDistanceKm("rail", a, b) }).wtwKg + 2 * calculateLeg({ mode: "road", tonnes, distanceKm: 30, vehicleClass: vehicleForTonnes(Math.min(12, tonnes)) }).wtwKg;
-    const air = calculateLeg({ mode: "air", tonnes, distanceKm: gcd }).wtwKg;
-    return { km: roadKm, options: [{ id: "road", label: "Road", kg: road, color: "var(--mode-road)" }, { id: "rail", label: "Rail + drayage", kg: rail, color: "var(--mode-rail)" }, { id: "air", label: "Air", kg: air, color: "var(--mode-air)" }] };
-  }, [from, to, tonnes]);
-  const max = result ? Math.max(...result.options.map((option) => option.kg)) : 1;
-  const saving = result ? (1 - result.options[1]!.kg / result.options[0]!.kg) * 100 : 0;
-  const select = "w-full appearance-none rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-[14px] font-semibold text-ink focus:border-maroon-500 focus:outline-none";
+function Typed({ text, active, delay = 0 }: { text: string; active: boolean; delay?: number }) {
+  const [shown, setShown] = useState(active ? text.length : 0);
+  useEffect(() => {
+    if (!active) { setShown(0); return; }
+    let i = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const next = () => { i += 1; setShown(i); if (i < text.length) timer = setTimeout(next, 55); };
+    timer = setTimeout(next, delay);
+    return () => clearTimeout(timer);
+  }, [text, active, delay]);
+  return <>{text.slice(0, shown)}{active && shown < text.length && <span className="ml-px inline-block h-[1.05em] w-[1.5px] translate-y-[2px] animate-pulse bg-maroon-600" aria-hidden="true" />}</>;
+}
+
+function ProductWalkthrough() {
+  const data = useShipment();
+  const [stage, setStage] = useState(0);
+  const [reduced, setReduced] = useState(false);
+  const paused = useRef(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(media.matches);
+    const timer = setInterval(() => { if (!paused.current && !media.matches) setStage((current) => (current + 1) % STAGES.length); }, STAGE_MS);
+    return () => clearInterval(timer);
+  }, []);
+  const total = emissions(data.road.wtwKg);
+  const counted = useCountUp(data.road.wtwKg, stage >= 1 || reduced);
+  const shown = emissions(counted, { unit: total.unit === "kg" ? "kg" : "t" });
+  const ttwShare = data.road.ttwKg / data.road.wtwKg;
+  const max = Math.max(...data.options.map((option) => option.kg));
+  const saving = 1 - data.options[1]!.kg / data.options[0]!.kg;
+  const fields: [string, string][] = [["From", "Mumbai"], ["To", "Delhi"], ["Cargo", `${TONNES} t · FMCG`], ["Truck", "32 ft multi-axle, diesel"]];
+
   return (
-    <div className="relative rounded-2xl border border-white/40 bg-white p-5 text-ink shadow-[0_30px_80px_-30px_rgba(0,0,0,.55)]">
-      <div className="flex items-center justify-between gap-3"><p className="text-[13px] font-bold">Try it: compare modes</p><span className="badge badge-maroon !text-[11px]">GLEC v3.2 India</span></div>
-      <div className="mt-4 grid grid-cols-[1fr_1fr_84px] gap-2">
-        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">From</span><select aria-label="From" className={select} value={from} onChange={(event) => setFrom(event.target.value as CityId)}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
-        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">To</span><select aria-label="To" className={select} value={to} onChange={(event) => setTo(event.target.value as CityId)}>{CITIES.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
-        <label className="grid gap-1"><span className="text-[11px] font-semibold text-grey-600">Tonnes</span><input aria-label="Tonnes" className={select} type="number" min={1} max={500} value={tonnes} onChange={(event) => setTonnes(Math.max(1, Math.min(500, Number(event.target.value) || 1)))} /></label>
-      </div>
-      {result ? (
-        <div className="mt-5 grid gap-3" aria-live="polite">
-          {result.options.map((option) => {
-            const value = emissions(option.kg);
-            return (
-              <div key={option.id}>
-                <div className="mb-1 flex items-baseline justify-between text-[13px]"><span className="font-semibold">{option.label}</span><span className="num font-bold">{value.value} <span className="font-normal text-grey-600">{value.unit}</span></span></div>
-                <div className="h-2.5 rounded-full bg-stone-100"><div className="h-full rounded-full transition-[width] duration-700 ease-out" style={{ width: `${Math.max(2, (option.kg / max) * 100)}%`, background: option.color }} /></div>
-              </div>
-            );
-          })}
-          <p className="mt-1 rounded-lg bg-maroon-50 px-3 py-2 text-[13px] text-maroon-900">Rail cuts this shipment's footprint by <strong>{pct(saving, 0)}</strong> over ~{fmt(result.km, 0)} km of road.</p>
-          <Link prefetch={false} href={`/app/compare/?from=${CITIES.find((city) => city.id === from)!.name}&to=${CITIES.find((city) => city.id === to)!.name}&t=${tonnes}`} className="btn btn-primary w-full">Open the full comparison <ArrowRight size={16} aria-hidden="true" /></Link>
+    <div className="relative" onMouseEnter={() => { paused.current = true; }} onMouseLeave={() => { paused.current = false; }}>
+      <div className="overflow-hidden rounded-2xl bg-white text-ink shadow-[0_40px_90px_-30px_rgba(0,0,0,.65)] ring-1 ring-white/20">
+        <div className="flex items-center gap-2 border-b border-stone-200 bg-stone-50 px-4 py-2.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" /><span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" /><span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+          <p className="ml-2 truncate text-[12px] font-semibold text-grey-600">TEMT · {STAGES[stage]}</p>
         </div>
-      ) : <p className="mt-6 text-sm text-grey-600">Pick two different cities.</p>}
+        <ol className="grid grid-cols-4 gap-1.5 px-4 pt-4" aria-label="What TEMT does">
+          {STAGES.map((label, i) => (
+            <li key={label}>
+              <button type="button" onClick={() => setStage(i)} className="group grid w-full gap-1.5 text-left" aria-current={stage === i ? "step" : undefined}>
+                <span className="h-1 overflow-hidden rounded-full bg-stone-200"><span className={cx("block h-full rounded-full bg-maroon-600", stage === i && !reduced ? "hero-progress" : stage > i ? "w-full" : "w-0")} style={stage === i ? { animationDuration: `${STAGE_MS}ms` } : undefined} /></span>
+                <span className={cx("text-[11px] font-semibold leading-tight transition-colors", stage === i ? "text-maroon-700" : "text-grey-500 group-hover:text-grey-700")}>{i + 1}. {label}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+
+        <div className="relative h-[292px] px-4 pb-4 pt-3 sm:h-[300px] sm:px-5">
+          {/* 1. Enter a shipment */}
+          <div className={cx("hero-stage", stage === 0 && "is-active")}>
+            <div className="grid grid-cols-2 gap-2.5">
+              {fields.map(([label, text], i) => (
+                <div key={label} className={cx("rounded-lg border px-3 py-2", stage === 0 ? "border-maroon-200 bg-maroon-50/40" : "border-stone-200")}>
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-grey-500">{label}</p>
+                  <p className="mt-0.5 min-h-[20px] text-[14px] font-semibold"><Typed text={text} active={stage === 0 && !reduced} delay={250 + i * 650} />{(reduced || stage !== 0) && text}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 flex items-center gap-2 text-[12.5px] text-grey-600"><Check size={14} className="text-ok" aria-hidden="true" /> Distance found automatically: about {fmt(data.roadKm, 0)} km by road</p>
+            <p className="mt-1.5 flex items-center gap-2 text-[12.5px] text-grey-600"><Check size={14} className="text-ok" aria-hidden="true" /> Cities, 6-digit PIN codes, ports and airports</p>
+            <div className="absolute inset-x-0 bottom-0">
+              <div className={cx("relative flex h-11 items-center justify-center gap-2 rounded-lg bg-maroon-700 text-[14px] font-semibold text-white", stage === 0 && !reduced && "hero-press")} style={{ animationDuration: `${STAGE_MS}ms` }}>
+                <Calculator size={16} aria-hidden="true" /> Calculate emissions
+                {stage === 0 && !reduced && <MousePointer2 size={20} className="hero-cursor absolute left-[62%] top-[55%] text-ink" fill="#fff" style={{ animationDuration: `${STAGE_MS}ms` }} aria-hidden="true" />}
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Footprint */}
+          <div className={cx("hero-stage", stage === 1 && "is-active")}>
+            <p className="text-[12px] font-semibold text-grey-600">Well-to-wheel emissions · Mumbai → Delhi, {TONNES} t</p>
+            <p className="mt-1 flex items-baseline gap-2"><span className="num text-[44px] font-bold leading-none tracking-tight text-maroon-800">{shown.value}</span><span className="text-[17px] font-semibold text-grey-600">{total.unit}</span></p>
+            <div className="mt-4 flex h-3 gap-[2px] overflow-hidden rounded-full bg-stone-100">
+              <span className="h-full transition-[width] duration-1000 ease-out" style={{ width: stage >= 1 || reduced ? `${ttwShare * 100}%` : "0%", background: "var(--stage-ttw)" }} />
+              <span className="h-full transition-[width] delay-300 duration-1000 ease-out" style={{ width: stage >= 1 || reduced ? `${(1 - ttwShare) * 100}%` : "0%", background: "var(--stage-wtt)" }} />
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-grey-700">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "var(--stage-ttw)" }} />Burned in the truck {pct(ttwShare * 100, 0)}</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "var(--stage-wtt)" }} />Producing the fuel {pct((1 - ttwShare) * 100, 0)}</span>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 text-[11.5px] font-semibold">
+              <span className="rounded-full bg-maroon-50 px-2.5 py-1 text-maroon-700">Scope 3 · Category 4</span>
+              <span className="rounded-full bg-stone-100 px-2.5 py-1 text-grey-700">{fmt(data.road.intensityG, 1)} g CO₂e per tonne-km</span>
+              <span className="rounded-full bg-stone-100 px-2.5 py-1 text-grey-700">ISO 14083 basis recorded</span>
+            </div>
+            <dl className="absolute inset-x-0 bottom-0 grid grid-cols-3 gap-2 border-t border-stone-200 pt-3 text-[11.5px]">
+              {[["Distance", `${fmt(data.roadKm, 0)} km, shortest feasible`], ["Emission factor", "TEMT, India-specific"], ["Data type", "Default, upgradeable to fuel data"]].map(([term, value]) => (
+                <div key={term}><dt className="font-semibold uppercase tracking-[0.06em] text-grey-500">{term}</dt><dd className="mt-0.5 leading-snug text-grey-800">{value}</dd></div>
+              ))}
+            </dl>
+          </div>
+
+          {/* 3. Compare */}
+          <div className={cx("hero-stage", stage === 2 && "is-active")}>
+            <p className="text-[12px] font-semibold text-grey-600">Same cargo, door to door</p>
+            <div className="mt-3 grid gap-3">
+              {data.options.map((option, i) => {
+                const value = emissions(option.kg);
+                const Icon = option.icon;
+                return (
+                  <div key={option.id}>
+                    <div className="mb-1 flex items-center justify-between text-[13px]">
+                      <span className="flex items-center gap-2 font-semibold"><Icon size={14} className="text-grey-500" aria-hidden="true" />{option.label}{option.id === "rail" && <span className="rounded-full bg-[#e6f2ea] px-2 py-px text-[10.5px] font-bold text-ok">Lowest</span>}</span>
+                      <span className="num font-bold">{value.value} <span className="font-normal text-grey-600">{value.unit}</span></span>
+                    </div>
+                    <div className="h-2.5 rounded-full bg-stone-100"><div className="h-full rounded-full transition-[width] duration-1000 ease-out" style={{ width: stage === 2 || reduced ? `${Math.max(2, (option.kg / max) * 100)}%` : "0%", background: option.color, transitionDelay: `${i * 180}ms` }} /></div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-4 rounded-lg bg-maroon-50 px-3 py-2 text-[13px] text-maroon-900">Moving this load by rail cuts its footprint by <strong>{pct(saving * 100, 0)}</strong>.</p>
+          </div>
+
+          {/* 4. Report */}
+          <div className={cx("hero-stage", stage === 3 && "is-active")}>
+            <p className="text-[12px] font-semibold text-grey-600">Every shipment rolls into your annual report</p>
+            <ul className="mt-3 grid gap-2 text-[13px]">
+              {[["Scope 3 · Category 4", "Upstream transportation"], ["BRSR Principle 6", "GHG emissions, value chain"], ["Emission intensity", "per tonne-km and per ₹ crore"]].map(([title, body], i) => (
+                <li key={title} className={cx("flex items-center justify-between gap-3 rounded-lg border border-stone-200 px-3 py-2 transition-all duration-500", stage === 3 || reduced ? "translate-x-0 opacity-100" : "translate-x-3 opacity-0")} style={{ transitionDelay: `${i * 150}ms` }}>
+                  <span className="font-semibold">{title}</span><span className="text-right text-[12px] text-grey-600">{body}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[[FileText, "PDF"], [FileSpreadsheet, "Excel"], [FileText, "Word"], [BarChart3, "Power BI"]].map(([Icon, label], i) => {
+                const I = Icon as typeof FileText;
+                return <span key={label as string} className={cx("inline-flex items-center gap-1.5 rounded-full border border-maroon-200 bg-white px-3 py-1 text-[12px] font-semibold text-maroon-800 transition-all duration-500", stage === 3 || reduced ? "scale-100 opacity-100" : "scale-90 opacity-0")} style={{ transitionDelay: `${450 + i * 120}ms` }}><I size={13} aria-hidden="true" />{label as string}<Check size={12} className="text-ok" aria-hidden="true" /></span>;
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 text-center text-[12px] text-maroon-200">Calculated live with TEMT's engine. Hover to pause.</p>
+      <style>{`
+        .hero-stage { position: absolute; inset: 12px 16px 16px; opacity: 0; transform: translateY(10px); transition: opacity .45s ease, transform .6s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
+        @media (min-width: 640px) { .hero-stage { inset: 12px 20px 16px; } }
+        .hero-stage.is-active { opacity: 1; transform: none; pointer-events: auto; }
+        .hero-progress { animation: hero-progress linear forwards; width: 0; }
+        .hero-press { animation-name: hero-press; animation-timing-function: ease; animation-fill-mode: both; }
+        @keyframes hero-press { 0%, 80% { transform: none; background: #740000; } 84% { transform: scale(.97); background: #520000; } 90%, 100% { transform: none; background: #740000; } }
+        .hero-cursor { animation-name: hero-cursor; animation-timing-function: cubic-bezier(.3,.7,.3,1); animation-fill-mode: both; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+        @keyframes hero-cursor { 0%, 58% { opacity: 0; transform: translate(70px, 40px); } 66% { opacity: 1; } 79% { opacity: 1; transform: none; } 84% { transform: scale(.85); } 90%, 100% { opacity: 1; transform: none; } }
+        @keyframes hero-progress { to { width: 100%; } }
+        @media (prefers-reduced-motion: reduce) { .hero-stage { transition: none; } .hero-progress { animation: none; width: 100%; } }
+      `}</style>
     </div>
   );
 }
@@ -111,25 +203,22 @@ export function Hero() {
   const [visible, setVisible] = useState(false);
   useEffect(() => setVisible(true), []);
   return (
-    <section className="relative overflow-hidden bg-[radial-gradient(120%_120%_at_85%_10%,#8f1716_0%,#4c0808_45%,#2a0505_100%)] text-white">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)", backgroundSize: "48px 48px" }} />
-      <FreightNetwork className="pointer-events-none absolute -right-10 top-4 hidden h-[560px] w-auto opacity-80 lg:block xl:right-[30%]" />
-      <div className="container-page relative grid gap-12 py-16 md:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+    <section className="relative overflow-hidden bg-[radial-gradient(110%_120%_at_90%_0%,#8f1716_0%,#4c0808_48%,#2a0505_100%)] text-white">
+      <div className="container-page relative grid gap-12 py-14 md:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div className={cx("transition-all duration-1000", visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0")}>
           <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[12px] font-semibold text-maroon-100"><BadgeCheck size={14} className="text-sand" aria-hidden="true" /> India's first ISO 14083-certified freight emissions platform</p>
-          <h1 className="display mt-6 text-[42px] leading-[1.04] sm:text-[56px] lg:text-[64px]">Measure freight emissions <span className="italic text-maroon-200">the way India moves.</span></h1>
-          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-maroon-100">TEMT, from the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore, turns shipments into traceable, ISO 14083-aligned emissions across road, rail, air, sea and inland waterways, with Indian factors, BRSR-mapped reports and a Copilot that works in plain English.</p>
+          <h1 className="display mt-6 text-[40px] leading-[1.05] sm:text-[54px] lg:text-[60px]">Measure freight emissions <span className="italic text-maroon-200">the way India moves.</span></h1>
+          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-maroon-100">TEMT, from IIM Bangalore's Supply Chain Management Centre, calculates the emissions of every shipment by road, rail, air, sea and inland waterway with India-specific factors, compares cleaner options, and turns the results into BRSR-ready reports.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link prefetch={false} href="/app/" className="btn btn-light btn-lg">Open TEMT, free <ArrowRight size={18} aria-hidden="true" /></Link>
             <Link prefetch={false} href="/tour/" className="btn btn-outline-light btn-lg"><PlayCircle size={18} aria-hidden="true" /> Watch the video tour</Link>
           </div>
-          <p className="mt-10 text-[11px] font-bold uppercase tracking-[0.14em] text-maroon-200">Credentials of the TEMT platform</p>
-          <ul className="mt-3 grid max-w-xl grid-cols-2 gap-x-6 gap-y-3 text-[13px] text-maroon-100 sm:grid-cols-4">
-            {[[ShieldCheck, "ISO 14083"], [ShieldCheck, "ISO/IEC 27001:2022"], [Landmark, "Adopted by DPIIT"], [Building2, "Integrated with ULIP"]].map(([Icon, label]) => { const I = Icon as typeof ShieldCheck; return <li key={String(label)} className="flex items-center gap-2"><I size={15} className="shrink-0 text-sand" aria-hidden="true" />{String(label)}</li>; })}
+          <ul className="mt-10 grid max-w-xl grid-cols-2 gap-x-6 gap-y-3 text-[13px] text-maroon-100 sm:grid-cols-4" aria-label="Credentials">
+            {[[ShieldCheck, "ISO 14083 certified"], [ShieldCheck, "ISO/IEC 27001:2022"], [Landmark, "Adopted by DPIIT"], [Building2, "Integrated with ULIP"]].map(([Icon, label]) => { const I = Icon as typeof ShieldCheck; return <li key={String(label)} className="flex items-center gap-2"><I size={15} className="shrink-0 text-sand" aria-hidden="true" />{String(label)}</li>; })}
           </ul>
         </div>
         <div className={cx("transition-all delay-200 duration-1000", visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0")}>
-          <HeroCalculator />
+          <ProductWalkthrough />
         </div>
       </div>
     </section>

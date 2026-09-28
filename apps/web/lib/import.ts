@@ -6,8 +6,8 @@ import type { Direction, LegMeta, PaidBy, RecordSource, ShipmentRecord } from ".
 export type ImportFormat = "temt" | "legacy-road" | "legacy-rail" | "legacy-air" | "legacy-coastal" | "legacy-water" | "legacy-courier" | "ewaybill";
 
 export const FORMAT_LABELS: Record<ImportFormat, string> = {
-  temt: "TEMT template", "legacy-road": "Production TEMT · Point to point", "legacy-rail": "Production TEMT · Railway", "legacy-air": "Production TEMT · Air",
-  "legacy-coastal": "Production TEMT · Coastal", "legacy-water": "Production TEMT · International water", "legacy-courier": "Production TEMT · Courier / PTL", ewaybill: "E-way bill JSON",
+  temt: "TEMT template", "legacy-road": "Earlier TEMT · Point to point", "legacy-rail": "Earlier TEMT · Railway", "legacy-air": "Earlier TEMT · Air",
+  "legacy-coastal": "Earlier TEMT · Coastal", "legacy-water": "Earlier TEMT · International water", "legacy-courier": "Earlier TEMT · Courier / PTL", ewaybill: "E-way bill JSON",
 };
 
 export const TEMT_COLUMNS = ["reference", "leg_no", "date", "business_unit", "commodity", "origin", "destination", "mode", "tonnes", "distance_km", "vehicle_class", "fuel", "refrigerated", "method", "fuel_quantity", "fuel_unit", "energy_kwh", "air_service", "trade_lane", "container_type", "tonnes_per_teu", "vessel_type", "direction", "paid_by", "notes"] as const;
@@ -74,7 +74,7 @@ export function parseDate(value: unknown): string | undefined {
 
 const MODE_ALIASES: Record<string, TransportMode> = { road: "road", truck: "road", lorry: "road", ftl: "road", ptl: "road", rail: "rail", train: "rail", railway: "rail", air: "air", flight: "air", sea: "sea", ship: "sea", ocean: "sea", coastal: "sea", vessel: "sea", iww: "iww", waterway: "iww", barge: "iww", "inland waterway": "iww" };
 
-/** Map truck descriptions, class ids or production TEMT labels to a class. */
+/** Map truck descriptions, class ids or earlier TEMT labels to a class. */
 export function parseVehicle(value: string, tonnes: number): { id: RoadClassId; guessed: boolean } {
   const text = value.toLowerCase();
   const ids: RoadClassId[] = ["gvw-3.5", "gvw-3-5", "gvw-5-12", "gvw-12-20", "gvw-20-30", "gvw-30-50", "trailer-30-60"];
@@ -101,7 +101,7 @@ export function parseVehicle(value: string, tonnes: number): { id: RoadClassId; 
   return { id: vehicleForTonnes(tonnes), guessed: true };
 }
 
-/** Production TEMT used "Crude tanker" for the bulk-carrier size bands; map categories to the GLEC names. */
+/** Earlier TEMT versions used "Crude tanker" for the bulk-carrier size bands; map categories to vessel names. */
 const LEGACY_VESSEL: Record<string, string> = { "crude tanker": "Bulk carrier", general: "General cargo", "lpg tanker": "Liquefied gas tanker", refrigerated: "Refrigerated bulk", vehicle: "Vehicle carrier", "container ship": "Container ship", "ferry ro pax": "Ferry Ro-Pax", "other liquid tankers": "Other liquid tanker", "chemical tanker": "Chemical tanker", "oil tanker": "Oil tanker", "ro ro": "Ro-Ro", "bulk carrier": "Bulk carrier" };
 export function parseVessel(category: string, size: string) {
   const type = LEGACY_VESSEL[norm(category)] ?? category;
@@ -265,7 +265,7 @@ async function legacyRows(format: ImportFormat, rows: Raw[], options: ImportOpti
       destination = await resolvePort(str(row["destination port"]), errors, "Destination port");
       const { vessel, remapped } = parseVessel(str(row["vessel category"]), str(row["vessel size"]));
       if (!vessel) errors.push(`Vessel “${str(row["vessel category"])} ${str(row["vessel size"])}” is not recognised.`);
-      if (remapped) messages.push("Production TEMT's “Crude tanker” size bands correspond to bulk carriers; mapped to Bulk carrier.");
+      if (remapped) messages.push("Earlier TEMT versions labelled bulk-carrier size bands “Crude tanker”; mapped to Bulk carrier.");
       let km: number | undefined;
       const nm = num(row["distance in nautical miles"]);
       if (nm && !Number.isNaN(nm)) km = nm * 1.852;
@@ -357,7 +357,7 @@ export async function parseImport(file: File, options: ImportOptions): Promise<{
   if (!table.length) throw new Error("The file has no data rows.");
   if (table.length > MAX_IMPORT_ROWS) throw new Error(`The file has ${table.length.toLocaleString("en-IN")} rows. Split it into files of up to ${MAX_IMPORT_ROWS.toLocaleString("en-IN")} rows.`);
   const format = detectFormat(Object.keys(table[0]!));
-  if (!format) throw new Error("Columns not recognised. Use the TEMT template or a production TEMT bulk template.");
+  if (!format) throw new Error("Columns not recognised. Use the TEMT template or a bulk template from an earlier TEMT version.");
   return { format, rows: format === "temt" ? await temtRows(table, options) : await legacyRows(format, table, options) };
 }
 

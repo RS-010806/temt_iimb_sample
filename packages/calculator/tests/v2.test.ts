@@ -7,31 +7,31 @@ import {
 describe("parity with production TEMT", () => {
   // Values exported from the live TEMT compare screen on 19 September 2026 (Delhi → Bengaluru, 1 t).
   it("reproduces the live road comparison", () => {
-    const leg = calculateLeg({ mode: "road", tonnes: 1, distanceKm: 2126.845, vehicleClass: "gvw-5-12", fuel: "diesel" }, "temt-legacy");
+    const leg = calculateLeg({ mode: "road", tonnes: 1, distanceKm: 2126.845, vehicleClass: "gvw-5-12", fuel: "diesel" }, "temt");
     expect(leg.wttKg).toBeCloseTo(57.424815, 5);
     expect(leg.ttwKg).toBeCloseTo(189.289205, 5);
     expect(leg.wtwKg).toBeCloseTo(246.71402, 5);
   });
 
   it("reproduces the live rail comparison", () => {
-    const leg = calculateLeg({ mode: "rail", tonnes: 1, distanceKm: 1994.288 }, "temt-legacy");
+    const leg = calculateLeg({ mode: "rail", tonnes: 1, distanceKm: 1994.288 }, "temt");
     expect(leg.wttKg).toBeCloseTo(12.3645856, 6);
     expect(leg.ttwKg).toBeCloseTo(8.1765808, 6);
   });
 
   it("adds the 95 km air routing adjustment in the production set", () => {
-    const leg = calculateLeg({ mode: "air", tonnes: 2, distanceKm: 1000, airScope: "domestic" }, "temt-legacy");
+    const leg = calculateLeg({ mode: "air", tonnes: 2, distanceKm: 1000, airScope: "domestic" }, "temt");
     expect(leg.distanceKm).toBe(1095);
     expect(leg.wtwKg).toBeCloseTo(2 * 1095 * (1.508 + 0.2444), 6);
   });
 
   it("applies the production refrigeration uplift and courier constants", () => {
-    const plain = calculateLeg({ mode: "road", tonnes: 5, distanceKm: 400, vehicleClass: "gvw-12-20" }, "temt-legacy");
-    const reefer = calculateLeg({ mode: "road", tonnes: 5, distanceKm: 400, vehicleClass: "gvw-12-20", refrigerated: true }, "temt-legacy");
+    const plain = calculateLeg({ mode: "road", tonnes: 5, distanceKm: 400, vehicleClass: "gvw-12-20" }, "temt");
+    const reefer = calculateLeg({ mode: "road", tonnes: 5, distanceKm: 400, vehicleClass: "gvw-12-20", refrigerated: true }, "temt");
     expect(reefer.wtwKg / plain.wtwKg).toBeCloseTo(1.21, 10);
-    const mid = calculateLeg({ mode: "road", tonnes: 1, distanceKm: 100, courierLeg: "mid" }, "temt-legacy");
+    const mid = calculateLeg({ mode: "road", tonnes: 1, distanceKm: 100, courierLeg: "mid" }, "temt");
     expect(mid.wtwKg).toBeCloseTo(100 * (0.063 + 0.019), 10);
-    expect(calculateHub({ type: "transshipment", tonnes: 2 }, "temt-legacy").wtwKg).toBeCloseTo(1.2, 10);
+    expect(calculateHub({ type: "transshipment", tonnes: 2 }, "temt").wtwKg).toBeCloseTo(1.2, 10);
   });
 });
 
@@ -61,8 +61,8 @@ describe("GLEC v3.2 India defaults", () => {
   });
 
   it("switches air haul at 1,500 km and uses the aircraft service type", () => {
-    const short = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1500 });
-    const long = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1501, airService: "freighter" });
+    const short = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1500 }, "glec-india");
+    const long = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1501, airService: "freighter" }, "glec-india");
     expect(short.factor.label).toContain("short-haul");
     expect(short.wtwKg).toBeCloseTo(1500 * 1.363, 6);
     expect(long.wtwKg).toBeCloseTo(1501 * 0.608, 6);
@@ -71,17 +71,17 @@ describe("GLEC v3.2 India defaults", () => {
 
   it("applies the sea distance adjustment only to estimated shortest routes", () => {
     const vesselId = VESSELS.find((vessel) => vessel.type === "Bulk carrier" && vessel.size.startsWith("60,000"))!.id;
-    const shortest = calculateLeg({ mode: "sea", tonnes: 1000, distanceKm: 2000, seaBasis: "vessel", vesselId });
-    const actual = calculateLeg({ mode: "sea", tonnes: 1000, distanceKm: 2000, seaBasis: "vessel", vesselId, distanceBasis: "actual" });
+    const shortest = calculateLeg({ mode: "sea", tonnes: 1000, distanceKm: 2000, seaBasis: "vessel", vesselId }, "glec-india");
+    const actual = calculateLeg({ mode: "sea", tonnes: 1000, distanceKm: 2000, seaBasis: "vessel", vesselId, distanceBasis: "actual" }, "glec-india");
     expect(shortest.wtwKg / actual.wtwKg).toBeCloseTo(1.15, 10);
     expect(actual.wtwKg).toBeCloseTo(1000 * 2000 * (0.9 + 4.4) / 1000, 6);
   });
 
   it("falls back across factor sets with a visible warning", () => {
-    const leg = calculateLeg({ mode: "road", tonnes: 5, distanceKm: 100, vehicleClass: "gvw-12-20", fuel: "cng" });
-    expect(leg.warnings[0]).toMatch(/TEMT production value is used/);
-    expect(leg.factor.source).toBe("temt-production");
-    expect(() => calculateLeg({ mode: "road", tonnes: 5, distanceKm: 100, vehicleClass: "gvw-30-50", fuel: "petrol" })).toThrow(CalculationError);
+    const leg = calculateLeg({ mode: "road", tonnes: 5, distanceKm: 100, vehicleClass: "gvw-12-20", fuel: "cng" }, "glec-india");
+    expect(leg.warnings[0]).toMatch(/TEMT factors value is used/);
+    expect(leg.factor.source).toBe("temt");
+    expect(() => calculateLeg({ mode: "road", tonnes: 5, distanceKm: 100, vehicleClass: "gvw-30-50", fuel: "petrol" }, "glec-india")).toThrow(CalculationError);
   });
 
   it("publishes every road class with its GLEC operating assumptions", () => {
@@ -118,9 +118,9 @@ describe("electric vehicles, fuel allocation and hubs", () => {
   });
 
   it("calculates GLEC hub operations per tonne and per container", () => {
-    expect(calculateHub({ type: "transshipment", tonnes: 10 }).wtwKg).toBeCloseTo(12, 10);
-    expect(calculateHub({ type: "warehouse", tonnes: 2, condition: "mixed" }).wtwKg).toBeCloseTo(100, 10);
-    expect(calculateHub({ type: "container-terminal", containers: 3 }).wtwKg).toBeCloseTo(34.2, 10);
+    expect(calculateHub({ type: "transshipment", tonnes: 10 }, "glec-india").wtwKg).toBeCloseTo(12, 10);
+    expect(calculateHub({ type: "warehouse", tonnes: 2, condition: "mixed" }, "glec-india").wtwKg).toBeCloseTo(100, 10);
+    expect(calculateHub({ type: "container-terminal", containers: 3 }, "glec-india").wtwKg).toBeCloseTo(34.2, 10);
     expect(() => calculateHub({ type: "container-terminal", tonnes: 3 })).toThrow(/Containers handled/);
   });
 });

@@ -3,23 +3,29 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, Check, Cpu, FileSpreadsheet, GitBranch, Landmark, Layers, MapPin, ShieldCheck, Upload } from "lucide-react";
 import { Footer, Header } from "@/components/site-chrome";
 import { ComparisonTeaser } from "@/components/marketing/sections";
+import { JsonLd, breadcrumbs, pageMetadata } from "@/components/seo";
 
-export const metadata: Metadata = { title: "Why TEMT", description: "What makes TEMT different: Indian source factors, ISO 14083-certified methodology, government adoption, multimodal chains, legacy and e-way bill import, and a browser-based AI Copilot." };
+export const metadata: Metadata = pageMetadata({
+  title: "Why TEMT",
+  description: "Why Indian companies choose TEMT for freight emissions: India-specific factors from IIM Bangalore research, ISO 14083 certification, DPIIT adoption, multimodal transport chains, e-way bill import, BRSR-ready reports and a private AI Copilot.",
+  path: "/why-temt/",
+});
 
 const PILLARS = [
-  { icon: MapPin, title: "Indian from the ground up", body: "The Indian truck intensities in the GLEC Framework v3.2 come from the TCI–IIMB Lab's research. TEMT uses them natively, with Indian vehicle classes, PIN codes, e-way bills, financial years and ₹." },
-  { icon: BadgeCheck, title: "Certified methodology", body: "Production TEMT was the first digital platform in India certified to ISO 14083 (methodology validated by SGS), and holds ISO/IEC 27001:2022 for information security." },
+  { icon: MapPin, title: "Indian from the ground up", body: "Emission factors for Indian truck classes, terrain and fuel mix come from IIM Bangalore's own research, with Indian PIN codes, e-way bills, financial years and ₹ built in." },
+  { icon: BadgeCheck, title: "Certified methodology", body: "TEMT was the first platform in India certified to ISO 14083 (December 2024), and its information security is certified to ISO/IEC 27001:2022 by SGS." },
   { icon: Landmark, title: "Government adoption", body: "TEMT is adopted by DPIIT, Ministry of Commerce and Industry, hosted on DPIIT's platform and integrated with the Unified Logistics Interface Platform (ULIP)." },
   { icon: GitBranch, title: "True transport chains", body: "Legs and hubs, fuel- and energy-based methods, courier three-leg models, sea routing and inland waterways: the full ISO 14083 structure, not just a tonne-km multiplier." },
-  { icon: Upload, title: "Your data, as it already is", body: "Import production TEMT bulk templates, GST e-way bill JSON or a simple CSV. Distances come from city names and PIN codes; every row is validated before saving." },
-  { icon: FileSpreadsheet, title: "Reports people can use", body: "PDF, Excel and Word reports with the factor set, data quality, GHG scopes and BRSR Principle 6 mapping; CSV, JSON and Power BI with the same leg-level figures." },
+  { icon: Upload, title: "Your data, as it already is", body: "Import bulk templates from earlier TEMT versions, GST e-way bill JSON or a simple CSV. Distances come from city names and PIN codes; every row is validated before saving." },
+  { icon: FileSpreadsheet, title: "Reports people can use", body: "PDF, Excel and Word reports with factor sources, data quality, GHG scopes and BRSR Principle 6 mapping; CSV, JSON and Power BI with the same leg-level figures." },
   { icon: Cpu, title: "A Copilot that stays private", body: "Calculate, compare, analyse, export and learn in plain English. It runs in the browser, and can use a local AI model on your own computer instead of a cloud AI service." },
-  { icon: Layers, title: "Versioned and reconcilable", body: "Switch between GLEC v3.2 India and the production TEMT factor set to restate a year or reconcile with existing records, without touching inputs." },
+  { icon: Layers, title: "Transparent and auditable", body: "Every result records its activity, distance type, factor source and data quality, the disclosures ISO 14083 asks for, and every factor is versioned in the library." },
 ];
 
 export default function WhyTemtPage() {
   return (
     <>
+      <JsonLd data={breadcrumbs([["Home", "/"], ["Why TEMT", "/why-temt/"]])} />
       <Header />
       <main id="main" className="bg-paper">
         <section className="bg-gradient-to-br from-maroon-800 via-maroon-900 to-maroon-950 py-16 text-white md:py-24">
@@ -55,7 +61,7 @@ export default function WhyTemtPage() {
             </div>
             <div className="grid content-start gap-3 rounded-2xl bg-maroon-50 p-6">
               <ShieldCheck size={26} className="text-maroon-700" aria-hidden="true" />
-              <p className="text-[15px] leading-relaxed text-maroon-900">Certifications and DPIIT adoption refer to the production TEMT platform and their stated scope. This workspace uses the same methodology and reproduces production calculations under the production factor set.</p>
+              <p className="text-[15px] leading-relaxed text-maroon-900">Developed by the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore's Supply Chain Management Centre. Enterprise onboarding: scmc.office@iimb.ac.in.</p>
               <Link prefetch={false} href="/app/" className="btn btn-primary mt-2">Open TEMT <ArrowRight size={16} aria-hidden="true" /></Link>
             </div>
           </div>

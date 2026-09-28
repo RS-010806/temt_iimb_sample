@@ -52,7 +52,7 @@ export function QuickCalc({ tone = "card" }: { tone?: "card" | "hero" }) {
   return (
     <div className={cx("flex h-full flex-col", tone === "card" ? "card card-pad" : "rounded-2xl bg-white p-5 text-ink shadow-2xl")} data-tour="quick-calc">
       <div className="flex items-center justify-between gap-3">
-        <div><h2 className="card-title">Quick calculate</h2><p className="card-subtitle">Door-to-door, with the active factor set</p></div>
+        <div><h2 className="card-title">Quick calculate</h2><p className="card-subtitle">Door-to-door, with TEMT's India-specific factors</p></div>
         <Link prefetch={false} href="/app/calculate/" className="shrink-0 whitespace-nowrap text-[12.5px] font-semibold text-maroon-700 hover:underline">Full calculator</Link>
       </div>
       <div className="mt-4 grid gap-2.5">

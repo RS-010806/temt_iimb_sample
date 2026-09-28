@@ -8,6 +8,8 @@ import { uid } from "./format";
 export interface Settings {
   organisation: { name: string; symbol?: string; industry?: string; revenueCrore?: number; contact?: string };
   factorSet: FactorSetId;
+  /** 2 = TEMT's own factor set became the default (earlier workspaces defaulted to GLEC). */
+  factorSetVersion?: number;
   businessUnits: string[];
   target: { baseYear: string; targetYear: string; reductionPercent: number };
   carbonPriceInrPerTonne: number;
@@ -33,7 +35,8 @@ export interface State {
 
 export const DEFAULT_SETTINGS: Settings = {
   organisation: { name: "" },
-  factorSet: "glec-india",
+  factorSet: "temt",
+  factorSetVersion: 2,
   businessUnits: ["Operations"],
   target: { baseYear: "FY 2024–25", targetYear: "FY 2030–31", reductionPercent: 30 },
   carbonPriceInrPerTonne: 0,
@@ -53,6 +56,15 @@ function emit() {
 export function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+/** Fill missing settings and move older workspaces to the current factor-set ids and default. */
+export function normaliseSettings(saved?: Partial<Settings>): Settings {
+  const merged: Settings = { ...DEFAULT_SETTINGS, ...saved, organisation: { ...DEFAULT_SETTINGS.organisation, ...saved?.organisation }, target: { ...DEFAULT_SETTINGS.target, ...saved?.target }, copilot: { ...DEFAULT_SETTINGS.copilot, ...saved?.copilot } };
+  if ((merged.factorSet as string) === "temt-legacy") merged.factorSet = "temt";
+  if (merged.factorSet !== "temt" && merged.factorSet !== "glec-india") merged.factorSet = "temt";
+  if ((saved?.factorSetVersion ?? 1) < 2) { merged.factorSet = "temt"; merged.factorSetVersion = 2; }
+  return merged;
 }
 
 export function getState() {
@@ -142,7 +154,7 @@ export function hydrate() {
       hydrated: true,
       storage,
       shipments: Array.isArray(shipments) ? shipments : [],
-      settings: { ...DEFAULT_SETTINGS, ...settings, organisation: { ...DEFAULT_SETTINGS.organisation, ...settings?.organisation }, target: { ...DEFAULT_SETTINGS.target, ...settings?.target }, copilot: { ...DEFAULT_SETTINGS.copilot, ...settings?.copilot } },
+      settings: normaliseSettings(settings),
       activity: Array.isArray(activity) ? activity : [],
     };
     emit();
@@ -268,7 +280,7 @@ export function workspaceSnapshot() {
 export function applyRemoteWorkspace(data: { settings?: Partial<Settings>; shipments?: unknown }, detail: string) {
   const shipments = (Array.isArray(data.shipments) ? data.shipments : []).filter((item): item is ShipmentRecord => !!item && typeof item === "object" && "id" in item && "input" in item && "origin" in item);
   const remote = data.settings ?? {};
-  const settings: Settings = { ...DEFAULT_SETTINGS, ...remote, organisation: { ...DEFAULT_SETTINGS.organisation, ...remote.organisation }, target: { ...DEFAULT_SETTINGS.target, ...remote.target }, copilot: { ...DEFAULT_SETTINGS.copilot, ...remote.copilot } };
+  const settings = normaliseSettings(remote);
   set({ shipments, settings }, { action: "Synced from account", detail });
   return shipments.length;
 }
@@ -285,6 +297,6 @@ export function restoreBackup(payload: unknown): { ok: true; count: number } | {
   const data = payload as { app?: string; shipments?: unknown; settings?: Partial<Settings> };
   if (data.app !== "TEMT" || !Array.isArray(data.shipments)) return { ok: false, error: "The file is not a TEMT workspace backup." };
   const shipments = data.shipments.filter((item): item is ShipmentRecord => !!item && typeof item === "object" && "id" in item && "input" in item && "origin" in item);
-  set({ shipments, settings: { ...state.settings, ...data.settings } }, { action: "Backup restored", detail: `${shipments.length} shipments` });
+  set({ shipments, settings: normaliseSettings({ ...state.settings, ...data.settings }) }, { action: "Backup restored", detail: `${shipments.length} shipments` });
   return { ok: true, count: shipments.length };
 }

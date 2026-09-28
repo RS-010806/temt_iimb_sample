@@ -8,7 +8,7 @@ export interface Source {
   note?: string;
 }
 
-export type SourceId = "glec-3.2" | "temt-production" | "cea-21" | "iso-14083" | "ghg-protocol-scope3";
+export type SourceId = "glec-3.2" | "temt" | "cea-21" | "iso-14083" | "ghg-protocol-scope3";
 
 export const SOURCES: Readonly<Record<SourceId, Source>> = Object.freeze({
   "glec-3.2": {
@@ -19,13 +19,13 @@ export const SOURCES: Readonly<Record<SourceId, Source>> = Object.freeze({
     url: "https://smartfreightcentre.org/news/13311209",
     note: "Indian road intensities in Table 13 are based on research by the TCI–IIMB Supply Chain Sustainability Lab.",
   },
-  "temt-production": {
-    id: "temt-production",
-    title: "Production TEMT factor set (iimb.freightemissions.com)",
-    publisher: "TCI–IIMB Supply Chain Sustainability Lab",
+  temt: {
+    id: "temt",
+    title: "TEMT emission factors",
+    publisher: "TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore",
     year: 2024,
-    url: "https://iimb.freightemissions.com/",
-    note: "Values as used by the production TEMT platform, reproduced for reconciliation with existing TEMT records.",
+    url: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab",
+    note: "India-specific factors validated through TEMT's ISO 14083 certification (December 2024).",
   },
   "cea-21": {
     id: "cea-21",

@@ -1,6 +1,6 @@
 /**
  * Realistic import files for end-to-end checks and the walkthrough video: the TEMT template,
- * the six production TEMT bulk templates (same headers as iimb.freightemissions.com) and an
+ * the six bulk templates from earlier TEMT versions (same headers) and an
  * e-way bill JSON export.
  */
 import { mkdirSync, writeFileSync } from "node:fs";

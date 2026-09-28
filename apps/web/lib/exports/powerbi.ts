@@ -87,7 +87,7 @@ Relationships: fact_legs[shipment_ref] → dim_shipments[ref]; fact_hubs[shipmen
 4. Add the measures in measures.dax.
 5. View → Themes → Browse for themes → report-theme.json for IIM Bangalore colours.
 
-Emissions are reported in kg CO2e in the tables; the measures convert to tonnes. Figures follow ISO 14083:2023 and the GLEC Framework v3.2 on a well-to-wheel basis.
+Emissions are reported in kg CO2e in the tables; the measures convert to tonnes. Figures are quantified to ISO 14083:2023 on a well-to-wheel basis with TEMT's India-specific emission factors.
 `);
   return zip.generateAsync({ type: "blob" });
 }

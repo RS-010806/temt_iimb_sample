@@ -3,12 +3,34 @@ import Link from "next/link";
 import { ArrowRight, Compass } from "lucide-react";
 import { Footer, Header } from "@/components/site-chrome";
 import { TourPlayer } from "@/components/marketing/tour-player";
+import { JsonLd, ORGANIZATION, SITE_URL, breadcrumbs, pageMetadata } from "@/components/seo";
+import { TOUR_VIDEO } from "@/lib/tour-video";
 
-export const metadata: Metadata = { title: "Video tour", description: "A two-and-a-half-minute walkthrough of TEMT: calculator, comparisons, transport chains, bulk import, reports, reduction planner and the Copilot." };
+const DESCRIPTION = "A narrated walkthrough of TEMT, end to end: the shipment calculator, mode comparisons, transport chains, bulk import, accounts and sync, reports and exports, the reduction planner and the Copilot.";
+export const metadata: Metadata = pageMetadata({ title: "Video tour", description: DESCRIPTION, path: "/tour/" });
+
+const iso = (seconds: number) => `PT${Math.floor(seconds / 60)}M${Math.round(seconds % 60)}S`;
+const VIDEO = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: "TEMT product tour",
+  description: DESCRIPTION,
+  thumbnailUrl: [`${SITE_URL}${TOUR_VIDEO.poster}`],
+  uploadDate: TOUR_VIDEO.published,
+  duration: iso(TOUR_VIDEO.durationSeconds),
+  contentUrl: `${SITE_URL}${TOUR_VIDEO.src}`,
+  embedUrl: `${SITE_URL}/tour/`,
+  inLanguage: "en-IN",
+  publisher: ORGANIZATION,
+  hasPart: TOUR_VIDEO.chapters.map((chapter, index) => ({
+    "@type": "Clip", name: chapter.title, startOffset: chapter.at, endOffset: TOUR_VIDEO.chapters[index + 1]?.at ?? TOUR_VIDEO.durationSeconds, url: `${SITE_URL}/tour/?t=${chapter.at}`,
+  })),
+};
 
 export default function TourPage() {
   return (
     <>
+      <JsonLd data={[VIDEO, breadcrumbs([["Home", "/"], ["Video tour", "/tour/"]])]} />
       <Header />
       <main id="main" className="bg-[radial-gradient(100%_80%_at_80%_0%,#8f1716_0%,#4c0808_45%,#2a0505_100%)] text-white">
         <section className="container-page py-14 md:py-20">

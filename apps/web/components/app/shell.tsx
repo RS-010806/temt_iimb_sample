@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeftRight, BarChart3, BookOpen, Calculator, CircleHelp, Database, FileText, GitBranch, LayoutDashboard, Menu, Settings2, ShieldCheck, Sparkles, Target, Upload, X } from "lucide-react";
-import { FACTOR_SETS } from "@temt/calculator";
+import { ArrowLeftRight, BookOpen, Calculator, CircleHelp, Database, FileText, GitBranch, LayoutDashboard, Menu, Settings2, ShieldCheck, Sparkles, Target, Upload, X } from "lucide-react";
 import { hydrate, useStore } from "@/lib/store";
 import { ToastProvider, cx } from "../ui";
 import { Brand } from "../brand";
@@ -58,8 +57,8 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </ul>
       </nav>
       <div className="m-3 rounded-xl border border-white/10 bg-white/5 p-3.5">
-        <p className="flex items-center gap-2 text-[12px] font-bold"><ShieldCheck size={15} className="text-maroon-200" aria-hidden="true" /> ISO 14083-aligned method</p>
-        <p className="mt-1 text-[11px] leading-relaxed text-maroon-200">Production TEMT was the first digital platform in India certified to ISO 14083 and holds ISO/IEC 27001:2022.</p>
+        <p className="flex items-center gap-2 text-[12px] font-bold"><ShieldCheck size={15} className="text-maroon-200" aria-hidden="true" /> ISO 14083 certified</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-maroon-200">India's first freight emissions platform certified to ISO 14083, with ISO/IEC 27001:2022 information security.</p>
       </div>
     </div>
   );
@@ -80,9 +79,6 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
         <p className="hidden text-xs text-grey-500 sm:block">{hydrated ? (storage === "memory" ? "Session only" : "Saved privately in this browser") : "Loading workspace…"}</p>
       </div>
       {samples && !onDashboard && <Link prefetch={false} href="/app/settings/#data" className="hidden rounded-full bg-[#fdf6e8] px-3 py-1.5 text-xs font-bold text-[#6b4a06] ring-1 ring-[#f0dfb5] sm:inline-flex" title="This workspace includes synthetic sample shipments">Sample data</Link>}
-      <Link prefetch={false} href="/app/settings/#factors" data-tour="factor-set" className="hidden items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-grey-700 transition hover:border-maroon-300 md:inline-flex" title="Change the factor set">
-        <BarChart3 size={14} className="text-maroon-600" aria-hidden="true" /> {FACTOR_SETS[settings.factorSet].short}
-      </Link>
       <AccountMenu />
       <button type="button" data-tour="copilot-button" className="btn btn-primary btn-sm" onClick={() => openCopilot()}>
         <Sparkles size={15} aria-hidden="true" /> <span className="hidden sm:inline">Ask Copilot</span><kbd className="ml-1 hidden rounded bg-white/15 px-1.5 text-[10px] font-semibold md:inline">⌘K</kbd>

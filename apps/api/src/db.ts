@@ -4,7 +4,9 @@
  * Every statement goes through `query(text, params)` with numbered placeholders ($1, $2, …), so user input is
  * always a bound parameter and never part of the SQL text. The SQL is a portable subset that runs unchanged on:
  *
- * - Postgres, when DATABASE_URL is set (for example a free Neon database), through node-postgres;
+ * - Postgres, when DATABASE_URL is set (for example a free Supabase or Neon database), through node-postgres. The
+ *   tables live in their own `temt` schema with row-level security on, so a Supabase project's public Data API
+ *   (which serves the `public` schema) can never read them;
  * - SQLite built into Node otherwise: a file when TEMT_DATA_DIR is set, else in memory. It needs only a few MB,
  *   so it fits the smallest free hosting instances.
  *
@@ -25,6 +27,8 @@ export interface Db {
 
 export interface DbOptions {
   url?: string;
+  /** PEM certificate authority for Postgres; when given, the server certificate is verified against it. */
+  ca?: string;
   /** Folder for the embedded database file. Omit for an in-memory database. */
   dataDir?: string;
 }
@@ -86,14 +90,39 @@ const MIGRATIONS = [
   `CREATE INDEX IF NOT EXISTS temt_login_failures_idx ON temt_login_failures (key, at)`,
 ];
 
-async function postgres(url: string): Promise<Db> {
+const TABLES = ["temt_users", "temt_sessions", "temt_workspaces", "temt_reports", "temt_activity", "temt_login_failures"];
+const SCHEMA = "temt";
+
+/**
+ * TLS for node-postgres, following libpq's sslmode meanings. node-postgres itself treats `sslmode=require` as
+ * full verification, which fails against managed databases that sign with their own CA (Supabase), so the mode is
+ * read here and removed from the URL.
+ */
+export function postgresConnection(url: string, ca?: string) {
+  let parsed: URL;
+  try { parsed = new URL(url); } catch { return { connectionString: url, ssl: ca ? { ca, rejectUnauthorized: true } : undefined }; }
+  const mode = parsed.searchParams.get("sslmode") ?? undefined;
+  for (const key of ["sslmode", "sslrootcert", "sslcert", "sslkey", "uselibpqcompat"]) parsed.searchParams.delete(key);
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+  const ssl = mode === "disable" || (local && !mode) ? false
+    : ca ? { ca, rejectUnauthorized: true }
+    : mode === "verify-full" || mode === "verify-ca" ? { rejectUnauthorized: true }
+    : { rejectUnauthorized: false };
+  return { connectionString: parsed.toString(), ssl };
+}
+
+async function postgres(url: string, ca?: string): Promise<Db> {
   const { default: pg } = await import("pg");
   // A small pool: the API runs on a single small instance.
-  const pool = new pg.Pool({ connectionString: url, max: 4, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 10_000 });
+  const pool = new pg.Pool({ ...postgresConnection(url, ca), max: 4, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 10_000 });
+  // Tables are named with the schema in every statement, which also works through transaction-mode poolers
+  // where a session-level search_path would not stick.
+  const qualified = new RegExp(`\\b(${TABLES.join("|")})\\b`, "g");
+  await pool.query(`CREATE SCHEMA IF NOT EXISTS ${SCHEMA}`);
   return {
     mode: "postgres",
     persistent: true,
-    async query<T>(text: string, params: readonly unknown[] = []) { return (await pool.query(text, params as unknown[])).rows as T[]; },
+    async query<T>(text: string, params: readonly unknown[] = []) { return (await pool.query(text.replace(qualified, `${SCHEMA}.$1`), params as unknown[])).rows as T[]; },
     close: () => pool.end(),
   };
 }
@@ -120,16 +149,21 @@ async function embedded(dataDir?: string): Promise<Db> {
 /** Create the tables on any database that implements `query`. */
 export async function migrate<T extends Db>(db: T): Promise<T> {
   for (const statement of MIGRATIONS) await db.query(statement);
+  if (db.mode === "postgres") {
+    // Only the API's own database role (the table owner) reads these tables; with row-level security on and no
+    // policies, any other role, such as a hosted Data API's anonymous role, sees nothing.
+    for (const table of TABLES) await db.query(`ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY`);
+  }
   return db;
 }
 
 export async function openDb(options: DbOptions = {}): Promise<Db> {
-  return migrate(options.url ? await postgres(options.url) : await embedded(options.dataDir));
+  return migrate(options.url ? await postgres(options.url, options.ca) : await embedded(options.dataDir));
 }
 
 /** Storage from the environment: DATABASE_URL, else TEMT_DATA_DIR, else in memory. */
 export function dbOptionsFromEnv(env: NodeJS.ProcessEnv = process.env): DbOptions {
   const url = env.DATABASE_URL?.trim() || env.POSTGRES_URL?.trim();
-  if (url) return { url };
+  if (url) return { url, ca: env.DATABASE_CA_CERT?.trim() || undefined };
   return { dataDir: env.TEMT_DATA_DIR?.trim() || undefined };
 }

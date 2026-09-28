@@ -170,7 +170,7 @@ export function CalculateView() {
   // Suggest a truck class that fits the cargo until the user picks one.
   // Before paint, so the result never flashes an intermediate truck class while the weight is typed.
   useLayoutEffect(() => { if (form.vehicleAuto && tonnes) set({ vehicleClass: vehicleForTonnes(tonnes) }); }, [tonnes, form.vehicleAuto]);
-  // Container voyages use the GLEC trade lane that matches the route until the user picks one.
+  // Container voyages use the trade lane that matches the route until the user picks one.
   useEffect(() => {
     if (form.mode !== "sea" || form.tradeLaneEdited || !form.origin?.country || !form.destination?.country) return;
     const lane = suggestTradeLane(form.origin.country, form.destination.country);
@@ -184,7 +184,7 @@ export function CalculateView() {
     try { return { result: calculateShipment({ legs: built.legs, hubs: built.hubs }, settings.factorSet) }; } catch (error) { return { error: error instanceof Error ? error.message : "Calculation failed." }; }
   }, [built, settings.factorSet]);
 
-  const availableFuels = (["diesel", "cng", "petrol"] as const).filter((fuel) => ROAD_FACTORS[settings.factorSet][form.vehicleClass]?.[fuel] || ROAD_FACTORS["glec-india"][form.vehicleClass]?.[fuel] || ROAD_FACTORS["temt-legacy"][form.vehicleClass]?.[fuel]);
+  const availableFuels = (["diesel", "cng", "petrol"] as const).filter((fuel) => ROAD_FACTORS[settings.factorSet][form.vehicleClass]?.[fuel] || ROAD_FACTORS["glec-india"][form.vehicleClass]?.[fuel] || ROAD_FACTORS["temt"][form.vehicleClass]?.[fuel]);
   const result = calc.result;
   const headline = result ? emissions(result.wtwKg) : null;
 
@@ -239,7 +239,7 @@ export function CalculateView() {
                 <NumberInput id="distance" value={form.distanceKm} suffix="km" onChange={(distanceKm) => set({ distanceKm, distanceEdited: true })} placeholder="e.g. 1,420" />
               </Field>
               {form.mode === "sea" && form.distanceEdited && (
-                <Field label="Distance basis" info="GLEC non-container factors assume the shortest feasible route and add 15%. If you enter the distance the ship actually sailed, the adjustment is skipped.">
+                <Field label="Distance basis" info="Non-container sea factors assume the shortest feasible route and include a distance adjustment. If you enter the distance the ship actually sailed, the adjustment is skipped.">
                   <Segmented ariaLabel="Distance basis" value={form.distanceBasis} onChange={(distanceBasis) => set({ distanceBasis })} options={[{ value: "shortest", label: "Shortest route" }, { value: "actual", label: "Actual sailed" }]} />
                 </Field>
               )}
@@ -256,7 +256,7 @@ export function CalculateView() {
           <Section n={3} title="Cargo" aside={<Segmented ariaLabel="Weight unit" size="sm" value={form.weightUnit} onChange={(weightUnit) => set({ weightUnit, tonnes: form.tonnes === undefined ? undefined : weightUnit === "kg" ? form.tonnes * (form.weightUnit === "t" ? 1000 : 1) : form.tonnes / (form.weightUnit === "kg" ? 1000 : 1) })} options={[{ value: "t", label: "Tonnes" }, { value: "kg", label: "kg" }]} />}>
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Cargo weight" htmlFor="tonnes" hint="Actual weight carried for this shipment (not vehicle capacity)."><NumberInput id="tonnes" value={form.tonnes} suffix={form.weightUnit} onChange={(value) => set({ tonnes: value })} placeholder={form.weightUnit === "t" ? "e.g. 18" : "e.g. 750"} /></Field>
-              <Field label="Temperature control" htmlFor="reefer"><div className="flex min-h-[42px] items-center"><Toggle checked={form.refrigerated} onChange={(refrigerated) => set({ refrigerated, containerType: refrigerated ? "reefer" : "dry" })} label={<span className="inline-flex items-center gap-1.5"><Snowflake size={14} aria-hidden="true" /> Refrigerated</span>} description={form.mode === "road" || form.mode === "courier" ? "Applies the production TEMT refrigeration uplift" : form.mode === "sea" ? "Uses reefer container values" : "No effect for this mode"} /></div></Field>
+              <Field label="Temperature control" htmlFor="reefer"><div className="flex min-h-[42px] items-center"><Toggle checked={form.refrigerated} onChange={(refrigerated) => set({ refrigerated, containerType: refrigerated ? "reefer" : "dry" })} label={<span className="inline-flex items-center gap-1.5"><Snowflake size={14} aria-hidden="true" /> Refrigerated</span>} description={form.mode === "road" || form.mode === "courier" ? "Applies TEMT's refrigeration uplift" : form.mode === "sea" ? "Uses reefer container values" : "No effect for this mode"} /></div></Field>
             </div>
           </Section>
 
@@ -294,7 +294,7 @@ export function CalculateView() {
                 )}
                 {form.fuel === "electric" && (
                   <div className="grid gap-3 rounded-xl bg-stone-50 p-4 md:grid-cols-3">
-                    <Field label="Electricity used" hint={form.vehicleClass === "gvw-3.5" ? "Required for light EVs." : "Blank uses a GLEC proxy estimate."}><NumberInput value={form.energyKwh} suffix="kWh" onChange={(energyKwh) => set({ energyKwh })} placeholder="From charging logs" /></Field>
+                    <Field label="Electricity used" hint={form.vehicleClass === "gvw-3.5" ? "Required for light EVs." : "Blank uses an estimate from international data."}><NumberInput value={form.energyKwh} suffix="kWh" onChange={(energyKwh) => set({ energyKwh })} placeholder="From charging logs" /></Field>
                     <Field label="Electricity factor" hint={`Blank uses CEA V21.0 grid average (${INDIA_GRID_KG_PER_KWH}). Enter your renewable contract's factor.`}><NumberInput value={form.gridFactor} suffix="kg/kWh" onChange={(gridFactor) => set({ gridFactor })} placeholder={String(INDIA_GRID_KG_PER_KWH)} /></Field>
                     <Field label="Share for this cargo"><NumberInput value={form.allocationPercent} suffix="%" onChange={(allocationPercent) => set({ allocationPercent })} placeholder="100" /></Field>
                   </div>
@@ -306,7 +306,7 @@ export function CalculateView() {
                 {([["firstVehicle", "First-mile vehicle"], ["midVehicle", "Line-haul vehicle"], ["lastVehicle", "Last-mile vehicle"]] as const).map(([key, label]) => (
                   <Field key={key} label={label}><Select value={form[key]} onChange={(value) => set({ [key]: value } as Partial<Form>)} options={ROAD_CLASSES.map((item) => ({ value: item.id, label: `${item.label} (${item.gvw})` }))} /></Field>
                 ))}
-                <p className="text-[13px] text-grey-600 md:col-span-3">Includes two hub transshipments ({settings.factorSet === "temt-legacy" ? "0.6 kg CO₂e per tonne each, production TEMT" : `${HUB_TYPES.transshipment.ambient} kg CO₂e per tonne each, GLEC Table 3`}).{settings.factorSet === "temt-legacy" && " The production set uses TEMT's courier defaults for each leg."}</p>
+                <p className="text-[13px] text-grey-600 md:col-span-3">Includes two hub transshipments ({settings.factorSet === "temt" ? "TEMT courier hub default" : `${HUB_TYPES.transshipment.ambient} kg CO₂e per tonne each, GLEC Table 3`}).{settings.factorSet === "temt" && " Each leg uses TEMT's courier defaults."}</p>
               </div>
             )}
             {form.mode === "rail" && <p className="text-[14px] text-grey-700">Indian Railways average for mixed diesel and electric traction ({FACTOR_SETS[settings.factorSet].short}). For door-to-door rail with road drayage, use <Link href="/app/compare/" className="font-semibold text-maroon-700 underline">Compare modes</Link> or the <Link href="/app/chain/" className="font-semibold text-maroon-700 underline">chain builder</Link>.</p>}
@@ -329,7 +329,7 @@ export function CalculateView() {
                 )}
               </div>
             )}
-            {form.mode === "iww" && <Field label="Inland vessel" hint="GLEC defaults, based mainly on European operations. Use operator data for National Waterways where available."><Select value={form.iwwVesselId} onChange={(iwwVesselId) => set({ iwwVesselId })} options={IWW_VESSELS.map((vessel) => ({ value: vessel.id, label: vessel.label }))} /></Field>}
+            {form.mode === "iww" && <Field label="Inland vessel" hint="International defaults, based mainly on European operations. Use operator data for National Waterways where available."><Select value={form.iwwVesselId} onChange={(iwwVesselId) => set({ iwwVesselId })} options={IWW_VESSELS.map((vessel) => ({ value: vessel.id, label: vessel.label }))} /></Field>}
             {form.mode !== "courier" && !(form.mode === "road" && form.method !== "distance") && form.fuel !== "electric" && (
               <div className="mt-5 border-t border-stone-200 pt-4">
                 <Toggle checked={form.useCustom} onChange={(useCustom) => set({ useCustom })} label="Use a carrier-specific intensity" description="Primary data from your carrier or telematics, in kg CO₂e per tonne-km." />

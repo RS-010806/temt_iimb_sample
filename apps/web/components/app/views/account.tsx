@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CheckCircle2, CloudUpload, Download, Eye, EyeOff, FileClock, History, KeyRound, LaptopMinimal, LoaderCircle, LogOut, MonitorSmartphone, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { LogIn, CheckCircle2, CloudUpload, Download, Eye, EyeOff, FileClock, History, KeyRound, LaptopMinimal, LoaderCircle, LogOut, MonitorSmartphone, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { MODE_LABELS, type TransportMode } from "@temt/calculator";
 import {
   ApiError, changePassword, deleteAccount, downloadAccountExport, listActivity, listReports, listSessions, retrySync, revokeOtherSessions, revokeSession, signIn, signOut, signUp,
@@ -53,8 +54,9 @@ function StorageNote() {
   );
 }
 
-function AuthPanel() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+export function AuthPanel({ initialMode = "signin", onSignedIn, onModeChange }: { initialMode?: "signin" | "signup"; onSignedIn?: () => void; onModeChange?: (mode: "signin" | "signup") => void }) {
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode);
+  useEffect(() => setMode(initialMode), [initialMode]);
   const [form, setForm] = useState({ name: "", organisation: "", jobTitle: "", email: "", password: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -65,6 +67,7 @@ function AuthPanel() {
     try {
       if (mode === "signin") await signIn({ email: form.email, password: form.password });
       else await signUp({ name: form.name, organisation: form.organisation, jobTitle: form.jobTitle, email: form.email, password: form.password });
+      onSignedIn?.();
     } catch (caught) { setError(message(caught)); } finally { setBusy(false); }
   };
   return (
@@ -84,7 +87,7 @@ function AuthPanel() {
         <p className="mt-6 flex items-start gap-2 text-[12.5px] leading-relaxed text-maroon-200"><ShieldCheck size={15} className="mt-0.5 shrink-0" aria-hidden="true" /> Passwords are hashed with scrypt, sessions use secure HttpOnly cookies, and every database query is parameterised.</p>
       </div>
       <form className="card card-pad grid content-start gap-4" onSubmit={submit} noValidate>
-        <Segmented ariaLabel="Account" value={mode} onChange={(value) => { setMode(value); setError(undefined); }} options={[{ value: "signin", label: "Sign in" }, { value: "signup", label: "Create account" }]} />
+        <Segmented ariaLabel="Account" value={mode} onChange={(value) => { setMode(value); setError(undefined); onModeChange?.(value); }} options={[{ value: "signin", label: "Sign in" }, { value: "signup", label: "Create account" }]} />
         {mode === "signup" && (
           <div className="grid items-start gap-4 sm:grid-cols-2">
             <Field label="Your name"><input className="input" value={form.name} onChange={(event) => set({ name: event.target.value })} autoComplete="name" required /></Field>
@@ -276,8 +279,8 @@ export function AccountView() {
   if (account.status === "signed-out") {
     return (
       <div>
-        <PageHeader eyebrow="Account" title="Sign in to TEMT" description="Optional. Keep a synced, secure copy of your workspace and report history." />
-        <AuthPanel />
+        <PageHeader eyebrow="Account" title="You are not signed in" description="TEMT works without an account. Sign in to keep a synced, secure copy of your workspace and report history." />
+        <Link prefetch={false} href="/signin/?next=/app/account/" className="btn btn-primary"><LogIn size={16} aria-hidden="true" /> Sign in or create an account</Link>
       </div>
     );
   }

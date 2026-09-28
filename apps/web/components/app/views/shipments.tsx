@@ -21,7 +21,7 @@ type SortKey = "date" | "wtw" | "intensity" | "tonnes";
 
 const SOURCE_LABELS: Record<ComputedShipment["source"], string> = {
   manual: "Manual entry", import: "Imported file", chain: "Transport chain", compare: "Mode comparison", copilot: "Copilot",
-  sample: "Sample data", ewaybill: "E-way bill", "legacy-temt": "Production TEMT file",
+  sample: "Sample data", ewaybill: "E-way bill", "legacy-temt": "Earlier TEMT file",
 };
 const QUALITY_LABELS = { primary: "Primary data", modelled: "Modelled data", default: "Default values" } as const;
 

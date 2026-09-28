@@ -83,7 +83,19 @@ async function landing(browser: Browser) {
     await shot(page, "landing-hero");
     return await page.title();
   });
-  await step(page, "Hero calculator computes a real comparison", async () => {
+  await step(page, "Hero walkthrough steps through a live calculation", async () => {
+    const steps = page.getByRole("list", { name: "What TEMT does" });
+    await steps.getByRole("button", { name: /Get its footprint/ }).click();
+    await page.getByText(/Well-to-wheel emissions · Mumbai → Delhi/).waitFor();
+    await steps.getByRole("button", { name: /Compare modes/ }).click();
+    const saving = page.getByText(/Moving this load by rail cuts its footprint/);
+    await saving.waitFor();
+    await steps.getByRole("button", { name: /Report it/ }).click();
+    await page.getByText("Every shipment rolls into your annual report").waitFor();
+    return (await saving.textContent())!.trim();
+  });
+  await step(page, "Try-it section computes a real comparison", async () => {
+    await page.locator("#try").scrollIntoViewIfNeeded();
     await page.getByLabel("From", { exact: true }).selectOption("chennai");
     await page.getByLabel("To", { exact: true }).selectOption("kolkata");
     await page.getByLabel("Tonnes", { exact: true }).fill("25");
@@ -301,14 +313,22 @@ async function workspace(browser: Browser) {
     return `${before.replace(/\s+/g, " ")} → ${after.replace(/\s+/g, " ")}`;
   });
 
-  await step(page, "Factor library: switch sets and every tab", async () => {
+  await step(page, "Factor library: TEMT factors first, GLEC comparison and every tab", async () => {
     await page.goto(`${BASE}/app/factors/`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: /Production TEMT factor set/ }).click();
-    await toast(/Now using TEMT production/);
+    await page.getByText("Calculations use TEMT's emission factors").waitFor();
+    await page.getByText("Show GLEC v3.2 for comparison").click();
+    await page.getByRole("columnheader", { name: "GLEC v3.2 WTW" }).waitFor();
     for (const tab of ["Rail and air", "Sea", "Waterways and hubs", "Fuels and electricity", "Sources", "Road"]) { await page.getByRole("button", { name: tab, exact: true }).click(); await page.waitForTimeout(150); }
     await shot(page, "factors");
-    await page.getByRole("button", { name: /GLEC Framework v3.2/ }).click();
-    await toast(/Now using GLEC v3.2 India/);
+  });
+
+  await step(page, "Settings: switch to the GLEC comparison set and back", async () => {
+    await page.goto(`${BASE}/app/settings/#factors`, { waitUntil: "networkidle" });
+    const factors = page.getByRole("group", { name: "Factor set" });
+    await factors.getByRole("button", { name: "GLEC v3.2" }).click();
+    await toast(/Now using GLEC v3\.2/);
+    await factors.getByRole("button", { name: "TEMT factors" }).click();
+    await toast(/Now using TEMT factors/);
   });
 
   await step(page, "Settings: NIFTY 500 company, backup, clear and restore, server check", async () => {
@@ -420,14 +440,18 @@ async function accounts(browser: Browser) {
     await a.getByRole("dialog").getByRole("button", { name: "Automotive" }).click();
     await a.getByText("Total emissions, well-to-wheel").waitFor();
     await a.getByRole("link", { name: "Sign in" }).click();
+    await a.waitForURL(/\/signin\/\?next=/);
     await a.getByRole("heading", { name: "Sign in to TEMT" }).waitFor();
     await shot(a, "account-sign-in");
     await a.getByRole("group", { name: "Account" }).getByRole("button", { name: "Create account" }).click();
+    await a.getByRole("heading", { name: "Create your TEMT account" }).waitFor();
     await a.getByLabel("Your name").fill("Asha Rao");
     await a.getByLabel("Organisation").fill("Sample Automotive Ltd");
     await a.getByLabel("Work email").fill(email);
     await a.getByLabel("Password", { exact: true }).fill(password);
     await a.locator('form button[type="submit"]').click();
+    await a.waitForURL(/\/app\/$/);
+    await a.goto(`${BASE}/app/account/`, { waitUntil: "networkidle" });
     await a.getByRole("heading", { name: "Asha Rao" }).waitFor();
     await a.getByText("Matches this browser").waitFor({ timeout: 20000 });
     await shot(a, "account-signed-in", true);
@@ -444,6 +468,9 @@ async function accounts(browser: Browser) {
   await step(b, "Account: signing in on a second device brings the workspace across", async () => {
     await b.goto(`${BASE}/app/account/`, { waitUntil: "networkidle" });
     await dismissOnboarding(b);
+    await b.getByRole("heading", { name: "You are not signed in" }).waitFor();
+    await b.getByRole("link", { name: "Sign in or create an account" }).click();
+    await b.getByRole("heading", { name: "Sign in to TEMT" }).waitFor();
     await b.getByLabel("Work email").fill(email);
     await b.getByLabel("Password", { exact: true }).fill("wrong password here");
     await b.locator('form button[type="submit"]').click();
@@ -460,7 +487,7 @@ async function accounts(browser: Browser) {
     // Device A signs out and edits offline; device B deletes a shipment and syncs.
     await a.getByRole("button", { name: "Sign out" }).first().click();
     await a.getByRole("dialog").getByRole("button", { name: "Sign out" }).click();
-    await a.getByRole("heading", { name: "Sign in to TEMT" }).waitFor();
+    await a.getByRole("heading", { name: "You are not signed in" }).waitFor();
     await b.goto(`${BASE}/app/shipments/`, { waitUntil: "networkidle" });
     await b.getByLabel("Financial year").selectOption("all");
     await b.locator("tbody tr").first().click();
@@ -475,7 +502,7 @@ async function accounts(browser: Browser) {
     await a.getByRole("button", { name: "Save to shipments" }).click();
     await a.getByText(/^Saved /).first().waitFor({ timeout: 10000 });
     // Navigate immediately: the save must survive a reload that starts within the batching delay.
-    await a.goto(`${BASE}/app/account/`, { waitUntil: "networkidle" });
+    await a.goto(`${BASE}/signin/?next=/app/account/`, { waitUntil: "networkidle" });
     await a.getByLabel("Work email").fill(email);
     await a.getByLabel("Password", { exact: true }).fill(password);
     await a.locator('form button[type="submit"]').click();
@@ -492,7 +519,7 @@ async function accounts(browser: Browser) {
     await b.getByRole("button", { name: "Sign out other sessions" }).click();
     await b.getByText(/Signed out \d+ other session/).waitFor();
     await a.reload({ waitUntil: "networkidle" });
-    await a.getByRole("heading", { name: "Sign in to TEMT" }).waitFor({ timeout: 15000 });
+    await a.getByRole("heading", { name: "You are not signed in" }).waitFor({ timeout: 15000 });
     await shot(b, "account-security", true);
   });
 

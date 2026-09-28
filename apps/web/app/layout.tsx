@@ -1,19 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { GlobalWidgets } from "@/components/global-widgets";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, pageMetadata } from "@/components/seo";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 const title = "TEMT | Transportation Emission Measurement Tool · IIM Bangalore";
-const description = "Measure, report and reduce freight emissions across road, rail, air, sea and inland waterways with India-specific, ISO 14083-aligned factors from the TCI–IIMB Supply Chain Sustainability Lab.";
 
 export const metadata: Metadata = {
-  ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
-  title: { default: title, template: "%s | TEMT · IIM Bangalore" },
-  description,
-  openGraph: { type: "website", title, description, ...(siteUrl ? { url: siteUrl, images: [{ url: `${siteUrl}/og.png`, width: 1200, height: 630, alt: "TEMT, the Transportation Emission Measurement Tool from IIM Bangalore" }] } : {}) },
-  twitter: { card: "summary_large_image", title, description, ...(siteUrl ? { images: [`${siteUrl}/og.png`] } : {}) },
-  robots: { index: true, follow: true },
-  icons: { icon: "/favicon.svg" },
+  metadataBase: new URL(SITE_URL),
+  title: { default: title, template: `%s | ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: "TEMT",
+  authors: [{ name: "TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore", url: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab" }],
+  creator: "TCI–IIMB Supply Chain Sustainability Lab",
+  publisher: "Supply Chain Management Centre, IIM Bangalore",
+  category: "business",
+  keywords: ["freight emissions", "ISO 14083", "Scope 3 Category 4", "BRSR Principle 6", "logistics carbon footprint India", "transport emissions calculator", "TEMT", "IIM Bangalore"],
+  ...pageMetadata({ description: SITE_DESCRIPTION, path: "/" }),
+  alternates: undefined,
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
+  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/apple-touch-icon.png" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = { themeColor: "#740000", width: "device-width", initialScale: 1 };

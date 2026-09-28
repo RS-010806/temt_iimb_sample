@@ -1,0 +1,24 @@
+# TEMT: Transportation Emission Measurement Tool
+
+> TEMT is a freight emissions platform from IIM Bangalore. It calculates well-to-wheel greenhouse gas emissions for road, rail, air, sea and inland-waterway shipments in India with India-specific emission factors, following ISO 14083:2023, and produces GHG Protocol Scope 3 and SEBI BRSR Principle 6 reports. It is built by the TCI–IIMB Supply Chain Sustainability Lab, part of the Supply Chain Management Centre (SCMC) at IIM Bangalore.
+
+Key facts:
+
+- TEMT was the first platform in India certified to ISO 14083 (December 2024). Its information security is certified to ISO/IEC 27001:2022 by SGS.
+- TEMT is adopted by the Department for Promotion of Industry and Internal Trade (DPIIT), and its emission factors API is integrated with the Unified Logistics Interface Platform (ULIP).
+- The TCI–IIMB Supply Chain Sustainability Lab was founded in 2023 by Transport Corporation of India and IIM Bangalore as part of the Supply Chain Management Centre.
+- TEMT is free to use in the browser without an account. Contact: scmc.office@iimb.ac.in.
+
+## Pages
+
+- [Home](https://temt-iimb-sample.onrender.com/): what TEMT does, credentials, modules, reports and FAQ
+- [Methodology](https://temt-iimb-sample.onrender.com/methodology/): ISO 14083 transport chains, emission factors, distances, data quality, scopes and BRSR mapping
+- [Why TEMT](https://temt-iimb-sample.onrender.com/why-temt/): how TEMT compares with spreadsheets and generic carbon tools
+- [Video tour](https://temt-iimb-sample.onrender.com/tour/): a narrated walkthrough of the whole product
+- [Privacy](https://temt-iimb-sample.onrender.com/privacy/): where workspace data is stored and how accounts are secured
+
+## Optional
+
+- [Full reference for AI assistants](https://temt-iimb-sample.onrender.com/llms-full.txt)
+- [TEMT at IIM Bangalore](https://www.iimb.ac.in/node/11590)
+- [TCI–IIMB Supply Chain Sustainability Lab](https://www.iimb.ac.in/tci-supply-chain-sustainability-lab)

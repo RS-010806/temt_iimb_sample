@@ -20,21 +20,21 @@ export const ARTICLES: Article[] = [
   },
   {
     id: "iso14083", kind: "concept", title: "ISO 14083 and what it means for TEMT",
-    keywords: ["iso 14083", "iso", "standard", "certified", "certification", "sgs", "compliant", "transport chain", "tce", "toc", "hoc"],
-    body: "ISO 14083:2023 is the international standard for quantifying and reporting greenhouse gas emissions from transport chains: every leg (transport operation) and every hub (terminal, warehouse, cross-dock), on a well-to-wheel basis. Production TEMT was the **first digital platform in India to achieve ISO 14083 certification** (methodology validated by SGS) and also holds **ISO/IEC 27001:2022** for information security. This rebuilt tool follows the same structure: legs plus hubs, WTT/TTW split, documented factors, data-quality labels and a calculation trace for every number.",
+    keywords: ["iso 14083", "iso", "standard", "certified", "certification", "compliant", "transport chain", "tce", "toc", "hoc"],
+    body: "ISO 14083:2023 is the international standard for quantifying and reporting greenhouse gas emissions from transport chains: every leg (transport operation) and every hub (terminal, warehouse, cross-dock), on a well-to-wheel basis. TEMT was the **first platform in India to achieve ISO 14083 certification** (December 2024) and its information security is certified to **ISO/IEC 27001:2022**. Every result follows the standard's structure: legs plus hubs, a WTT/TTW split, documented factor sources, data-quality labels and the stated distance type.",
     actions: [{ label: "Read the methodology", href: "/methodology/" }],
   },
   {
-    id: "glec", kind: "concept", title: "GLEC Framework and the Indian factors",
-    keywords: ["glec", "smart freight centre", "sfc", "default factors", "india factors", "tci", "iimb lab", "table 13"],
-    body: "The GLEC Framework (Smart Freight Centre) is the industry method used to implement ISO 14083. Version 3.2 (October 2025) publishes **Indian road emission intensities in Table 13, based on research by the TCI–IIMB Supply Chain Sustainability Lab**, the team behind TEMT. TEMT uses GLEC v3.2 India defaults by default: seven truck classes by gross vehicle weight and fuel, Indian rail, air by haul and aircraft type, IMO-based sea vessels, container trade lanes, inland waterways and logistics hubs.",
+    id: "glec", kind: "concept", title: "Where TEMT's Indian factors come from",
+    keywords: ["glec", "smart freight centre", "sfc", "default factors", "india factors", "tci", "iimb lab", "table 13", "where do the indian factors come from", "emission factors"],
+    body: "TEMT's emission factors were developed from research at the **TCI–IIMB Supply Chain Sustainability Lab** (Supply Chain Management Centre, IIM Bangalore) and validated through TEMT's ISO 14083 certification. They cover seven Indian truck classes by gross vehicle weight and fuel, Indian Railways, air by haul and aircraft type, and sea by vessel. The lab's truck research is also published in the international GLEC Framework v3.2. Where TEMT has no value of its own, such as container trade lanes, inland waterways and most hubs, it uses the ISO 14083-aligned GLEC defaults.",
     actions: [{ label: "Open the factor library", href: "/app/factors/" }],
   },
   {
-    id: "factor-sets", kind: "product", title: "Factor sets: GLEC v3.2 India vs production TEMT",
-    keywords: ["factor set", "switch factors", "temt production", "legacy", "restate", "reconcile", "compare factor sets", "which factors"],
-    body: "TEMT keeps factors **versioned**. *GLEC v3.2 India* is the latest published set. *Production TEMT* reproduces the values used on iimb.freightemissions.com, so you can reconcile with shipments already recorded there or restate a previous year. Switching sets recalculates every shipment instantly; your inputs are never changed. The active set is shown in the top bar and printed on every report.",
-    actions: [{ label: "Change factor set", href: "/app/settings/#factors" }],
+    id: "factor-sets", kind: "product", title: "TEMT factors and the GLEC comparison",
+    keywords: ["factor set", "switch factors", "legacy", "restate", "reconcile", "compare factor sets", "which factors", "glec comparison"],
+    body: "TEMT calculates with **its own India-specific factors** by default. For benchmarking, Settings can switch the whole workspace to the **GLEC Framework v3.2** defaults, for example to compare with a partner who reports on GLEC. Switching recalculates every shipment instantly; your inputs never change, and every report names the factor set it used.",
+    actions: [{ label: "Open the factor library", href: "/app/factors/" }],
   },
   {
     id: "scopes", kind: "concept", title: "Scope 1, 2 and 3 (Category 4 and 9) for freight",
@@ -65,22 +65,22 @@ export const ARTICLES: Article[] = [
   {
     id: "reefer", kind: "concept", title: "Refrigerated freight",
     keywords: ["reefer", "refrigerated", "cold chain", "temperature controlled", "frozen", "chilled"],
-    body: "Temperature-controlled road freight uses more fuel. TEMT applies the production TEMT refrigeration uplift to refrigerated road legs and uses GLEC reefer container values at sea. Tick “Refrigerated” on the leg.",
+    body: "Temperature-controlled road freight uses more fuel. TEMT applies its refrigeration uplift to refrigerated road legs and uses reefer container values at sea. Tick “Refrigerated” on the leg.",
   },
   {
     id: "air", kind: "concept", title: "How air freight is calculated",
     keywords: ["air", "flight", "airport", "belly", "freighter", "95 km", "short haul", "long haul", "air cargo"],
-    body: "Air distance is the great-circle distance between airports. GLEC intensities already include the +95 km routing allowance; the production TEMT set adds 95 km explicitly. GLEC splits **short-haul (≤1,500 km)** and long-haul, and **freighter, belly-hold or unknown** aircraft. Per tonne-kilometre, GLEC air defaults are about 12–20 times a heavy truck and 75–130 times Indian rail, so small air volumes dominate footprints quickly.",
+    body: "Air distance is the great-circle distance between airports, with the standard routing allowance. Air factors distinguish **short-haul (≤1,500 km)** and long-haul, and **freighter, belly-hold or unknown** aircraft. Per tonne-kilometre, air is roughly 12–20 times a heavy truck and far above Indian rail, so small air volumes dominate footprints quickly.",
   },
   {
     id: "sea", kind: "concept", title: "How sea and coastal freight are calculated",
     keywords: ["sea", "ship", "vessel", "coastal", "ocean", "container", "teu", "trade lane", "port", "nautical", "bulk", "tanker", "distance adjustment"],
-    body: "Choose **container by trade lane** (GLEC end-user values per TEU-km, converted with the cargo per TEU: 6, 10 or 14.5 t) or a **vessel type and size** (IMO-based GLEC values, bulk carriers to tankers). TEMT routes port to port through a sea-lane network, including around Sri Lanka for west–east coast voyages, and applies GLEC's 15% distance adjustment to estimated routes. Enter the actual sailed distance to skip the adjustment.",
+    body: "Choose **container by trade lane** (per TEU-km, converted with the cargo per TEU: 6, 10 or 14.5 t; TEMT suggests the lane from the route) or a **vessel type and size**, from bulk carriers to tankers. TEMT routes port to port through a sea-lane network and adjusts estimated routes to typical sailed distances. Enter the actual sailed distance when you have it.",
   },
   {
     id: "hubs", kind: "concept", title: "Hubs, terminals and warehouses",
     keywords: ["hub", "terminal", "warehouse", "transshipment", "cross dock", "icd", "cfs", "port handling", "storage"],
-    body: "ISO 14083 counts hub operations as part of the transport chain. TEMT uses GLEC v3.2 Table 3: transshipment 1.2 kg CO₂e per tonne (2.6 mixed temperature), storage and transshipment 2.7, warehouse 40.1, liquid bulk terminal 3.4, and 11.4 kg per container at intermodal terminals. Add hubs between legs in the transport chain builder.",
+    body: "ISO 14083 counts hub operations as part of the transport chain. TEMT uses ISO 14083-aligned hub defaults: transshipment 1.2 kg CO₂e per tonne (2.6 mixed temperature), storage and transshipment 2.7, warehouse 40.1, liquid bulk terminal 3.4, and 11.4 kg per container at intermodal terminals. Add hubs between legs in the transport chain builder.",
     actions: [{ label: "Build a chain", href: "/app/chain/" }],
   },
   {
@@ -91,7 +91,7 @@ export const ARTICLES: Article[] = [
   {
     id: "courier", kind: "concept", title: "Courier and part-truckload (PTL)",
     keywords: ["courier", "ptl", "part truck", "express", "surface express", "ltl", "consolidated", "first mile", "last mile", "mid mile"],
-    body: "Express and PTL consignments move in three legs: **first mile** to the carrier's hub, **line haul** between hubs, and **last mile** to the customer, with two transshipments. TEMT models all five steps. Under the production TEMT set it uses TEMT's courier defaults; under GLEC it uses the vehicle classes you choose for each leg.",
+    body: "Express and PTL consignments move in three legs: **first mile** to the carrier's hub, **line haul** between hubs, and **last mile** to the customer, with two transshipments. TEMT models all five steps with its courier defaults for each leg.",
     actions: [{ label: "Courier calculator", href: "/app/calculate/?mode=courier" }],
   },
   {
@@ -108,7 +108,7 @@ export const ARTICLES: Article[] = [
   {
     id: "howto-import", kind: "howto", title: "Import shipments in bulk",
     keywords: ["import", "upload", "bulk", "csv", "excel", "xlsx", "template", "spreadsheet", "many shipments", "columns"],
-    body: "Open **Bulk import**, download the TEMT template (CSV or Excel), fill one row per shipment leg and drop the file in. Distances can be left blank; TEMT estimates them from city names or PIN codes. Every row is validated before anything is saved, and you can download an error report. TEMT also reads **production TEMT bulk templates** (road, courier, rail, air, coastal and international water) and **e-way bill JSON** exports.",
+    body: "Open **Bulk import**, download the TEMT template (CSV or Excel), fill one row per shipment leg and drop the file in. Distances can be left blank; TEMT estimates them from city names or PIN codes. Every row is validated before anything is saved, and you can download an error report. TEMT also reads **bulk templates from earlier TEMT versions** (road, courier, rail, air, coastal and international water) and **e-way bill JSON** exports.",
     actions: [{ label: "Go to bulk import", href: "/app/import/" }],
   },
   {
@@ -150,7 +150,7 @@ export const ARTICLES: Article[] = [
   {
     id: "credentials", kind: "product", title: "TEMT's credentials",
     keywords: ["credentials", "dpiit", "ulip", "government", "iimb", "tci", "why temt", "trust", "certified", "27001", "adopted", "national"],
-    body: "- Developed by the **TCI–IIMB Supply Chain Sustainability Lab** at IIM Bangalore.\n- **First digital platform in India with ISO 14083 certification** for transport emissions measurement.\n- **ISO/IEC 27001:2022** certified information security (SGS).\n- **Adopted by DPIIT**, Ministry of Commerce and Industry, hosted on DPIIT's platform and **integrated with ULIP**.\n- The lab's research underpins the **Indian road factors in the GLEC Framework v3.2**.\nThese certifications apply to the production TEMT platform and its stated scope.",
+    body: "- Developed by the **TCI–IIMB Supply Chain Sustainability Lab**, part of the **Supply Chain Management Centre** at IIM Bangalore (founded with Transport Corporation of India in 2023).\n- **First platform in India with ISO 14083 certification** for transport emissions (December 2024).\n- **ISO/IEC 27001:2022** certified information security (SGS).\n- **Adopted by DPIIT**, Ministry of Commerce and Industry, with its emission factors API **integrated with ULIP**.\n- Contact: scmc.office@iimb.ac.in",
   },
   {
     id: "copilot", kind: "product", title: "What the Copilot can do",

@@ -185,6 +185,8 @@
   .skeleton { background: linear-gradient(90deg, var(--color-stone-100), var(--color-stone-50), var(--color-stone-100)); background-size: 200% 100%; animation: shimmer 1.4s ease infinite; border-radius: 8px; }
   @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
   .page-enter { animation: page-enter .45s cubic-bezier(.2,.7,.2,1) both; }
+  /* Let grid items in workspace pages shrink below their content (charts, long rows) so nothing widens the page on phones. */
+  .page-enter .grid > * { min-width: 0; }
   @keyframes page-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
   .reveal.is-visible { opacity: 1; transform: none; }
@@ -199,8 +201,8 @@
   .prose-temt p + p { margin-top: 14px; }
   .prose-temt ul, .prose-temt ol { padding-left: 20px; margin: 12px 0; }
   .prose-temt li + li { margin-top: 6px; }
-  .prose-temt a { color: var(--color-maroon-700); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--color-maroon-200); }
-  .prose-temt a:hover { text-decoration-color: var(--color-maroon-600); }
+  .prose-temt a:not(.btn) { color: var(--color-maroon-700); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--color-maroon-200); }
+  .prose-temt a:not(.btn):hover { text-decoration-color: var(--color-maroon-600); }
   .prose-temt code { font-family: var(--font-mono); font-size: 13px; background: var(--color-stone-100); padding: 2px 6px; border-radius: 6px; }
 }
 

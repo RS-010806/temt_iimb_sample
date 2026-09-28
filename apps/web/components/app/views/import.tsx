@@ -54,7 +54,7 @@ export function ImportView() {
 
   return (
     <div>
-      <PageHeader eyebrow="Bulk import" title="Bring a year of freight in one go" description="Upload the TEMT template, your production TEMT bulk files or e-way bill exports. Every row is located, validated and calculated before anything is saved." />
+      <PageHeader eyebrow="Bulk import" title="Bring a year of freight in one go" description="Upload the TEMT template, bulk files from earlier TEMT versions or e-way bill exports. Every row is located, validated and calculated before anything is saved." />
       <div className="mb-6 grid gap-4 md:grid-cols-3">
         <div className="card card-pad animate-rise">
           <FileSpreadsheet size={22} className="text-maroon-600" aria-hidden="true" />
@@ -67,8 +67,8 @@ export function ImportView() {
         </div>
         <div className="card card-pad animate-rise" style={{ animationDelay: "60ms" }}>
           <History size={22} className="text-maroon-600" aria-hidden="true" />
-          <h2 className="mt-3 font-bold">Production TEMT files</h2>
-          <p className="mt-1 text-[13px] text-grey-600">Detected automatically: point to point, courier / PTL, railway, air, coastal and international water bulk templates, exactly as downloaded from iimb.freightemissions.com.</p>
+          <h2 className="mt-3 font-bold">Earlier TEMT files</h2>
+          <p className="mt-1 text-[13px] text-grey-600">Detected automatically: point to point, courier / PTL, railway, air, coastal and international water bulk templates, exactly as exported from earlier TEMT versions.</p>
         </div>
         <div className="card card-pad animate-rise" style={{ animationDelay: "120ms" }}>
           <FileJson size={22} className="text-maroon-600" aria-hidden="true" />

@@ -76,7 +76,7 @@ export function HelpView() {
         </div>
       )}
       <section className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-stone-50 p-6">
-        <div><p className="font-bold">Talk to the TEMT team</p><p className="text-[13.5px] text-grey-600">TCI–IIMB Supply Chain Sustainability Lab, Indian Institute of Management Bangalore.</p></div>
+        <div><p className="font-bold">Talk to the TEMT team</p><p className="text-[13.5px] text-grey-600">Supply Chain Management Centre, IIM Bangalore · scmc.office@iimb.ac.in</p></div>
         <a href="mailto:aditya.gupta@iimb.ac.in?subject=TEMT%20enquiry" className="btn btn-primary"><Mail size={16} aria-hidden="true" /> Email the team</a>
       </section>
     </div>

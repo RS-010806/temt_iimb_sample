@@ -85,7 +85,7 @@ export function BasisBody({ result, legMeta, size = "md" }: { result: ShipmentRe
       )}
       <p className="flex gap-2 border-t border-stone-200 pt-3 text-grey-600">
         <ShieldCheck size={14} className="mt-0.5 shrink-0 text-maroon-700" aria-hidden="true" />
-        <span>Quantified to ISO 14083:2023 with the GLEC Framework v3.2. Sources and assumptions are summarised in the <Link href="/methodology/" className="font-semibold text-maroon-700 underline">methodology</Link>.</span>
+        <span>Quantified to ISO 14083:2023 with TEMT's India-specific factors. Sources and assumptions are summarised in the <Link href="/methodology/" className="font-semibold text-maroon-700 underline">methodology</Link>.</span>
       </p>
     </div>
   );

@@ -1,0 +1,67 @@
+# TEMT: Transportation Emission Measurement Tool (full reference)
+
+TEMT measures, reports and helps reduce the greenhouse gas emissions of freight transport in India. It is developed by the TCI–IIMB Supply Chain Sustainability Lab, part of the Supply Chain Management Centre (SCMC) at the Indian Institute of Management Bangalore. The lab was founded in 2023 by Transport Corporation of India (TCI) and IIM Bangalore.
+
+Website: https://temt-iimb-sample.onrender.com/
+Contact: scmc.office@iimb.ac.in, Supply Chain Management Centre, IIM Bangalore, Bannerghatta Road, Bengaluru 560076, India.
+
+## Credentials
+
+- ISO 14083:2023: TEMT was the first platform in India certified to the international standard for quantifying and reporting greenhouse gas emissions of transport chains (December 2024).
+- ISO/IEC 27001:2022: TEMT's information security management system is certified by SGS.
+- DPIIT and ULIP: TEMT is adopted by the Department for Promotion of Industry and Internal Trade, Ministry of Commerce and Industry, and its emission factors API is integrated with the Unified Logistics Interface Platform.
+
+## Who it is for
+
+Listed Indian companies (for example NIFTY 500 constituents) reporting freight emissions in their Business Responsibility and Sustainability Report (BRSR), shippers, and logistics service providers who need shipment-level emissions for customers.
+
+## What it calculates
+
+- Modes: road (seven Indian truck classes from light commercial vehicles to tractor-trailers, on diesel, petrol, CNG or electricity), rail (Indian Railways mixed diesel and electric traction), air (domestic and international), sea (container trade lanes or vessel types), inland waterways, and courier or part-truckload shipments.
+- Methods: distance-based (tonnes × distance × intensity), fuel-based (litres or kilograms of fuel) and energy-based (kWh for electric vehicles).
+- Results: well-to-wheel CO₂ equivalent, split into tank-to-wheel (vehicle operation) and well-to-tank (energy production and delivery), with emission intensity per tonne-km.
+- Distances: from Indian city names, 6-digit PIN codes, airports and ports. Road, rail, waterway and sea legs use the shortest feasible distance; air legs use the great-circle distance. Actual distances replace estimates when entered.
+- Transport chains: multi-leg shipments with hub operations such as warehouses and terminals, as ISO 14083 defines them.
+
+## Emission factors
+
+TEMT uses its own India-specific emission factors, developed from research at the TCI–IIMB Supply Chain Sustainability Lab and validated through TEMT's ISO 14083 certification. Electric vehicles use the Central Electricity Authority's all-India grid emission factor (CO₂ Baseline Database V21.0) unless the user enters a supplier factor. Where TEMT does not publish its own value, such as container trade lanes, inland waterways and most hub operations, it uses the ISO 14083-aligned international defaults of the GLEC Framework v3.2 (Smart Freight Centre). Every factor is listed with its source and version in the in-app factor library.
+
+## Reporting
+
+- GHG Protocol: own fleet is Scope 1 (fuel) or Scope 2 (electricity); purchased transport is Scope 3 Category 4 (upstream transportation and distribution); customer-paid transport of sold products is Scope 3 Category 9.
+- SEBI BRSR: reports map freight emissions to Principle 6, with intensity per tonne-km and per ₹ crore of revenue.
+- ISO 14083 disclosures: services covered, totals and intensities by mode, transport activity, distance type, hub activity, factor sources and the share of primary data.
+- Formats: PDF report, Excel workbook, Word report, Power BI pack, CSV and JSON.
+
+## Product features
+
+Shipment calculator; door-to-door mode comparison (road, rail with drayage, air, coastal); transport chain builder; bulk import of TEMT templates, earlier TEMT file formats and GST e-way bill JSON; shipment ledger with a calculation basis for every leg; dashboards by month, mode, lane, business unit, scope and data quality; reduction planner (mode shift, consolidation, electric trucks, load factor) against a target; a private Copilot that answers in plain English and runs in the browser; optional accounts that sync the workspace across devices and keep a report history.
+
+## Data and privacy
+
+Workspaces are stored in the user's browser by default and TEMT works without an account. Optional accounts sync a copy to TEMT's server with scrypt-hashed passwords, HttpOnly session cookies and parameterised database queries; users can download or delete their data at any time. The Copilot does not send data to a cloud AI service.
+
+## Frequently asked questions
+
+**Is TEMT free to use?**
+Yes. Open the workspace and start calculating; no account is needed. For enterprise onboarding, write to the Supply Chain Management Centre at scmc.office@iimb.ac.in.
+
+**Where is my data stored?**
+In your own browser (IndexedDB) by default. If you sign in, a copy syncs to your TEMT account so you can use it on other devices; you can download or delete that copy at any time. Without an account, nothing is uploaded unless you run the server check.
+
+**Which emission factors does TEMT use?**
+TEMT's own India-specific factors, developed from research at IIM Bangalore's TCI–IIMB Supply Chain Sustainability Lab and validated through its ISO 14083 certification. For categories TEMT does not cover itself, such as container trade lanes, it uses ISO 14083-aligned international defaults. Every value is listed with its source in the factor library.
+
+**Can I bring my existing TEMT data?**
+Yes. The bulk importer reads the bulk templates of earlier TEMT versions for road, courier, rail, air, coastal and international water, as well as GST e-way bill JSON and the new TEMT template.
+
+**Does this complete our BRSR?**
+It covers freight: Scope 3 Categories 4 and 9 and own-fleet Scope 1 and 2, with a Principle 6 mapping. BRSR also needs your site-level emissions and other disclosures.
+
+**How accurate are estimated distances?**
+Road and rail distances are estimated from city or PIN-code locations with a model calibrated on Indian corridors, typically within 10–15%. Enter actual distances from your TMS or e-way bills whenever you have them.
+
+**Who built TEMT?**
+The TCI–IIMB Supply Chain Sustainability Lab, part of the Supply Chain Management Centre at IIM Bangalore, founded with Transport Corporation of India in 2023. TEMT was certified to ISO 14083 in December 2024 and adopted by DPIIT.
+

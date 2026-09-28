@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PlayCircle } from "lucide-react";
 import { TOUR_VIDEO } from "@/lib/tour-video";
 import { cx } from "../ui";
@@ -12,6 +12,11 @@ export function TourPlayer() {
   const [current, setCurrent] = useState(0);
   const active = [...TOUR_VIDEO.chapters].reverse().find((chapter) => current >= chapter.at) ?? TOUR_VIDEO.chapters[0];
   const seek = (at: number) => { if (!video.current) return; video.current.currentTime = at; void video.current.play(); };
+  // Chapter links (/tour/?t=seconds) open the video at that chapter.
+  useEffect(() => {
+    const at = Number(new URLSearchParams(window.location.search).get("t"));
+    if (video.current && at > 0 && at < TOUR_VIDEO.durationSeconds) { video.current.currentTime = at; setCurrent(at); }
+  }, []);
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">

@@ -126,7 +126,7 @@ export interface DistanceEstimate {
 export function estimateDistance(mode: TransportMode, from?: Place, to?: Place): DistanceEstimate | undefined {
   if (!hasCoords(from) || !hasCoords(to)) return undefined;
   const gcd = greatCircleKm(from, to);
-  if (mode === "air") return { km: gcd, method: "great-circle", note: `Great-circle distance between airports. A ${AIR_DISTANCE_ADJUSTMENT_KM} km routing allowance is handled by the factor set.` };
+  if (mode === "air") return { km: gcd, method: "great-circle", note: `Great-circle distance between airports. The standard ${AIR_DISTANCE_ADJUSTMENT_KM} km routing allowance is applied in the calculation.` };
   if (mode === "sea") {
     const a = from.kind === "port" && from.code ? from.code : nearestPort(from).id;
     const b = to.kind === "port" && to.code ? to.code : nearestPort(to).id;

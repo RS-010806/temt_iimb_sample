@@ -51,7 +51,7 @@ export function PlannerView() {
 
   return (
     <div>
-      <PageHeader eyebrow="Reduction planner" title="Plan your pathway to target" description="Pull the levers and see the effect on your own shipments, recalculated leg by leg with the active factor set."
+      <PageHeader eyebrow="Reduction planner" title="Plan your pathway to target" description="Pull the levers and see the effect on your own shipments, recalculated leg by leg with the same emission factors."
         actions={<><Select ariaLabel="Baseline year" value={fy} onChange={setBaseYear} className="!w-auto !min-h-[38px] text-[13px] font-semibold" options={years.map((year) => ({ value: year, label: `Baseline ${year}` }))} /><button type="button" className="btn btn-secondary" onClick={() => setLevers(DEFAULT_LEVERS)}><RotateCcw size={15} aria-hidden="true" /> Reset levers</button></>} />
       <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiTile label={`Baseline, ${fy}`} value={emissionsText(scenario.baselineKg).split(" ")[0]} unit={emissionsText(scenario.baselineKg).split(" ").slice(1).join(" ")} />

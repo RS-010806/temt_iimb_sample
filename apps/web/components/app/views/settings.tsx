@@ -57,7 +57,7 @@ export function SettingsView() {
 
   return (
     <div>
-      <PageHeader eyebrow="Settings" title="Workspace settings" description="Organisation details, targets, factor set, Copilot, data backup and the audit trail." />
+      <PageHeader eyebrow="Settings" title="Workspace settings" description="Organisation details, targets, emission factors, Copilot, data backup and the audit trail." />
       <div className="grid gap-6 xl:grid-cols-2">
         <Card id="organisation" title="Organisation" description="Shown on reports. Revenue enables BRSR intensity per ₹ crore.">
           <div className="grid gap-4">
@@ -79,7 +79,7 @@ export function SettingsView() {
           </div>
         </Card>
 
-        <Card id="factors" title="Factor set" description="Switching recalculates every shipment. Inputs are never changed.">
+        <Card id="factors" title="Emission factors" description="TEMT's own factors are the default. Switch to GLEC v3.2 only to compare with a partner's figures; switching recalculates every shipment and never changes inputs.">
           <Segmented ariaLabel="Factor set" value={settings.factorSet} onChange={(factorSet: FactorSetId) => { update({ factorSet }); toast({ tone: "ok", message: `Now using ${FACTOR_SETS[factorSet].short}.` }); }} options={(Object.keys(FACTOR_SETS) as FactorSetId[]).map((id) => ({ value: id, label: FACTOR_SETS[id].short }))} />
           <p className="mt-3 text-[13.5px] leading-relaxed text-grey-700">{FACTOR_SETS[settings.factorSet].description}</p>
           <div className="mt-6 border-t border-stone-200 pt-5">

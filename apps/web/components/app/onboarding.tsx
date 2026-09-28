@@ -74,7 +74,7 @@ export function Onboarding() {
     <Modal open={open} onClose={close} width={760} title={step === "choose" ? "Welcome to TEMT" : "Set up your organisation"}>
       {step === "choose" ? (
         <div className="grid gap-5">
-          <p className="text-[15px] leading-relaxed text-grey-700">Measure, report and reduce freight emissions across road, rail, air, sea and inland waterways, using India-specific factors from the TCI–IIMB Supply Chain Sustainability Lab. How would you like to begin?</p>
+          <p className="text-[15px] leading-relaxed text-grey-700">Measure, report and reduce freight emissions across road, rail, air, sea and inland waterways, using India-specific emission factors developed at IIM Bangalore. How would you like to begin?</p>
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-xl border border-stone-200 p-4">
               <Database size={20} className="text-maroon-600" aria-hidden="true" />

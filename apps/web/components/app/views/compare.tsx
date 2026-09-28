@@ -79,7 +79,7 @@ export function CompareView() {
         <div className="panel grid place-items-center gap-2 px-6 py-16 text-center">
           <div className="flex gap-3 text-maroon-600">{[Truck, TrainFront, Plane, Ship].map((Icon, i) => <Icon key={i} size={26} aria-hidden="true" />)}</div>
           <p className="mt-2 text-lg font-bold">Choose an origin and destination</p>
-          <p className="max-w-md text-sm text-grey-600">TEMT builds road, rail, air and coastal options using the nearest rail terminals, airports and ports, then calculates each one with {settings.factorSet === "glec-india" ? "GLEC v3.2 India defaults" : "the production TEMT factors"}.</p>
+          <p className="max-w-md text-sm text-grey-600">TEMT builds road, rail, air and coastal options using the nearest rail terminals, airports and ports, then calculates each one with {settings.factorSet === "glec-india" ? "the GLEC v3.2 comparison set" : "TEMT's India-specific factors"}.</p>
         </div>
       )}
       {options && (

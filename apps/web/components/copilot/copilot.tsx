@@ -265,7 +265,8 @@ export function Copilot() {
   };
 
   const suggestions = messages.length ? messages[messages.length - 1]?.suggestions ?? [] : suggestionsFor(pathname);
-  const onApp = pathname.startsWith("/app");
+  // The workspace has its own Copilot entry in the top bar; the sign-in page stays free of distractions.
+  const onApp = pathname.startsWith("/app") || pathname.startsWith("/signin");
   const [launcherHidden, setHidden] = useState(false);
   useEffect(() => { launcherListeners.add(setHidden); return () => { launcherListeners.delete(setHidden); }; }, []);
   useEffect(() => { setHidden(false); }, [pathname]);

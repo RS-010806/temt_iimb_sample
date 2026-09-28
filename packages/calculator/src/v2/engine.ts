@@ -132,7 +132,7 @@ function factorUsed(label: string, intensity: Pick<Intensity, "wtt" | "ttw" | "s
 function roadIntensity(set: FactorSetId, vehicleClass: RoadClassId, fuel: Exclude<RoadFuel, "electric">, warnings: string[]): Intensity {
   const own = ROAD_FACTORS[set][vehicleClass]?.[fuel];
   if (own) return own;
-  const otherSet: FactorSetId = set === "glec-india" ? "temt-legacy" : "glec-india";
+  const otherSet: FactorSetId = set === "temt" ? "glec-india" : "temt";
   const other = ROAD_FACTORS[otherSet][vehicleClass]?.[fuel];
   if (other) {
     warnings.push(`${FACTOR_SETS[set].short} has no ${fuel.toUpperCase()} value for this vehicle class; the ${FACTOR_SETS[otherSet].short} value is used.`);
@@ -149,7 +149,7 @@ function describeRoadClass(id: RoadClassId) {
 }
 
 /** Calculate one transport leg. Deterministic and side-effect free. */
-export function calculateLeg(input: LegInput, factorSet: FactorSetId = "glec-india"): LegResult {
+export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): LegResult {
   const method: CalcMethod = input.method ?? (input.mode === "road" && input.fuel === "electric" ? "energy" : "distance");
   const tonnes = positive(input.tonnes, "tonnes", "Cargo weight");
   const warnings: string[] = [];
@@ -222,7 +222,7 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "glec-ind
       dataQuality = input.customFactor.quality ?? "primary";
     } else if (input.mode === "road") {
       const fuel = (input.fuel ?? "diesel") as Exclude<RoadFuel, "electric">;
-      if (factorSet === "temt-legacy" && input.courierLeg) {
+      if (factorSet === "temt" && input.courierLeg) {
         intensity = input.courierLeg === "mid" ? TEMT_COURIER.midMile : input.courierLeg === "first" ? TEMT_COURIER.firstMile : TEMT_COURIER.lastMile;
         label = `Courier ${input.courierLeg}-mile default`;
       } else {
@@ -236,7 +236,7 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "glec-ind
       label = "Indian Railways average, mixed diesel/electric traction";
     } else if (input.mode === "air") {
       const gcd = distanceKm;
-      if (factorSet === "temt-legacy") {
+      if (factorSet === "temt") {
         const scope = input.airScope ?? "domestic";
         intensity = TEMT_AIR[scope];
         label = `Air freight, ${scope}`;
@@ -260,18 +260,16 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "glec-ind
         intensity = { wtt: lane[type].wtt / 1000 / perTeu, ttw: lane[type].ttw / 1000 / perTeu, source: "glec-3.2", ref: "Sea Table 18, container end-user values" };
         label = `Container, ${lane.label}, ${type}`;
         trace.push(`Container intensity: WTT ${lane[type].wtt} + TTW ${lane[type].ttw} g CO₂e/TEU-km ÷ ${num(perTeu)} t per TEU (includes the GLEC distance adjustment)`);
-        if (factorSet === "temt-legacy") warnings.push("Production TEMT has no trade-lane factors; the GLEC v3.2 container value is used.");
       } else {
         const vessel = VESSELS.find((item) => item.id === input.vesselId);
         if (!vessel) throw new CalculationError("Choose a supported vessel type and size.", "vesselId");
-        const useTemt = factorSet === "temt-legacy" ? vessel.temtTtw !== undefined : !vessel.glec;
+        const useTemt = factorSet === "temt" ? vessel.temtTtw !== undefined : !vessel.glec;
         if (useTemt && vessel.temtTtw !== undefined) {
           intensity = t(vessel.temtTtw / 5, vessel.temtTtw);
-          if (factorSet === "glec-india") warnings.push("GLEC publishes container vessels by trade lane rather than size; the production TEMT vessel value is used.");
+          if (factorSet === "glec-india") warnings.push("GLEC publishes container vessels by trade lane rather than size; the TEMT vessel value is used.");
         } else if (vessel.glec) {
           intensity = { wtt: vessel.glec.wtt / 1000, ttw: vessel.glec.ttw / 1000, source: "glec-3.2", ref: "Sea Tables 14–17, VLSFO" };
-          if (factorSet === "temt-legacy") warnings.push("Production TEMT has no value for this vessel; the GLEC v3.2 value is used.");
-          if ((input.distanceBasis ?? "shortest") === "shortest") uplifts.push({ label: "GLEC sea distance adjustment (shortest route to actual)", multiplier: SEA_DISTANCE_ADJUSTMENT });
+          if ((input.distanceBasis ?? "shortest") === "shortest") uplifts.push({ label: "Sea distance adjustment (shortest route to sailed)", multiplier: SEA_DISTANCE_ADJUSTMENT });
         } else {
           throw new CalculationError("No factor is available for this vessel.", "vesselId");
         }
@@ -302,17 +300,17 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "glec-ind
 }
 
 function t(wtt: number, ttw: number): Intensity {
-  return { wtt, ttw, source: "temt-production", ref: "Vessel table (WTT = TTW ÷ 5)" };
+  return { wtt, ttw, source: "temt", ref: "Vessel table (WTT = TTW ÷ 5)" };
 }
 
-export function calculateHub(input: HubInput, factorSet: FactorSetId = "glec-india"): HubResult {
+export function calculateHub(input: HubInput, factorSet: FactorSetId = "temt"): HubResult {
   const hub = HUB_TYPES[input.type];
   if (!hub) throw new CalculationError("Choose a supported hub type.", "type");
-  if (factorSet === "temt-legacy" && input.type === "transshipment") {
+  if (factorSet === "temt" && input.type === "transshipment") {
     const tonnes = positive(input.tonnes, "tonnes", "Tonnes handled");
     const kg = tonnes * TEMT_COURIER.transshipmentKgPerTonne;
-    return { type: input.type, label: input.label || hub.label, wtwKg: kg, ttwKg: kg, wttKg: 0, splitKnown: true, source: "temt-production",
-      trace: [`Transshipment: ${num(tonnes)} t × ${TEMT_COURIER.transshipmentKgPerTonne} kg CO₂e/t = ${num(kg)} kg CO₂e (production TEMT)`] };
+    return { type: input.type, label: input.label || hub.label, wtwKg: kg, ttwKg: kg, wttKg: 0, splitKnown: true, source: "temt",
+      trace: [`Transshipment: ${num(tonnes)} t × ${TEMT_COURIER.transshipmentKgPerTonne} kg CO₂e/t = ${num(kg)} kg CO₂e (TEMT)`] };
   }
   const condition = input.condition ?? "ambient";
   const perUnit = hub[condition];
@@ -326,7 +324,7 @@ export function calculateHub(input: HubInput, factorSet: FactorSetId = "glec-ind
 const QUALITY_RANK: Record<DataQuality, number> = { primary: 0, modelled: 1, default: 2 };
 
 /** Calculate a transport chain: legs plus optional hub operations. */
-export function calculateShipment(input: ShipmentInput, factorSet: FactorSetId = "glec-india"): ShipmentResult {
+export function calculateShipment(input: ShipmentInput, factorSet: FactorSetId = "temt"): ShipmentResult {
   if (!input.legs?.length) throw new CalculationError("Add at least one transport leg.", "legs");
   const legs = input.legs.map((leg) => calculateLeg(leg, factorSet));
   const hubs = (input.hubs ?? []).map((hub) => calculateHub(hub, factorSet));
