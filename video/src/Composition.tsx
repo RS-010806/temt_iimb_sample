@@ -67,7 +67,7 @@ function Intro({ duration }: { duration: number }) {
           Transportation Emission <span style={{ fontStyle: "italic", color: SAND }}>Measurement</span> Tool
         </div>
         <div style={{ fontSize: 26, marginTop: 22, color: "#f0dcd9", opacity: interpolate(frame, [2 * fps, 3 * fps], [0, 1], clamp) }}>
-          Supply Chain Management Centre · Product walkthrough
+          TCI–IIMB Supply Chain Sustainability Lab · Product walkthrough
         </div>
         <div style={{ display: "flex", gap: 14, marginTop: 44, opacity: interpolate(frame, [2.8 * fps, 3.8 * fps], [0, 1], clamp) }}>
           {["ISO 14083 certified", "India-specific factors", "BRSR-ready reports", "Secure accounts"].map((chip) => (
@@ -91,7 +91,7 @@ function Outro({ duration }: { duration: number }) {
       <div style={{ fontFamily: "Playfair", fontSize: 76, marginTop: 30 }}>Measure your next shipment.</div>
       <div style={{ fontSize: 28, marginTop: 20, color: "#f0dcd9" }}>India-specific factors · ISO 14083 certified · reports that stand up to scrutiny</div>
       <div style={{ marginTop: 46, fontSize: 30, fontWeight: 700, background: "white", color: MAROON, padding: "16px 34px", borderRadius: 14, opacity: interpolate(frame, [1 * fps, 1.8 * fps], [0, 1], clamp) }}>temt-iimb-sample.onrender.com</div>
-      <div style={{ marginTop: 40, fontSize: 20, color: "#e3bdb9" }}>TEMT · TCI–IIMB Supply Chain Sustainability Lab · Supply Chain Management Centre, IIM Bangalore</div>
+      <div style={{ marginTop: 40, fontSize: 20, color: "#e3bdb9" }}>TEMT · TCI–IIMB Supply Chain Sustainability Lab · IIM Bangalore</div>
     </AbsoluteFill>
   );
 }

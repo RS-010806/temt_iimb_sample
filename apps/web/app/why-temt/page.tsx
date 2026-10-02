@@ -61,7 +61,7 @@ export default function WhyTemtPage() {
             </div>
             <div className="grid content-start gap-3 rounded-2xl bg-maroon-50 p-6">
               <ShieldCheck size={26} className="text-maroon-700" aria-hidden="true" />
-              <p className="text-[15px] leading-relaxed text-maroon-900">Developed by the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore's Supply Chain Management Centre. Enterprise onboarding: scmc.office@iimb.ac.in.</p>
+              <p className="text-[15px] leading-relaxed text-maroon-900">Developed by the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore. For enterprise onboarding, <a href="mailto:scmc.office@iimb.ac.in?subject=TEMT%20enterprise%20onboarding" className="font-semibold underline">email the lab</a>.</p>
               <Link prefetch={false} href="/app/" className="btn btn-primary mt-2">Open TEMT <ArrowRight size={16} aria-hidden="true" /></Link>
             </div>
           </div>

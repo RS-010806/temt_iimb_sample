@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   applicationName: "TEMT",
   authors: [{ name: "TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore", url: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab" }],
   creator: "TCI–IIMB Supply Chain Sustainability Lab",
-  publisher: "Supply Chain Management Centre, IIM Bangalore",
+  publisher: "TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore",
   category: "business",
   keywords: ["freight emissions", "ISO 14083", "Scope 3 Category 4", "BRSR Principle 6", "logistics carbon footprint India", "transport emissions calculator", "TEMT", "IIM Bangalore"],
   ...pageMetadata({ description: SITE_DESCRIPTION, path: "/" }),

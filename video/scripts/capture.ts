@@ -21,12 +21,12 @@ const VIEWER = join(OUT, "viewer");
 const PORT = 3300;
 const BASE = `http://localhost:${PORT}`;
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const TAIL = 0.7;
+const TAIL = 0.45;
 /** FAST=1 runs every step without waiting for narration: a quick check that all selectors work. */
 const FAST = process.env.FAST === "1";
 
 const voices = new Map((JSON.parse(readFileSync(join(OUT, "voice/voice.json"), "utf8")) as VoiceChapter[]).map((v) => [v.id, v]));
-const events: { t: number; kind: "click" | "type" | "whoosh" | "chime" | "chapter"; id?: string; ms?: number }[] = [];
+const events: { t: number; kind: "click" | "type" | "chime" | "chapter"; id?: string; ms?: number }[] = [];
 const chapters: { id: string; start: number; end: number }[] = [];
 const now = () => Date.now() / 1000;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -237,21 +237,20 @@ async function main() {
   const nav = (tour: string) => page.locator(`[data-tour="${tour}"]`).first();
 
   await chapter("landing", async (at) => {
-    await hover(page, page.getByRole("heading", { level: 1 }), 500);
+    await hover(page, page.getByRole("heading", { level: 1 }), 300);
     // Step through the hero walkthrough: a shipment, its footprint, cleaner modes, the report.
     const steps = page.getByRole("list", { name: "What TEMT does" });
-    await hover(page, steps.getByRole("button", { name: /Enter a shipment/ }), 1300);
-    for (const label of [/Get its footprint/, /Compare modes/, /Report it/]) await click(page, steps.getByRole("button", { name: label }), 1500);
+    await hover(page, steps.getByRole("button", { name: /Enter a shipment/ }), 900);
+    for (const label of [/Get its footprint/, /Compare modes/, /Report it/]) await click(page, steps.getByRole("button", { name: label }), 1150);
     await at(1, -0.3);
     const top = await page.evaluate(() => window.scrollY);
     const y = async (text: string) => top + ((await page.getByText(text).first().boundingBox())?.y ?? 0) - 110;
-    await smoothScrollTo(page, await y("Credentials of the TEMT platform"), 1200);
-    await sleep(700);
-    await smoothScrollTo(page, await y("Everything from one shipment to a board report."), 1200);
+    await smoothScrollTo(page, await y("Credentials of the TEMT platform"), 1000);
     await sleep(500);
+    await smoothScrollTo(page, await y("Everything from one shipment to a board report."), 1000);
+    await sleep(400);
     await select(page, page.getByLabel("From", { exact: true }), "chennai");
-    await select(page, page.getByLabel("To", { exact: true }), "kolkata");
-    await sleep(700);
+    await sleep(500);
   });
 
   await chapter("onboarding", async (at) => {
@@ -314,16 +313,16 @@ async function main() {
   });
 
   await chapter("modes", async (at) => {
-    await click(page, page.getByRole("radio", { name: "Rail", exact: true }), 900);
+    await click(page, page.getByRole("radio", { name: "Rail", exact: true }), 600);
     await at(1, -0.5);
     await click(page, page.getByRole("radio", { name: "Air", exact: true }), 200);
     await choose(page, page.locator("#origin"), "DEL");
     await choose(page, page.locator("#destination"), "BLR");
-    await sleep(500);
+    await sleep(250);
     await click(page, page.getByRole("radio", { name: "Sea", exact: true }), 200);
     await choose(page, page.locator("#origin"), "Jawaharlal");
     await choose(page, page.locator("#destination"), "Rotterdam");
-    await sleep(700);
+    await sleep(400);
   });
 
   await chapter("compare", async () => {
@@ -373,10 +372,10 @@ async function main() {
     await click(page, page.getByRole("link", { name: "Sign in" }), 500);
     await page.getByRole("heading", { name: "Sign in to TEMT" }).waitFor();
     await click(page, page.getByRole("group", { name: "Account" }).getByRole("button", { name: "Create account" }), 200);
-    await type(page, page.getByLabel("Your name"), "Asha Rao", 40);
-    await type(page, page.getByLabel("Organisation"), "Sample FMCG Ltd", 35);
-    await type(page, page.getByLabel("Work email"), "asha.rao@example.com", 35);
-    await type(page, page.getByLabel("Password", { exact: true }), "freight emissions 2026", 30);
+    await type(page, page.getByLabel("Your name"), "Asha Rao", 30);
+    await type(page, page.getByLabel("Organisation"), "Sample FMCG Ltd", 24);
+    await type(page, page.getByLabel("Work email"), "asha.rao@example.com", 22);
+    await type(page, page.getByLabel("Password", { exact: true }), "freight emissions 2026", 20);
     await click(page, page.locator('form button[type="submit"]'), 300);
     // Back in the workspace; the account menu shows the sync status.
     const menu = page.getByRole("button", { name: /^Account: / });
@@ -385,9 +384,9 @@ async function main() {
     await click(page, menu, 500);
     await click(page, page.getByRole("menuitem", { name: "Account and security" }), 400);
     await page.getByText("Matches this browser").waitFor({ timeout: 20000 });
-    await hover(page, page.getByText("Matches this browser"), 900);
+    await hover(page, page.getByText("Matches this browser"), 700);
     await reveal(page, page.getByText("Active sessions"));
-    await hover(page, page.getByText("Active sessions"), 900);
+    await hover(page, page.getByText("Active sessions"), 600);
   });
 
   await chapter("reports", async (at) => {
@@ -401,7 +400,7 @@ async function main() {
     // One export at a time: the page disables the other buttons while a file is being generated.
     for (const label of ["PDF report", "Excel workbook", "Word document", "CSV (leg level)", "JSON", "Power BI pack"]) {
       const next = page.waitForEvent("download", { timeout: 60000 });
-      await click(page, page.getByRole("button", { name: new RegExp(`^${label.replace(/[()]/g, "\\$&")}`) }), 150);
+      await click(page, page.getByRole("button", { name: new RegExp(`^${label.replace(/[()]/g, "\\$&")}`) }), 80);
       const download = await next;
       await download.saveAs(join(DOWNLOADS, download.suggestedFilename()));
       events.push({ t: now(), kind: "chime" });
@@ -417,7 +416,6 @@ async function main() {
   }), { id, to, ms });
 
   await chapter("export-pdf", async () => {
-    events.push({ t: now(), kind: "whoosh" });
     await page.goto(`${BASE}/__demo/viewer.html#pdf`, { waitUntil: "networkidle" });
     await hover(page, viewerItem("pdf"), 300);
     await moveTo(page, 900, 450, 500);
@@ -426,7 +424,7 @@ async function main() {
   });
   await chapter("export-xlsx", async () => {
     await click(page, viewerItem("xlsx"), 500);
-    for (const sheet of ["Monthly", "Legs"]) { await click(page, page.locator(".tabs button", { hasText: new RegExp(`^${sheet}$`) }), 700); }
+    for (const sheet of ["Monthly", "Legs"]) { await click(page, page.locator(".tabs button", { hasText: new RegExp(`^${sheet}$`) }), 450); }
   });
   await chapter("export-docx", async () => {
     await click(page, viewerItem("docx"), 300);
@@ -443,7 +441,6 @@ async function main() {
   });
 
   await chapter("planner", async () => {
-    events.push({ t: now(), kind: "whoosh" });
     await page.goto(`${BASE}/app/planner/`, { waitUntil: "networkidle" });
     for (const [label, from, to] of [["Move long road hauls to rail", 30, 80], ["Electrify short road legs", 25, 60]] as const) {
       const slider = page.getByLabel(label);

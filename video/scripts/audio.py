@@ -1,7 +1,7 @@
 """
 Builds the soundtrack for the product video from the capture timeline:
-narration per chapter, an ambient music bed that ducks under the voice, and quiet UI sound effects
-(clicks, typing, chapter transitions, export chimes). Also writes the layout the Remotion composition
+narration per chapter kept clean and in front, a very soft pad that is only audible in pauses, and quiet
+UI sounds (clicks, typing, export chimes). Also writes the layout the Remotion composition
 uses (video/src/demo-data.json) and WebVTT captions.
 
     python3 scripts/audio.py
@@ -85,9 +85,6 @@ t_click = np.arange(int(0.045 * SR)) / SR
 click = (bandpass(rng.standard_normal(len(t_click)), 1800, 7000) * np.exp(-t_click * 140) * 0.55 + np.sin(2 * np.pi * 1450 * t_click) * np.exp(-t_click * 90) * 0.35).astype(np.float32)
 t_key = np.arange(int(0.03 * SR)) / SR
 key = (bandpass(rng.standard_normal(len(t_key)), 2500, 9000) * np.exp(-t_key * 220)).astype(np.float32)
-t_whoosh = np.arange(int(0.7 * SR)) / SR
-sweep = np.concatenate([bandpass(rng.standard_normal(int(0.1 * SR)), 300 + 3000 * i / 7, 700 + 4200 * i / 7) for i in range(7)])[: len(t_whoosh)]
-whoosh = (sweep * np.sin(np.pi * t_whoosh / t_whoosh[-1]) ** 2).astype(np.float32)
 t_chime = np.arange(int(0.9 * SR)) / SR
 chime = ((np.sin(2 * np.pi * 1318.5 * t_chime) + 0.55 * np.sin(2 * np.pi * 1975.5 * t_chime) + 0.2 * np.sin(2 * np.pi * 2637 * t_chime)) * np.exp(-t_chime * 6.5)).astype(np.float32)
 
@@ -95,21 +92,15 @@ for event in timeline["events"]:
     at = INTRO + event["t"]
     kind = event["kind"]
     if kind == "click":
-        place(sfx, click, at, 0.16)
+        place(sfx, click, at, 0.09)
     elif kind == "type":
         count = max(1, int(event.get("ms", 300) / 50))
         for i in range(count):
-            place(sfx, key, at + i * event["ms"] / 1000 / count + rng.uniform(-0.006, 0.006), 0.05 * rng.uniform(0.6, 1.0))
-    elif kind == "whoosh":
-        place(sfx, whoosh, at - 0.2, 0.05)
+            place(sfx, key, at + i * event["ms"] / 1000 / count + rng.uniform(-0.006, 0.006), 0.03 * rng.uniform(0.6, 1.0))
     elif kind == "chime":
-        place(sfx, chime, at, 0.045)
-    elif kind == "chapter" and titles.get(event.get("id")) and event["t"] > 1:
-        place(sfx, whoosh, at - 0.25, 0.028)
-place(sfx, whoosh, INTRO - 0.35, 0.05)
-place(sfx, whoosh, INTRO + CAPTURE - 0.35, 0.05)
+        place(sfx, chime, at, 0.03)
 
-# ─── Music bed: warm pads and a soft plucked arpeggio, D major, 84 bpm ────
+# ─── Music bed: a warm, slow pad in D major, far below the voice ──────────
 bpm, beat = 84, 60 / 84
 bar = beat * 4
 t = np.arange(N) / SR
@@ -130,14 +121,7 @@ for index in range(int(TOTAL / chord_len) + 1):
         pad += 0.25 * np.sin(2 * np.pi * f * 2 * seg)
     bass_note = notes[chord[0]] / 2
     pad += 0.9 * np.sin(2 * np.pi * bass_note * seg) * (0.6 + 0.4 * np.sin(2 * np.pi * seg / chord_len))
-    place(music, (lowpass(pad, 1600) * env * 0.05).astype(np.float32), start)
-    # Arpeggio: one gentle note per beat.
-    arp = chord + [chord[1]]
-    for step in range(8):
-        f = notes[arp[step % 4]] * 2
-        tt = np.arange(int(beat * 1.6 * SR)) / SR
-        pluck = (np.sin(2 * np.pi * f * tt) + 0.3 * np.sin(2 * np.pi * f * 2 * tt)) * np.exp(-tt * 3.2)
-        place(music, (lowpass(pluck, 3000) * 0.022).astype(np.float32), start + step * beat)
+    place(music, (lowpass(pad, 1200) * env * 0.009).astype(np.float32), start)
 
 # Duck the music under the narration (fast attack, slow release) and lift it for intro and outro.
 level = np.sqrt(np.convolve(narration**2, np.ones(int(0.12 * SR)) / int(0.12 * SR), mode="same"))
@@ -148,7 +132,7 @@ for i in range(0, N, 480):
     target = gate[i]
     state += (target - state) * (0.5 if target > state else 0.04)
     smooth[i : i + 480] = state
-duck = 1.0 - 0.62 * smooth
+duck = 1.0 - 0.8 * smooth
 fade = np.clip(np.minimum(t / 2.5, (TOTAL - t) / 3.0), 0, 1)
 music *= duck * fade
 
@@ -158,7 +142,12 @@ peak = np.abs(stereo).max()
 stereo = stereo / peak * 0.89
 raw = OUT / "mix-raw.wav"
 wavfile.write(raw, SR, (stereo * 32767).astype(np.int16))
-subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(raw), "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", str(SR), str(OUT / "mix.wav")], check=True)
+# Two-pass loudness normalisation with one constant gain, so the level never pumps between phrases.
+probe = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(raw), "-af", "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True).stderr
+measured = json.loads(probe[probe.rindex("{"):probe.rindex("}") + 1])
+subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(raw), "-af",
+    f"loudnorm=I=-16:TP=-1.5:LRA=11:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true",
+    "-ar", str(SR), str(ROOT / "public" / "mix.wav")], check=True)
 
 
 def stamp(seconds):

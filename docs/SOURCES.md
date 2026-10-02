@@ -7,7 +7,7 @@ Research reviewed: 14 September 2026; attribution and credentials rechecked agai
 | Source | Supports | Boundary in this preview |
 | --- | --- | --- |
 | [IIM Bangalore: TEMT](https://www.iimb.ac.in/node/11590) | TEMT developed by the TCI–IIMB Supply Chain Sustainability Lab; first in India to achieve ISO 14083 certification (December 2024); ISO/IEC 27001:2022 certified by SGS. | The certifications apply to the certified platform and scope; this rebuild has not been separately audited. |
-| [TCI–IIMB Supply Chain Sustainability Lab](https://www.iimb.ac.in/tci-supply-chain-sustainability-lab) | The lab founded by TCI and IIM Bangalore in 2023 as part of the Supply Chain Management Centre (SCMC). | Attribute TEMT to the lab within SCMC, IIM Bangalore. |
+| [TCI–IIMB Supply Chain Sustainability Lab](https://www.iimb.ac.in/tci-supply-chain-sustainability-lab) | The lab founded by Transport Corporation of India (TCI) and IIM Bangalore in 2023. | TEMT is the lab's product: attribute it to the TCI–IIMB Supply Chain Sustainability Lab. |
 | [IIM Bangalore: DPIIT adoption](https://www.iimb.ac.in/node/14281) | IIMB's account of DPIIT adoption, dated 4 September 2025, and the ULIP context. | Attribute the published account to IIMB. This is evidence about the existing product. |
 | SGS verification statement (published with the earlier TEMT) | Verification for TEMT v1.3, dated 1 October 2024, referring to ISO 14083. | The verification applies to the version and scope in that statement. The demo estimator and this new website are not certified. |
 | [IIM Bangalore: CAT](https://www.iimb.ac.in/node/11573) | Carbon Accounting Tool and Scope 1, 2 and 3 accounting context. | Do not describe the freight estimator as a complete organizational carbon inventory. |

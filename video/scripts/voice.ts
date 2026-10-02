@@ -1,11 +1,11 @@
 /**
- * Synthesises the narration with Kokoro-82M, a local neural voice (scripts/tts.py), one file per line, cleaned up
- * and joined per chapter. Writes out/demo/voice/<chapter>.wav and voice.json with exact line timings for captions.
+ * Synthesises the narration with a Microsoft neural voice (Ava, scripts/tts_edge.py), one file per line, and joins
+ * the lines per chapter. Writes out/demo/voice/<chapter>.wav and voice.json with exact line timings for captions.
  *
  *   npx tsx scripts/voice.ts
  *
- * Needs a Python environment with kokoro-onnx and the model files (see video/README.md). VERIFY=1 also transcribes
- * every line with Whisper and lists any line whose words do not come back as written.
+ * Needs a Python environment with edge-tts (see video/README.md). VERIFY=1 also transcribes every line with
+ * Whisper and lists any line whose words do not come back as written.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -17,9 +17,9 @@ const OUT = join(import.meta.dirname, "../out/demo/voice");
 const RAW = join(OUT, "raw");
 const TTS_DIR = process.env.TEMT_TTS_DIR ?? join(homedir(), ".cache/temt-tts");
 const PYTHON = process.env.TEMT_TTS_PYTHON ?? join(TTS_DIR, "venv/bin/python");
-const VOICE = process.env.TEMT_VOICE ?? "af_heart";
-const SPEED = process.env.TEMT_VOICE_SPEED ?? "1.05";
-const GAP = 0.34;
+const VOICE = process.env.TEMT_VOICE ?? "en-US-AvaNeural";
+const RATE = process.env.TEMT_VOICE_RATE ?? "+6%";
+const GAP = 0.32;
 
 const duration = (file: string) => Number(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file]).toString().trim());
 
@@ -31,7 +31,7 @@ function synthesiseAll() {
   mkdirSync(RAW, { recursive: true });
   const lines = all.flatMap((chapter) => chapter.lines.map((line, index) => ({ id: `${chapter.id}-${index}`, text: spoken(line) })));
   writeFileSync(join(RAW, "lines.json"), JSON.stringify(lines, null, 2));
-  execFileSync(PYTHON, [join(import.meta.dirname, "tts.py"), join(RAW, "lines.json"), RAW, VOICE, SPEED], { stdio: ["ignore", "ignore", "inherit"], env: { ...process.env, TEMT_TTS_DIR: TTS_DIR } });
+  execFileSync(PYTHON, [join(import.meta.dirname, "tts_edge.py"), join(RAW, "lines.json"), RAW, VOICE, RATE], { stdio: ["ignore", "ignore", "inherit"] });
 }
 
 function assemble(chapter: ChapterScript): VoiceChapter {
@@ -40,10 +40,10 @@ function assemble(chapter: ChapterScript): VoiceChapter {
   let cursor = 0;
   chapter.lines.forEach((line, index) => {
     const clean = join(OUT, `${chapter.id}-${index}.wav`);
-    // Trim leading and trailing silence, then light broadcast polish: rumble filter, a touch of presence, gentle compression.
-    execFileSync("ffmpeg", ["-y", "-v", "error", "-i", join(RAW, `${chapter.id}-${index}.wav`), "-af",
+    // Keep the voice as recorded: only trim leading and trailing silence, remove sub-bass and resample for the mix.
+    execFileSync("ffmpeg", ["-y", "-v", "error", "-i", join(RAW, `${chapter.id}-${index}.mp3`), "-af",
       "silenceremove=start_periods=1:start_threshold=-50dB,areverse,silenceremove=start_periods=1:start_threshold=-50dB,areverse," +
-      "aresample=48000,highpass=f=70,equalizer=f=3000:t=q:w=1.2:g=1.5,acompressor=threshold=-20dB:ratio=2:attack=8:release=120:makeup=1.5",
+      "highpass=f=60,aresample=48000:filter_size=64",
       "-ac", "1", clean]);
     const length = duration(clean);
     lines.push({ text: line, start: cursor, end: cursor + length });
@@ -78,5 +78,5 @@ mkdirSync(OUT, { recursive: true });
 synthesiseAll();
 const voices = all.map((chapter) => { const voice = assemble(chapter); console.log(`${voice.id.padEnd(16)} ${voice.duration.toFixed(1)} s`); return voice; });
 writeFileSync(join(OUT, "voice.json"), JSON.stringify(voices, null, 2));
-console.log(`Total narration ${voices.reduce((sum, item) => sum + item.duration, 0).toFixed(0)} s (${VOICE}, speed ${SPEED})`);
+console.log(`Total narration ${voices.reduce((sum, item) => sum + item.duration, 0).toFixed(0)} s (${VOICE}, rate ${RATE})`);
 if (process.env.VERIFY === "1") verify();

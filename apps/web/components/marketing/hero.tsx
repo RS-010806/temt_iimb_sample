@@ -208,7 +208,7 @@ export function Hero() {
         <div className={cx("transition-all duration-1000", visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0")}>
           <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[12px] font-semibold text-maroon-100"><BadgeCheck size={14} className="text-sand" aria-hidden="true" /> India's first ISO 14083-certified freight emissions platform</p>
           <h1 className="display mt-6 text-[40px] leading-[1.05] sm:text-[54px] lg:text-[60px]">Measure freight emissions <span className="italic text-maroon-200">the way India moves.</span></h1>
-          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-maroon-100">TEMT, from IIM Bangalore's Supply Chain Management Centre, calculates the emissions of every shipment by road, rail, air, sea and inland waterway with India-specific factors, compares cleaner options, and turns the results into BRSR-ready reports.</p>
+          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-maroon-100">TEMT, from the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore, calculates the emissions of every shipment by road, rail, air, sea and inland waterway with India-specific factors, compares cleaner options, and turns the results into BRSR-ready reports.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link prefetch={false} href="/app/" className="btn btn-light btn-lg">Open TEMT, free <ArrowRight size={18} aria-hidden="true" /></Link>
             <Link prefetch={false} href="/tour/" className="btn btn-outline-light btn-lg"><PlayCircle size={18} aria-hidden="true" /> Watch the video tour</Link>

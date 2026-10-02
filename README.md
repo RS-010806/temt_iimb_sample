@@ -1,6 +1,6 @@
 # TEMT · Transportation Emission Measurement Tool
 
-A working freight-emissions product for India's listed companies, rebuilt for the TCI–IIMB Supply Chain Sustainability Lab, part of the Supply Chain Management Centre at IIM Bangalore. It calculates well-to-wheel emissions for road, rail, air, sea and inland-waterway shipments with an ISO 14083-aligned method and India-specific factors, then turns them into dashboards, reports and reduction plans.
+A working freight-emissions product for India's listed companies, rebuilt for the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore. It calculates well-to-wheel emissions for road, rail, air, sea and inland-waterway shipments with an ISO 14083-aligned method and India-specific factors, then turns them into dashboards, reports and reduction plans.
 
 **[Live product](https://temt-iimb-sample.onrender.com/app/) · [Landing page](https://temt-iimb-sample.onrender.com) · [Video tour](https://temt-iimb-sample.onrender.com/tour/) · [Methodology](https://temt-iimb-sample.onrender.com/methodology/)**
 

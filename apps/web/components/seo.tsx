@@ -35,9 +35,8 @@ export const ORGANIZATION = {
   "@type": "Organization",
   "@id": `${SITE_URL}/#organization`,
   name: "TCI–IIMB Supply Chain Sustainability Lab",
-  alternateName: "Supply Chain Management Centre, IIM Bangalore",
+  alternateName: "TCI–IIMB Lab",
   url: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab",
-  email: "scmc.office@iimb.ac.in",
   parentOrganization: { "@type": "CollegeOrUniversity", name: "Indian Institute of Management Bangalore", url: "https://www.iimb.ac.in" },
   address: { "@type": "PostalAddress", streetAddress: "Bannerghatta Road", addressLocality: "Bengaluru", addressRegion: "Karnataka", postalCode: "560076", addressCountry: "IN" },
 };

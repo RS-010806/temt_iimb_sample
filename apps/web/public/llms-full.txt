@@ -1,9 +1,9 @@
 # TEMT: Transportation Emission Measurement Tool (full reference)
 
-TEMT measures, reports and helps reduce the greenhouse gas emissions of freight transport in India. It is developed by the TCI–IIMB Supply Chain Sustainability Lab, part of the Supply Chain Management Centre (SCMC) at the Indian Institute of Management Bangalore. The lab was founded in 2023 by Transport Corporation of India (TCI) and IIM Bangalore.
+TEMT measures, reports and helps reduce the greenhouse gas emissions of freight transport in India. It is a product of the TCI–IIMB Supply Chain Sustainability Lab at the Indian Institute of Management Bangalore. The lab was founded in 2023 by Transport Corporation of India (TCI) and IIM Bangalore.
 
 Website: https://temt-iimb-sample.onrender.com/
-Contact: scmc.office@iimb.ac.in, Supply Chain Management Centre, IIM Bangalore, Bannerghatta Road, Bengaluru 560076, India.
+Contact: TCI–IIMB Supply Chain Sustainability Lab (https://www.iimb.ac.in/tci-supply-chain-sustainability-lab), IIM Bangalore, Bannerghatta Road, Bengaluru 560076, India.
 
 ## Credentials
 
@@ -45,7 +45,7 @@ Workspaces are stored in the user's browser by default and TEMT works without an
 ## Frequently asked questions
 
 **Is TEMT free to use?**
-Yes. Open the workspace and start calculating; no account is needed. For enterprise onboarding, write to the Supply Chain Management Centre at scmc.office@iimb.ac.in.
+Yes. Open the workspace and start calculating; no account is needed. For enterprise onboarding, contact the TCI–IIMB Supply Chain Sustainability Lab using the Enterprise onboarding button on this page.
 
 **Where is my data stored?**
 In your own browser (IndexedDB) by default. If you sign in, a copy syncs to your TEMT account so you can use it on other devices; you can download or delete that copy at any time. Without an account, nothing is uploaded unless you run the server check.
@@ -63,5 +63,5 @@ It covers freight: Scope 3 Categories 4 and 9 and own-fleet Scope 1 and 2, with 
 Road and rail distances are estimated from city or PIN-code locations with a model calibrated on Indian corridors, typically within 10–15%. Enter actual distances from your TMS or e-way bills whenever you have them.
 
 **Who built TEMT?**
-The TCI–IIMB Supply Chain Sustainability Lab, part of the Supply Chain Management Centre at IIM Bangalore, founded with Transport Corporation of India in 2023. TEMT was certified to ISO 14083 in December 2024 and adopted by DPIIT.
+The TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore, founded by Transport Corporation of India and IIM Bangalore in 2023. TEMT was certified to ISO 14083 in December 2024 and adopted by DPIIT.
 

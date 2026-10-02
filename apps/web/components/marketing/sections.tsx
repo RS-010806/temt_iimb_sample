@@ -10,6 +10,7 @@ import { BlockView, openCopilot, setLauncherHidden } from "../copilot/copilot";
 import { ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Braces, Calculator, Check, ChevronDown, Database, FileArchive, FileSpreadsheet, FileText, FileType2, GitBranch, Landmark, Layers, Lock, PlayCircle, Route, ScrollText, Sheet, ShieldCheck, Sparkles, Target, Upload, X } from "lucide-react";
 import { AnimatedNumber, Reveal, cx, useInView } from "../ui";
 import { FAQ } from "./faq-data";
+import { TOUR_VIDEO } from "@/lib/tour-video";
 
 export function SectionHeading({ eyebrow, title, body, center = false, light = false }: { eyebrow: string; title: ReactNode; body?: ReactNode; center?: boolean; light?: boolean }) {
   return (
@@ -25,7 +26,7 @@ const CREDENTIALS = [
   { icon: BadgeCheck, title: "First in India certified to ISO 14083", body: "In December 2024 TEMT became the first platform in India certified to ISO 14083:2023, the international standard for transport-chain emissions.", href: "https://www.iimb.ac.in/node/11590" },
   { icon: Lock, title: "ISO/IEC 27001:2022 information security", body: "TEMT's information security management system is certified by SGS.", href: "https://www.iimb.ac.in/node/11590" },
   { icon: Landmark, title: "Adopted by DPIIT, integrated with ULIP", body: "Recognised by the Department for Promotion of Industry and Internal Trade as a national digital resource; its emission factors API runs on ULIP.", href: "https://www.iimb.ac.in/node/14281" },
-  { icon: ScrollText, title: "Built on IIM Bangalore research", body: "Developed by the TCI–IIMB Supply Chain Sustainability Lab at the Supply Chain Management Centre, whose research supplies India's truck emission factors.", href: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab" },
+  { icon: ScrollText, title: "Built on IIM Bangalore research", body: "Developed by the TCI–IIMB Supply Chain Sustainability Lab, whose research supplies India's truck emission factors.", href: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab" },
 ];
 
 export function Credentials() {
@@ -297,7 +298,7 @@ export function VideoSection() {
         <Reveal className="mx-auto mt-10 max-w-5xl">
           <Link prefetch={false} href="/tour/" className="group relative block overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/video/temt-tour-poster.jpg" alt="TEMT product tour" className="aspect-video w-full object-cover transition duration-700 group-hover:scale-[1.02]" />
+            <img src={TOUR_VIDEO.poster} alt="TEMT product tour" className="aspect-video w-full object-cover transition duration-700 group-hover:scale-[1.02]" />
             <span className="absolute inset-0 grid place-items-center bg-maroon-950/30 transition group-hover:bg-maroon-950/10"><span className="grid h-20 w-20 place-items-center rounded-full bg-white text-maroon-700 shadow-2xl transition group-hover:scale-110"><PlayCircle size={40} aria-hidden="true" /></span></span>
           </Link>
         </Reveal>

@@ -108,7 +108,7 @@ export async function buildPdf(model: ReportModel): Promise<JsPDF> {
   y = Math.max(y + 4, 262);
   stroke(STONE); doc.setLineWidth(0.3); doc.line(M, y, W - M, y);
   font("normal", 7.5); ink(GREY);
-  wrap(`${generatedLabel(model)}. Prepared with TEMT, developed by the TCI–IIMB Supply Chain Sustainability Lab, Supply Chain Management Centre, IIM Bangalore. Emissions are quantified to ISO 14083:2023 on a well-to-wheel basis with TEMT's India-specific emission factors.`, W - 2 * M).forEach((line, index) => text(line, M, y + 5 + index * 3.6));
+  wrap(`${generatedLabel(model)}. Prepared with TEMT, developed by the TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore. Emissions are quantified to ISO 14083:2023 on a well-to-wheel basis with TEMT's India-specific emission factors.`, W - 2 * M).forEach((line, index) => text(line, M, y + 5 + index * 3.6));
 
   // ─── Monthly profile and insights ───────────────────────────────────────
   doc.addPage();
@@ -215,7 +215,7 @@ export async function buildPdf(model: ReportModel): Promise<JsPDF> {
     font("normal", 7); ink(GREY);
     if (page > 1) { text(`TEMT · ${model.title}`, M, 12); text(`${model.organisation} · ${model.period}`, W - M, 12, { align: "right" }); stroke(STONE); doc.setLineWidth(0.2); doc.line(M, 14, W - M, 14); }
     text(`Page ${page} of ${pages}`, W - M, H - 8, { align: "right" });
-    if (page > 1) text("TEMT · Supply Chain Management Centre, IIM Bangalore", M, H - 8);
+    if (page > 1) text("TEMT · TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore", M, H - 8);
   }
   return doc;
 }

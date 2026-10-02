@@ -36,7 +36,7 @@ function toInstruction(name: string, args: Record<string, unknown>): string {
 
 export async function askLocalModel(config: LocalModelConfig, message: string, history: { role: "user" | "assistant"; content: string }[], context: string): Promise<{ content?: string; instruction?: string }> {
   const knowledge = searchKnowledge(message, 3).map((hit) => `## ${hit.article.title}\n${hit.article.body}`).join("\n\n");
-  const system = `You are the TEMT Copilot inside the Transportation Emission Measurement Tool built by the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore's Supply Chain Management Centre. Help Indian enterprise users measure, report and reduce freight emissions. Use a tool whenever the user asks to calculate, compare, summarise, export or navigate; never invent emission numbers yourself. Answer concept questions briefly and only from the reference notes. Use Indian English and CO₂e units.\n\nWorkspace: ${context}\n\nReference notes:\n${knowledge}`;
+  const system = `You are the TEMT Copilot inside the Transportation Emission Measurement Tool built by the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore. Help Indian enterprise users measure, report and reduce freight emissions. Use a tool whenever the user asks to calculate, compare, summarise, export or navigate; never invent emission numbers yourself. Answer concept questions briefly and only from the reference notes. Use Indian English and CO₂e units.\n\nWorkspace: ${context}\n\nReference notes:\n${knowledge}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
   try {

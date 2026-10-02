@@ -56,7 +56,7 @@ export function SignInPage() {
       </main>
       <footer className="border-t border-stone-200 bg-white py-5 text-[12.5px] text-grey-600">
         <div className="container-page flex flex-wrap items-center justify-between gap-3">
-          <p>TCI–IIMB Supply Chain Sustainability Lab, Supply Chain Management Centre, IIM Bangalore</p>
+          <p>TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore</p>
           <nav aria-label="Legal" className="flex gap-4"><Link prefetch={false} href="/privacy/" className="hover:text-maroon-700">Privacy</Link><Link prefetch={false} href="/methodology/" className="hover:text-maroon-700">Methodology</Link></nav>
         </div>
       </footer>

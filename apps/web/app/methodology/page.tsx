@@ -22,7 +22,7 @@ const GOVERNANCE = [
   { icon: BadgeCheck, title: "ISO 14083:2023", body: "TEMT was the first platform in India certified to the international standard for transport-chain emissions (December 2024)." },
   { icon: Lock, title: "ISO/IEC 27001:2022", body: "TEMT's information security management system is certified by SGS." },
   { icon: Landmark, title: "DPIIT and ULIP", body: "Adopted by the Department for Promotion of Industry and Internal Trade; TEMT's emission factors API is integrated with the Unified Logistics Interface Platform." },
-  { icon: Building2, title: "IIM Bangalore", body: "Developed by the TCI–IIMB Supply Chain Sustainability Lab, part of the Supply Chain Management Centre." },
+  { icon: Building2, title: "IIM Bangalore", body: "Developed by the TCI–IIMB Supply Chain Sustainability Lab, founded by Transport Corporation of India and IIM Bangalore." },
 ];
 
 export default function MethodologyPage() {

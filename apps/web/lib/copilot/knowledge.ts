@@ -27,7 +27,7 @@ export const ARTICLES: Article[] = [
   {
     id: "glec", kind: "concept", title: "Where TEMT's Indian factors come from",
     keywords: ["glec", "smart freight centre", "sfc", "default factors", "india factors", "tci", "iimb lab", "table 13", "where do the indian factors come from", "emission factors"],
-    body: "TEMT's emission factors were developed from research at the **TCI–IIMB Supply Chain Sustainability Lab** (Supply Chain Management Centre, IIM Bangalore) and validated through TEMT's ISO 14083 certification. They cover seven Indian truck classes by gross vehicle weight and fuel, Indian Railways, air by haul and aircraft type, and sea by vessel. The lab's truck research is also published in the international GLEC Framework v3.2. Where TEMT has no value of its own, such as container trade lanes, inland waterways and most hubs, it uses the ISO 14083-aligned GLEC defaults.",
+    body: "TEMT's emission factors were developed from research at the **TCI–IIMB Supply Chain Sustainability Lab** at IIM Bangalore and validated through TEMT's ISO 14083 certification. They cover seven Indian truck classes by gross vehicle weight and fuel, Indian Railways, air by haul and aircraft type, and sea by vessel. The lab's truck research is also published in the international GLEC Framework v3.2. Where TEMT has no value of its own, such as container trade lanes, inland waterways and most hubs, it uses the ISO 14083-aligned GLEC defaults.",
     actions: [{ label: "Open the factor library", href: "/app/factors/" }],
   },
   {
@@ -150,7 +150,7 @@ export const ARTICLES: Article[] = [
   {
     id: "credentials", kind: "product", title: "TEMT's credentials",
     keywords: ["credentials", "dpiit", "ulip", "government", "iimb", "tci", "why temt", "trust", "certified", "27001", "adopted", "national"],
-    body: "- Developed by the **TCI–IIMB Supply Chain Sustainability Lab**, part of the **Supply Chain Management Centre** at IIM Bangalore (founded with Transport Corporation of India in 2023).\n- **First platform in India with ISO 14083 certification** for transport emissions (December 2024).\n- **ISO/IEC 27001:2022** certified information security (SGS).\n- **Adopted by DPIIT**, Ministry of Commerce and Industry, with its emission factors API **integrated with ULIP**.\n- Contact: scmc.office@iimb.ac.in",
+    body: "- A product of the **TCI–IIMB Supply Chain Sustainability Lab** at IIM Bangalore, founded by Transport Corporation of India and IIM Bangalore in 2023.\n- **First platform in India with ISO 14083 certification** for transport emissions (December 2024).\n- **ISO/IEC 27001:2022** certified information security (SGS).\n- **Adopted by DPIIT**, Ministry of Commerce and Industry, with its emission factors API **integrated with ULIP**.\n- Contact: the Enterprise onboarding button on the website, or the lab's page on iimb.ac.in",
   },
   {
     id: "copilot", kind: "product", title: "What the Copilot can do",

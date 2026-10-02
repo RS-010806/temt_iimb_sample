@@ -7,7 +7,7 @@ export interface ChapterScript { id: string; title?: string; lines: string[] }
 export const INTRO: ChapterScript = {
   id: "intro",
   lines: [
-    "This is TEMT, the Transportation Emission Measurement Tool from IIM Bangalore's Supply Chain Management Centre.",
+    "This is TEMT, the Transportation Emission Measurement Tool from the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore.",
     "Here is the whole product, end to end.",
   ],
 };
@@ -99,35 +99,16 @@ export const OUTRO: ChapterScript = {
   ],
 };
 
-/** Spoken form for the neural voice: acronyms spelled out, and units it would otherwise misread. Captions keep the written form. */
+/**
+ * Spoken form for the neural voice (Ava): only what it would otherwise misread. Captions keep the written form.
+ * Checked with VERIFY=1, which transcribes every line with Whisper.
+ */
 const SPOKEN: [RegExp, string][] = [
   [/TCI–IIMB/g, "T C I, I I M B"],
   [/\bTEMT\b/g, "T E M T"],
   [/\bIIM Bangalore\b/g, "I I M Bangalore"],
-  [/\bISO 14083\b/g, "I S O fourteen oh eight three"],
-  [/\bGLEC v3\.2\b/g, "glek version three point two"],
-  [/\bGLEC\b/g, "glek"],
-  [/\bBRSR\b/g, "B R S R"],
-  [/\bSEBI\b/g, "sebi"],
-  [/\bNIFTY 500\b/g, "nifty five hundred"],
-  [/\bAI\b/g, "A I"],
-  [/\bFMCG\b/g, "F M C G"],
   [/\bFY (\d{4})–(\d{2})\b/g, "F Y $1 to $2"],
-  [/\bGHG\b/g, "G H G"],
-  [/\bGST\b/g, "G S T"],
-  [/\bPIN\b/g, "pin"],
-  [/\bPDF\b/g, "P D F"],
-  [/\bCSV\b/g, "C S V"],
-  [/\bJSON\b/g, "jay-son"],
-  [/\bDAX\b/g, "dax"],
-  [/Power BI/g, "Power B I"],
+  [/\bPune\b/g, "Poo-nay"],
   [/tonne-kilometre/g, "tonne kilometre"],
-  // Indian place names the voice mispronounces, respelt phonetically (checked with VERIFY=1).
-  [/\bPune\b/g, "Poonay"],
-  [/\bKolkata\b/g, "Kolkahta"],
-  [/\bDelhi\b/g, "Dell-ee"],
-  [/well-to-wheel/g, "well to wheel"],
-  [/tank-to-wheel/g, "tank to wheel"],
-  [/well-to-tank/g, "well to tank"],
 ];
 export const spoken = (line: string) => SPOKEN.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), line);

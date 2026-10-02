@@ -37,7 +37,7 @@ export default function PrivacyPage() {
           <h2>Information security</h2>
           <p>TEMT's information security management system is certified to ISO/IEC 27001:2022.</p>
           <h2>Contact</h2>
-          <p>Supply Chain Management Centre and TCI–IIMB Supply Chain Sustainability Lab, Indian Institute of Management Bangalore, Bannerghatta Road, Bengaluru 560076: <a href="mailto:scmc.office@iimb.ac.in">scmc.office@iimb.ac.in</a>.</p>
+          <p>TCI–IIMB Supply Chain Sustainability Lab, Indian Institute of Management Bangalore, Bannerghatta Road, Bengaluru 560076: <a href="mailto:scmc.office@iimb.ac.in">email the lab</a>.</p>
         </article>
       </main>
       <Footer />
