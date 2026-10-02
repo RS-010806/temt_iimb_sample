@@ -28,6 +28,16 @@ services:
       - type: rewrite
         source: /api/*
         destination: https://temt-iimb-api.onrender.com/api/*
+      # Earlier cuts of the product tour; links to them open the current video.
+      - type: redirect
+        source: /video/temt-tour.mp4
+        destination: /video/temt-tour-2026-10-03.mp4
+      - type: redirect
+        source: /video/temt-tour.vtt
+        destination: /video/temt-tour-2026-10-03.vtt
+      - type: redirect
+        source: /video/temt-tour-poster.jpg
+        destination: /video/temt-tour-2026-10-03-poster.jpg
     headers:
       - path: /manifest.webmanifest
         name: Content-Type
