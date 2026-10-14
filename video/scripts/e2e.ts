@@ -417,8 +417,9 @@ async function workspace(browser: Browser) {
     for (let i = 1; i <= 14; i += 1) {
       const dialog = page.getByRole("dialog", { name: `Guided tour, step ${i} of 14` });
       await dialog.waitFor({ timeout: 15000 });
-      await page.waitForTimeout(1300);
-      const highlighted = await page.locator('svg rect[stroke="#efc4c0"]').count();
+      // Steps on another page wait for that page to load before the target is highlighted.
+      const highlighted = await page.locator('svg rect[stroke="#efc4c0"]').first().waitFor({ state: "attached", timeout: 8000 }).then(() => true, () => false);
+      await page.waitForTimeout(600);
       if (!highlighted) missing.push(String(i));
       if ([1, 5, 7, 12, 14].includes(i)) await shot(page, `tour-step-${i}`);
       await dialog.getByRole("button", { name: i === 14 ? "Finish" : "Next" }).click();
