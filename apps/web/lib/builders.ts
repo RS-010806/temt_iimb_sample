@@ -1,5 +1,6 @@
 import { calculateShipment, seaRoute, type FactorSetId, type HubInput, type LegInput, type RoadClassId, type ShipmentInput, type ShipmentResult } from "@temt/calculator";
 import { estimateDistance, hasCoords, nearestAirport, nearestIndianPort, type Place } from "./places";
+import { railRoute } from "./rail";
 import { getState } from "./store";
 import { todayIso, uid } from "./format";
 import type { Direction, LegMeta, PaidBy, RecordKind, RecordSource, ShipmentRecord } from "./records";
@@ -61,12 +62,24 @@ export async function buildAlternatives(from: Place, to: Place, tonnes: number, 
   const roadInput: ShipmentInput = { legs: [truck(road.km)], hubs: [] };
   out.push({ id: "road", label: "Road, direct", summary: `${round(road.km).toLocaleString("en-IN")} km by truck`, input: roadInput, legMeta: [{ from, to, distanceMethod: road.method }], result: calculateShipment(roadInput, factorSet), practical: true, notes: [road.note] });
 
-  const rail = estimateDistance("rail", from, to)!;
-  if (rail.km >= 150) {
-    const input: ShipmentInput = { legs: [collection(drayage), { mode: "rail", tonnes, distanceKm: round(rail.km) }, collection(drayage)], hubs: [{ type: "container-terminal", containers, label: "Origin rail terminal" }, { type: "container-terminal", containers, label: "Destination rail terminal" }] };
-    out.push({ id: "rail", label: "Rail with road drayage", summary: `${drayage} km truck · ${round(rail.km).toLocaleString("en-IN")} km rail · ${drayage} km truck`, input,
-      legMeta: [{ from, distanceMethod: "user" }, { distanceMethod: rail.method }, { to, distanceMethod: "user" }], result: calculateShipment(input, factorSet), practical: true,
-      notes: [`Assumes rail terminals within ${drayage} km of each end and ${containers} container${containers > 1 ? "s" : ""} handled at each terminal.`, rail.note] });
+  // Rail: road to the best-connected station near each end, then the shortest route on the Indian Railways network.
+  const network = opts.drayageKm === undefined ? await railRoute(from, to).catch(() => undefined) : undefined;
+  if (network && network.km >= 150) {
+    const station = (item: typeof network.from): Place => ({ label: `${item.name} (${item.code})`, kind: "station", code: item.code, lat: item.lat, lon: item.lon, state: item.state, country: "IN" });
+    const [stationA, stationB] = [station(network.from), station(network.to)];
+    const first = Math.max(5, estimateDistance("road", from, stationA)!.km), last = Math.max(5, estimateDistance("road", stationB, to)!.km);
+    const input: ShipmentInput = { legs: [collection(first), { mode: "rail", tonnes, distanceKm: round(network.km) }, collection(last)], hubs: [{ type: "container-terminal", containers, label: `${network.from.name} rail terminal` }, { type: "container-terminal", containers, label: `${network.to.name} rail terminal` }] };
+    out.push({ id: "rail", label: "Rail with road drayage", summary: `${network.from.code} → ${network.to.code}, ${round(network.km).toLocaleString("en-IN")} km by rail`, input,
+      legMeta: [{ from, to: stationA, distanceMethod: "road-estimate" }, { from: stationA, to: stationB, distanceMethod: "rail-network" }, { from: stationB, to, distanceMethod: "road-estimate" }], result: calculateShipment(input, factorSet), practical: true,
+      notes: [`Trucks to ${stationA.label} (${round(first)} km) and from ${stationB.label} (${round(last)} km), with ${containers} container${containers > 1 ? "s" : ""} handled at each terminal. The rail distance is the shortest route on the Indian Railways network.`] });
+  } else if (!network) {
+    const rail = estimateDistance("rail", from, to)!;
+    if (rail.km >= 150) {
+      const input: ShipmentInput = { legs: [collection(drayage), { mode: "rail", tonnes, distanceKm: round(rail.km) }, collection(drayage)], hubs: [{ type: "container-terminal", containers, label: "Origin rail terminal" }, { type: "container-terminal", containers, label: "Destination rail terminal" }] };
+      out.push({ id: "rail", label: "Rail with road drayage", summary: `${drayage} km truck · ${round(rail.km).toLocaleString("en-IN")} km rail · ${drayage} km truck`, input,
+        legMeta: [{ from, distanceMethod: "user" }, { distanceMethod: rail.method }, { to, distanceMethod: "user" }], result: calculateShipment(input, factorSet), practical: true,
+        notes: [`Assumes rail terminals within ${drayage} km of each end and ${containers} container${containers > 1 ? "s" : ""} handled at each terminal.`, rail.note] });
+    }
   }
 
   const [airA, airB] = await Promise.all([nearestAirport(from), nearestAirport(to)]);

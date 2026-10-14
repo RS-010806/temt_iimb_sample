@@ -22,7 +22,7 @@ export function greatCircleKm(a: LatLon, b: LatLon): number {
  */
 export const CIRCUITY = Object.freeze({ road: 1.22, rail: 1.15, iww: 1.3 });
 
-export type DistanceMethod = "road-estimate" | "rail-estimate" | "iww-estimate" | "great-circle" | "air-gcd-95" | "sea-route" | "user";
+export type DistanceMethod = "road-estimate" | "rail-estimate" | "rail-network" | "iww-estimate" | "great-circle" | "air-gcd-95" | "sea-route" | "user";
 
 /** The Siliguri corridor: land routes between the North-East and the rest of India pass through it. */
 export const SILIGURI_CORRIDOR: LatLon = Object.freeze({ lat: 26.72, lon: 88.43 });

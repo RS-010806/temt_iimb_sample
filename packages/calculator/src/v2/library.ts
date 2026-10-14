@@ -101,15 +101,6 @@ export const ROAD_FACTORS: Readonly<Record<FactorSetId, RoadTable>> = Object.fre
   },
 });
 
-/**
- * Battery-electric truck energy intensity (kWh per tonne-km), average/mixed loading.
- * GLEC v3.2 Table 11 publishes European and South American values; India-specific defaults are not
- * yet published, so these are proxies. Light vehicles have no proxy and need measured energy data.
- */
-export const EV_ENERGY_PROXY_KWH_PER_TKM: Readonly<Partial<Record<RoadClassId, number>>> = Object.freeze({
-  "gvw-3-5": 0.44, "gvw-5-12": 0.34, "gvw-12-20": 0.22, "gvw-20-30": 0.16, "gvw-30-50": 0.16, "trailer-30-60": 0.16,
-});
-
 /** CEA V21.0 all-India weighted average, FY 2024–25. Electricity has no tank-to-wheel emissions. */
 export const INDIA_GRID_KG_PER_KWH = 0.71;
 
@@ -302,5 +293,32 @@ export const FUELS: Readonly<Record<FuelId, Fuel>> = Object.freeze({
   "lng-marine": { id: "lng-marine", label: "LNG (marine, default engine)", ttw: 3.73, wtw: 4.61, unit: "kg", source: "glec-3.2", ref: "Module 1, marine fuel" },
   electricity: { id: "electricity", label: "Grid electricity (India)", ttw: 0, wtw: INDIA_GRID_KG_PER_KWH, unit: "kWh", source: "cea-21", ref: "Weighted average, FY 2024–25" },
 });
+
+/**
+ * Battery-electric truck energy intensity (kWh per tonne-km) on Indian loading.
+ *
+ * GLEC v3.2 Table 11 publishes electric rigid-truck energy for Europe only, at European loading (60% load factor,
+ * 17% empty running). Indian trucks run far more heavily loaded, so TEMT's Indian diesel factors are much lower per
+ * tonne-km than the European ones, and comparing them with an unadjusted European electric value overstates
+ * electric emissions. Each class therefore keeps GLEC's European ratio of electricity to diesel for the matching
+ * rigid class (Table 11 kWh/t-km over Table 8 diesel kg/t-km) and applies it to the diesel use implied by TEMT's
+ * Indian factor. Light commercial vehicles have no matching European value and need measured energy.
+ */
+export const GLEC_ELECTRIC_REFERENCE: Readonly<Partial<Record<RoadClassId, { kwhPerTkm: number; dieselKgPerTkm: number; europeanClass: string }>>> = Object.freeze({
+  "gvw-3-5": { kwhPerTkm: 0.44, dieselKgPerTkm: 0.080, europeanClass: "Rigid truck 3.5–7.5 t" },
+  "gvw-5-12": { kwhPerTkm: 0.34, dieselKgPerTkm: 0.053, europeanClass: "Rigid truck 7.5–12 t" },
+  "gvw-12-20": { kwhPerTkm: 0.22, dieselKgPerTkm: 0.046, europeanClass: "Rigid truck 12–20 t" },
+  "gvw-20-30": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },
+  "gvw-30-50": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },
+  "trailer-30-60": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },
+});
+
+export const EV_ENERGY_PROXY_KWH_PER_TKM: Readonly<Partial<Record<RoadClassId, number>>> = Object.freeze(Object.fromEntries(
+  Object.entries(GLEC_ELECTRIC_REFERENCE).map(([id, reference]) => {
+    const diesel = ROAD_FACTORS.temt[id as RoadClassId]!.diesel!;
+    const indianDieselKgPerTkm = (diesel.wtt + diesel.ttw) / FUELS.diesel.wtw;
+    return [id, Math.round((reference!.kwhPerTkm / reference!.dieselKgPerTkm) * indianDieselKgPerTkm * 1000) / 1000];
+  }),
+));
 
 export const MODE_LABELS: Readonly<Record<TransportMode, string>> = Object.freeze({ road: "Road", rail: "Rail", air: "Air", sea: "Sea", iww: "Inland waterway" });

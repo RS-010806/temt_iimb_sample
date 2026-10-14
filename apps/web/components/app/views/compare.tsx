@@ -22,7 +22,6 @@ export function CompareView() {
   const [tonnes, setTonnes] = useState<number | undefined>(20);
   const [vehicle, setVehicle] = useState<RoadClassId | "auto">("auto");
   const [refrigerated, setRefrigerated] = useState(false);
-  const [drayage, setDrayage] = useState<number | undefined>(30);
   const [options, setOptions] = useState<Alternative[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -39,12 +38,12 @@ export function CompareView() {
     if (!from || !to || !tonnes) { setOptions(null); return; }
     let cancelled = false;
     setBusy(true); setError("");
-    buildAlternatives(from, to, tonnes, settings.factorSet, { vehicleClass: vehicle === "auto" ? undefined : vehicle, refrigerated, drayageKm: drayage || 30 })
+    buildAlternatives(from, to, tonnes, settings.factorSet, { vehicleClass: vehicle === "auto" ? undefined : vehicle, refrigerated })
       .then((result) => { if (!cancelled) setOptions(result); })
       .catch((reason) => { if (!cancelled) { setOptions(null); setError(reason instanceof Error ? reason.message : "Could not compare these places."); } })
       .finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
-  }, [from, to, tonnes, vehicle, refrigerated, drayage, settings.factorSet]);
+  }, [from, to, tonnes, vehicle, refrigerated, settings.factorSet]);
 
   const road = options?.find((option) => option.id === "road");
   const best = options?.find((option) => option.practical);
@@ -66,9 +65,8 @@ export function CompareView() {
           <Field label="Destination"><PlaceInput value={to} onChange={setTo} ariaLabel="Destination" /></Field>
           <Field label="Cargo"><NumberInput value={tonnes} onChange={setTonnes} suffix="t" ariaLabel="Cargo tonnes" /></Field>
         </div>
-        <div className="mt-4 grid gap-4 border-t border-stone-200 pt-4 md:grid-cols-3">
+        <div className="mt-4 grid items-start gap-4 border-t border-stone-200 pt-4 md:grid-cols-2">
           <Field label="Truck for road legs"><Select value={vehicle} onChange={setVehicle} options={[{ value: "auto", label: "Automatic, fits the cargo" }, ...ROAD_CLASSES.map((item) => ({ value: item.id, label: `${item.label} (${item.gvw})` }))]} /></Field>
-          <Field label="Rail drayage each end" hint="Road distance to and from rail terminals"><NumberInput value={drayage} onChange={setDrayage} suffix="km" /></Field>
           <Field label="Temperature control"><div className="flex min-h-[42px] items-center"><Toggle checked={refrigerated} onChange={setRefrigerated} label="Refrigerated cargo" /></div></Field>
         </div>
       </section>

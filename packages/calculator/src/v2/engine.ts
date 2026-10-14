@@ -199,11 +199,11 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): 
       if (input.mode !== "road") throw new CalculationError("Enter measured electricity use for this mode.", "energyKwh");
       const vehicleClass = input.vehicleClass ?? "gvw-12-20";
       const proxy = EV_ENERGY_PROXY_KWH_PER_TKM[vehicleClass];
-      if (proxy === undefined) throw new CalculationError("No default energy intensity exists for light electric vehicles. Enter measured kWh from charging or telematics records.", "energyKwh");
+      if (proxy === undefined) throw new CalculationError("There is no default energy use for light electric vehicles. Use the fuel-based method with the kWh from charging records.", "energyKwh");
       positive(distanceKm, "distanceKm", "Distance");
       kwh = proxy * tonnes * distanceKm;
       trace.push(`Estimated electricity: ${num(tonnes)} t × ${num(distanceKm)} km × ${proxy} kWh/t-km = ${num(kwh)} kWh`);
-      warnings.push("Electric-truck energy intensity uses a GLEC v3.2 Table 11 European proxy. Replace it with measured kWh when available.");
+      warnings.push("Electric-truck energy is estimated from GLEC v3.2 Table 11, adjusted to Indian truck loading. Replace it with measured kWh from charging records when available.");
     }
     wttKg = kwh * grid;
     const custom = input.gridKgPerKwh !== undefined;

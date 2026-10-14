@@ -18,6 +18,7 @@ export interface LegMeta {
 export function distanceType(method: DistanceMethod | undefined, mode: TransportMode): string {
   if (method === "user") return "Actual (supplied)";
   if (method === "great-circle" || method === "air-gcd-95" || (!method && mode === "air")) return "GCD";
+  if (method === "rail-network") return "SFD (rail network)";
   return "SFD (estimated)";
 }
 

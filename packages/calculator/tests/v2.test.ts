@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateHub, calculateLeg, calculateShipment, CalculationError, estimateLandDistanceKm, FACTORS, getPort, greatCircleKm, landPathKm, legInputSchema, PORTS,
-  ROAD_CLASSES, ROAD_FACTORS, seaRoute, shipmentInputSchema, suggestTradeLane, VESSELS,
+  EV_ENERGY_PROXY_KWH_PER_TKM, FUELS, INDIA_GRID_KG_PER_KWH, ROAD_CLASSES, ROAD_FACTORS, seaRoute, shipmentInputSchema, suggestTradeLane, VESSELS,
 } from "../src/index.js";
 
 describe("parity with production TEMT", () => {
@@ -103,11 +103,11 @@ describe("electric vehicles, fuel allocation and hubs", () => {
   });
 
   it("requires measured energy for light EVs and marks proxies as default data", () => {
-    expect(() => calculateLeg({ mode: "road", fuel: "electric", tonnes: 1, distanceKm: 80, vehicleClass: "gvw-3.5" })).toThrow(/measured kWh/);
+    expect(() => calculateLeg({ mode: "road", fuel: "electric", tonnes: 1, distanceKm: 80, vehicleClass: "gvw-3.5" })).toThrow(/kWh from charging records/);
     const proxy = calculateLeg({ mode: "road", fuel: "electric", tonnes: 10, distanceKm: 100, vehicleClass: "gvw-12-20" });
-    expect(proxy.wtwKg).toBeCloseTo(10 * 100 * 0.22 * 0.71, 8);
+    expect(proxy.wtwKg).toBeCloseTo(10 * 100 * EV_ENERGY_PROXY_KWH_PER_TKM["gvw-12-20"]! * 0.71, 8);
     expect(proxy.dataQuality).toBe("default");
-    expect(proxy.warnings[0]).toMatch(/proxy/);
+    expect(proxy.warnings[0]).toMatch(/Indian truck loading/);
   });
 
   it("allocates shared fuel and rejects out-of-range shares", () => {
@@ -216,5 +216,16 @@ describe("container trade lane from the route", () => {
     expect(suggestTradeLane("SG", "IT")).toBe("asia-med");
     expect(suggestTradeLane("in", "ke")).toBe("asia-africa");
     expect(suggestTradeLane(undefined, "NL")).toBe("intra-me-india");
+  });
+});
+
+describe("electric trucks on Indian loading", () => {
+  it("keeps GLEC's electricity-to-diesel ratio and applies it to TEMT's Indian diesel use", () => {
+    const heavy = ROAD_FACTORS.temt["gvw-30-50"]!.diesel!;
+    const expected = (0.16 / 0.037) * ((heavy.wtt + heavy.ttw) / FUELS.diesel.wtw);
+    expect(EV_ENERGY_PROXY_KWH_PER_TKM["gvw-30-50"]).toBeCloseTo(expected, 3);
+    // On the Indian grid a heavy electric truck should not be far above diesel per tonne-km.
+    expect(EV_ENERGY_PROXY_KWH_PER_TKM["gvw-30-50"]! * INDIA_GRID_KG_PER_KWH).toBeLessThan(heavy.wtt + heavy.ttw);
+    expect(EV_ENERGY_PROXY_KWH_PER_TKM["gvw-3.5"]).toBeUndefined();
   });
 });
