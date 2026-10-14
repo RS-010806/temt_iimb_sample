@@ -187,7 +187,7 @@ async function workspace(browser: Browser) {
     await choosePlace(page, page.locator("#destination"), "400001");
     await page.locator("#tonnes").fill("18");
     await page.getByText("Well-to-wheel emissions").waitFor();
-    await page.getByText("How this was calculated").waitFor();
+    await page.getByRole("button", { name: "How this was calculated", exact: true }).waitFor();
     for (const label of ["Transport activity", "Emission factor", "Intensity per ton", "Reference framework: GLEC Framework v3.2"]) await page.getByText(label).first().waitFor();
     const basis = await page.locator('[data-tour="result"]').innerText();
     if (/straight line|circuity/i.test(basis)) throw new Error("Calculation basis exposes internal modelling parameters");

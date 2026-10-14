@@ -26,16 +26,17 @@ export const CHAPTERS: ChapterScript[] = [
     "Each month splits into tank-to-wheel and well-to-tank, as ISO 14083 requires, followed by modes, business units, lanes and reduction opportunities.",
   ] },
   { id: "quick", title: "Quick calculate", lines: [
-    "The quick calculator compares every practical mode, door to door. Pune to Kolkata by rail is about eighty-four percent lower than by truck.",
+    "The quick calculator compares every practical mode, door to door. Pune to Kolkata by rail is about eighty-five percent lower than by truck.",
   ] },
   { id: "calculator", title: "Calculator", lines: [
-    "The full calculator covers road, courier, rail, air, sea and inland waterways.",
-    "Enter a city or a PIN code, and TEMT estimates the shortest feasible distance. Pick the truck class, and the result updates live.",
-    "The calculation basis shows what an auditor needs: activity, distance type, intensity, factor source and data quality.",
-    "With fuel receipts, switch to fuel-based for primary data.",
+    "The calculator starts with the method: distance-based, or fuel-based when you have fuel records. Then pick the mode.",
+    "Type a city, even an old name like Bangalore, or a PIN code, and TEMT calculates the distance. Or enter it manually from your trip sheet.",
+    "Enter the cargo in tons, pick the truck, and the result shows the emission factor, intensity per ton, and every step, with the GLEC reference.",
+    "The LR number and dispatch date are required, and saving the same LR number again updates that shipment.",
+    "Fuel-based asks only for the fuel used: here, litres of diesel from a fuel card.",
   ] },
   { id: "modes", lines: [
-    "Rail, air and sea work the same way. Rail uses the Indian average for mixed diesel and electric traction.",
+    "For rail, search stations by name or code. TEMT measures the shortest route on the Indian Railways network, station to station: on average within about three percent of published route distances.",
     "Air uses great-circle distances between airports, and sea legs are routed port to port through a sea-lane network, by trade lane or vessel type.",
   ] },
   { id: "compare", title: "Compare modes", lines: [
@@ -45,7 +46,7 @@ export const CHAPTERS: ChapterScript[] = [
     "Real freight is often multimodal. The chain builder links legs and hubs in one shipment: here, a factory to the gateway port by trailer, then a container ship, with terminal handling counted as a hub operation.",
   ] },
   { id: "import", title: "Bulk import", lines: [
-    "Bulk import reads the TEMT template, six formats from earlier TEMT versions and GST e-way bills, and checks every row before anything is saved.",
+    "Bulk import reads the TEMT template, six formats from earlier TEMT versions and GST e-way bills. It checks every row before saving, and updates any shipment whose LR number is already saved.",
   ] },
   { id: "ledger", title: "Shipment ledger", lines: [
     "Every shipment lands in the ledger. Search, filter, and open any one to see its legs and calculation basis.",

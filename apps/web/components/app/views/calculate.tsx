@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, ArrowLeftRight, ArrowRightLeft, BadgeCheck, Calculator, ChevronDown, Fuel, GitBranch, LoaderCircle, MapPinned, Package, PencilLine, Plane, Plus, Route, RotateCcw, Save, Ship, Snowflake, TrainFront, Truck, Waves, Zap } from "lucide-react";
 import { calculateShipment, suggestTradeLane, FUELS, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, ROAD_CLASSES, ROAD_FACTORS, TEU_LOADS, TRADE_LANES, VESSELS, type FuelId, type HubInput, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult } from "@temt/calculator";
 import { buildRecord, vehicleForTonnes } from "@/lib/builders";
@@ -224,6 +224,18 @@ export function CalculateView() {
   const [editing, setEditing] = useState<ShipmentRecord | null>(null);
   const [showMore, setShowMore] = useState(false);
   const [missing, setMissing] = useState({ ref: false, date: false });
+  // Wide screens: the result's details scroll inside the panel, so point to the working when it is out of view.
+  const details = useRef<HTMLDivElement>(null);
+  const basis = useRef<HTMLDivElement>(null);
+  const [scrollHint, setScrollHint] = useState({ moreBelow: false, basisBelow: false });
+  const checkMore = () => {
+    const box = details.current, start = basis.current;
+    const next = box && start ? { moreBelow: box.scrollHeight - box.scrollTop - box.clientHeight > 8, basisBelow: start.offsetTop + 40 > box.scrollTop + box.clientHeight } : { moreBelow: false, basisBelow: false };
+    setScrollHint((current) => (current.moreBelow === next.moreBelow && current.basisBelow === next.basisBelow ? current : next));
+  };
+  useEffect(checkMore);
+  useEffect(() => { window.addEventListener("resize", checkMore); return () => window.removeEventListener("resize", checkMore); }, []);
+  const { moreBelow, basisBelow } = scrollHint;
   const [showRoute, setShowRoute] = useState(false);
   const [duplicate, setDuplicate] = useState<{ existing: ShipmentRecord; record: ShipmentRecord; again: boolean } | null>(null);
   const set = (patch: Partial<Form>) => setForm((current) => ({ ...current, ...patch }));
@@ -373,7 +385,7 @@ export function CalculateView() {
                 </Field></div>
                 <Field label="Quantity" htmlFor="fuel-quantity">
                   <div className="flex gap-2">
-                    <div className="min-w-0 flex-1"><NumberInput id="fuel-quantity" value={form.fuelQuantity} suffix={form.fuelUnit === "t" ? "t" : form.fuelUnit === "l" ? "l" : form.fuelUnit} onChange={(fuelQuantity) => set({ fuelQuantity })} placeholder={form.fuelUnit === "kWh" ? "e.g. 420" : form.fuelUnit === "t" ? "e.g. 18.5" : "e.g. 315"} /></div>
+                    <div className="min-w-0 flex-1"><NumberInput id="fuel-quantity" value={form.fuelQuantity} suffix={fuelOption!.units.length > 1 ? undefined : form.fuelUnit} onChange={(fuelQuantity) => set({ fuelQuantity })} placeholder={form.fuelUnit === "kWh" ? "e.g. 420" : form.fuelUnit === "t" ? "e.g. 18.5" : "e.g. 315"} /></div>
                     {fuelOption!.units.length > 1 && <Segmented ariaLabel="Fuel unit" value={form.fuelUnit} onChange={(fuelUnit) => set({ fuelUnit })} options={fuelOption!.units.map((unit) => ({ value: unit, label: UNIT_LABEL[unit] }))} />}
                   </div>
                 </Field>
@@ -576,9 +588,10 @@ export function CalculateView() {
           </Step>
         </div>
 
-        <aside className="xl:sticky xl:top-24 xl:self-start" data-tour="result">
-          <div className="overflow-hidden rounded-[var(--radius-card)] border border-stone-200 bg-white shadow-[var(--shadow-card)]">
-            <div className="relative overflow-hidden bg-gradient-to-br from-maroon-800 via-maroon-800 to-maroon-950 px-6 py-6 text-white">
+        {/* On wide screens the result stays in view: the headline and Save stay put while the working scrolls between them. */}
+        <aside className="xl:sticky xl:top-24 xl:flex xl:max-h-[calc(100vh-7.5rem)] xl:flex-col xl:self-start" data-tour="result">
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-stone-200 bg-white shadow-[var(--shadow-card)] xl:flex xl:min-h-0 xl:flex-col">
+            <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-maroon-800 via-maroon-800 to-maroon-950 px-6 py-6 text-white">
               <svg className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 text-white/[0.06]" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="12" /></svg>
               <p className="text-[13px] font-semibold text-maroon-100">Well-to-wheel emissions</p>
               {headline ? <p className="mt-2 flex items-baseline gap-2"><span className="num text-[44px] font-bold leading-none tracking-tight">{headline.value}</span><span className="text-lg font-semibold text-maroon-100">{headline.unit}</span></p>
@@ -586,7 +599,8 @@ export function CalculateView() {
               {result && <p className="mt-2 text-[13px] text-maroon-100">{fuelBased ? `${fmt(form.fuelQuantity ?? 0, 2)} ${form.fuelUnit === "l" ? "litres" : form.fuelUnit === "t" ? "tonnes" : form.fuelUnit} of ${form.fuelId === "electricity" ? "electricity" : FUELS[form.fuelId].label}` : `${fmt(result.cargoTonnes, 2)} ton over ${fmt(result.distanceKm, 0)} km`} · {fuelBased ? "fuel-based" : "distance-based"}</p>}
             </div>
             {result && mainLeg && (
-              <div className="grid gap-5 p-6">
+              <div className="relative xl:flex xl:min-h-0 xl:flex-1 xl:flex-col">
+              <div ref={details} onScroll={checkMore} className="relative grid gap-5 p-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
                 <StageBar ttw={result.ttwKg} wtt={result.wttKg} hub={result.hubKg} />
                 <dl className="grid grid-cols-2 gap-3 text-[13px]">
                   {([
@@ -607,17 +621,24 @@ export function CalculateView() {
                 </div>
                 <p className="text-[12.5px] leading-relaxed text-grey-600"><span className="font-semibold text-grey-800">Factor source:</span> {factorSource(mainLeg)}.</p>
                 {[...new Set(result.legs.flatMap((leg) => leg.warnings))].map((warning, i) => <p key={i} className="callout callout-warn !py-2.5 text-[12.5px]"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />{warning}</p>)}
-                <CalculationBasis result={result} legMeta={"legMeta" in built ? built.legMeta : undefined} defaultOpen />
+                <div ref={basis}><CalculationBasis result={result} legMeta={"legMeta" in built ? built.legMeta : undefined} defaultOpen /></div>
+              </div>
+              {moreBelow && (
+                <button type="button" onClick={() => details.current?.scrollTo({ top: basisBelow ? basis.current!.offsetTop - 12 : details.current.scrollTop + details.current.clientHeight * 0.8, behavior: "smooth" })}
+                  className="absolute inset-x-0 bottom-0 hidden justify-center bg-gradient-to-t from-white via-white/90 to-transparent pb-2.5 pt-10 xl:flex">
+                  <span className="flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[12.5px] font-semibold text-maroon-700 shadow-sm ring-1 ring-stone-200"><ChevronDown size={14} aria-hidden="true" /> {basisBelow ? "See how this was calculated" : "More"}</span>
+                </button>
+              )}
               </div>
             )}
-            <div className="grid gap-2 border-t border-stone-200 p-4 sm:grid-cols-2">
+            <div className="grid shrink-0 gap-2 border-t border-stone-200 p-4 sm:grid-cols-2">
               <button type="button" className="btn btn-primary sm:col-span-2" disabled={!result} onClick={() => save(false)}><Save size={16} aria-hidden="true" /> {editing ? "Update shipment" : "Save to shipments"}</button>
               {!editing && <button type="button" className="btn btn-secondary" disabled={!result} onClick={() => save(true)}><Plus size={15} aria-hidden="true" /> Save, add another</button>}
               <button type="button" className={cx("btn btn-ghost", editing && "sm:col-span-2")} onClick={() => { setForm(initialForm(settings.businessUnits[0] ?? "Operations")); setEditing(null); setMissing({ ref: false, date: false }); }}><RotateCcw size={15} aria-hidden="true" /> Reset</button>
             </div>
           </div>
           {result && !fuelBased && form.origin && form.destination && hasCoords(form.origin) && hasCoords(form.destination) && (form.mode === "road" || form.mode === "rail") && (
-            <Link prefetch={false} href={`/app/compare/?from=${encodeURIComponent(form.origin.label)}&to=${encodeURIComponent(form.destination.label)}&t=${tonnes}`} className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-maroon-300 bg-maroon-50/60 px-4 py-3 text-[13.5px] font-semibold text-maroon-800 transition hover:bg-maroon-50">
+            <Link prefetch={false} href={`/app/compare/?from=${encodeURIComponent(form.origin.label)}&to=${encodeURIComponent(form.destination.label)}&t=${tonnes}`} className="mt-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-dashed border-maroon-300 bg-maroon-50/60 px-4 py-3 text-[13.5px] font-semibold text-maroon-800 transition hover:bg-maroon-50">
               Could another mode be cleaner? Compare door to door <ArrowLeftRight size={16} aria-hidden="true" />
             </Link>
           )}
