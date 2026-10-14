@@ -175,9 +175,9 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): 
     if (fuel.unit === "kg" && unit === "l") {
       if (!fuel.density) throw new CalculationError(`${fuel.label} is measured by mass. Enter kilograms.`, "fuelUnit");
       base = quantity * fuel.density;
-      trace.push(`Fuel: ${num(quantity)} l × ${fuel.density} kg/l = ${num(base)} kg ${fuel.label.toLowerCase()}`);
+      trace.push(`Fuel: ${num(quantity)} l × ${fuel.density} kg/l = ${num(base)} kg of ${fuel.label}`);
     } else {
-      trace.push(`Fuel: ${num(quantity)} ${unit} ${fuel.label.toLowerCase()}`);
+      trace.push(`Fuel: ${num(quantity)} ${unit} of ${fuel.label}`);
     }
     ttwKg = base * fuel.ttw * share;
     wttKg = base * (fuel.wtw - fuel.ttw) * share;

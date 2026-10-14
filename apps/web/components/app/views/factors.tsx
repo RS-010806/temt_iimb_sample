@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { EV_ENERGY_PROXY_KWH_PER_TKM, FACTOR_SETS, FUELS, GLEC_AIR, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, SOURCES, TEMT_AIR, TRADE_LANES, VESSELS, type FactorSetId, type RoadClassId } from "@temt/calculator";
+import { EV_ENERGY_PROXY_KWH_PER_TKM, FACTOR_SETS, GLEC_ELECTRIC_REFERENCE, FUELS, GLEC_AIR, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, SOURCES, TEMT_AIR, TRADE_LANES, VESSELS, type FactorSetId, type RoadClassId } from "@temt/calculator";
 import { fmt } from "@/lib/format";
 import { useSettings } from "@/lib/store";
 import { BarList } from "../charts";
@@ -74,8 +74,8 @@ export function FactorsView() {
               return [[`${item.label} (${item.gvw})`, fuel === "cng" ? "CNG" : fuel, g(own.wtt), g(own.ttw), g(own.wtt + own.ttw), ...(compare ? [alt ? g(alt) : "–"] : [])]];
             }))} />
           <p className="text-[13px] leading-relaxed text-grey-600">g CO₂e per tonne-km, at the typical load factor of each class. Refrigerated road freight adds TEMT's refrigeration uplift. Courier and part-truckload shipments use TEMT's first-mile, line-haul and last-mile defaults with a transshipment at each hub.</p>
-          <Table head={["Electric truck class", "Energy kWh/t-km", "At CEA grid, g/t-km"]} rows={ROAD_CLASSES.filter((item) => EV_ENERGY_PROXY_KWH_PER_TKM[item.id]).map((item) => [`${item.label} (${item.gvw})`, fmt(EV_ENERGY_PROXY_KWH_PER_TKM[item.id]!, 2), g(EV_ENERGY_PROXY_KWH_PER_TKM[item.id]! * INDIA_GRID_KG_PER_KWH)])} />
-          <p className="text-[13px] text-grey-600">International energy proxies until Indian values are published. Enter measured kWh from charging logs for primary data.</p>
+          <Table head={["Electric truck class", "GLEC v3.2 Europe, kWh/t-km", "Indian loading, kWh/t-km", "At CEA grid, g/t-km", "Diesel, g/t-km"]} right={1} rows={ROAD_CLASSES.filter((item) => EV_ENERGY_PROXY_KWH_PER_TKM[item.id]).map((item) => [`${item.label} (${item.gvw})`, fmt(GLEC_ELECTRIC_REFERENCE[item.id]!.kwhPerTkm, 2), fmt(EV_ENERGY_PROXY_KWH_PER_TKM[item.id]!, 3), g(EV_ENERGY_PROXY_KWH_PER_TKM[item.id]! * INDIA_GRID_KG_PER_KWH), g(ROAD_FACTORS.temt[item.id]!.diesel!.wtt + ROAD_FACTORS.temt[item.id]!.diesel!.ttw)])} />
+          <p className="text-[13px] leading-relaxed text-grey-600">GLEC v3.2 Table 11 publishes electric-truck energy use only for Europe, where trucks carry lighter loads. TEMT keeps GLEC's ratio of electricity to diesel for the matching rigid-truck class and applies it to the diesel use of TEMT's Indian factor, so electric and diesel trucks are compared on the same Indian loading. Light commercial vehicles need measured kWh. Enter kWh from charging records for primary data.</p>
         </div>
       )}
       {tab === "rail-air" && (

@@ -1,6 +1,6 @@
-import { calculateShipment, seaRoute, VESSELS, type FactorSetId, type HubInput, type LegInput, type RoadClassId, type TransportMode } from "@temt/calculator";
-import { buildRecord, vehicleForTonnes } from "./builders";
-import { estimateDistance, hasCoords, nearestIndianPort, resolvePlace, type Place, type PlaceKind } from "./places";
+import { calculateShipment, seaRoute, VESSELS, type DistanceMethod, type FactorSetId, type HubInput, type LegInput, type RoadClassId, type TransportMode } from "@temt/calculator";
+import { buildRecord, refSequence, vehicleForTonnes } from "./builders";
+import { estimateDistance, hasCoords, measureDistance, nearestIndianPort, resolvePlace, type Place, type PlaceKind } from "./places";
 import type { Direction, LegMeta, PaidBy, RecordSource, ShipmentRecord } from "./records";
 
 export type ImportFormat = "temt" | "legacy-road" | "legacy-rail" | "legacy-air" | "legacy-coastal" | "legacy-water" | "legacy-courier" | "ewaybill";
@@ -27,7 +27,8 @@ export interface ImportRow {
   status: "ok" | "warning" | "error";
   messages: string[];
   record?: ShipmentRecord;
-  summary: { ref: string; date: string; route: string; mode: string; tonnes?: number; km?: number; kg?: number };
+  /** refInFile: the reference came from the file (LR, RR, AWB, e-way bill), rather than being assigned by TEMT. */
+  summary: { ref: string; refInFile: boolean; date: string; route: string; mode: string; tonnes?: number; km?: number; kg?: number };
 }
 
 export interface ImportOptions {
@@ -138,31 +139,35 @@ async function resolvePort(text: string, messages: string[], label: string): Pro
   return { label: text, kind: "custom" };
 }
 
-function distanceFor(mode: TransportMode, from: Place, to: Place, given: number | undefined, messages: string[]) {
-  if (given !== undefined && !Number.isNaN(given) && given > 0) return { km: given, method: "user" as const };
-  const estimate = estimateDistance(mode, from, to);
-  if (estimate) { messages.push(`Distance estimated: ${Math.round(estimate.km).toLocaleString("en-IN")} km.`); return { km: Math.round(estimate.km), method: estimate.method }; }
+/** The distance given in the file, else one calculated from the places (rail over the Indian Railways network). */
+async function distanceFor(mode: TransportMode, from: Place, to: Place, given: number | undefined, messages: string[]): Promise<{ km: number; method: DistanceMethod } | undefined> {
+  if (given !== undefined && !Number.isNaN(given) && given > 0) return { km: given, method: "user" };
+  const estimate = mode === "rail" ? await measureDistance(mode, from, to) : estimateDistance(mode, from, to);
+  if (estimate) { messages.push(`Distance calculated: ${Math.round(estimate.km).toLocaleString("en-IN")} km${estimate.method === "rail-network" ? " on the rail network" : ""}.`); return { km: Math.round(estimate.km), method: estimate.method }; }
   return undefined;
 }
 
 interface Draft { line: number; ref: string; date?: string; businessUnit: string; commodity: string; origin: Place; destination: Place; direction: Direction; paidBy: PaidBy; notes?: string; legs: LegInput[]; legMeta: LegMeta[]; hubs: HubInput[]; kind: ShipmentRecord["kind"]; source: RecordSource; messages: string[]; errors: string[] }
 
-function finish(draft: Draft, options: ImportOptions): ImportRow {
+/** Rows without a reference get today's next TEMT reference, so they never match or overwrite a saved shipment. */
+function finish(draft: Draft, options: ImportOptions, newRef: () => string): ImportRow {
   const route = `${draft.origin.label} → ${draft.destination.label}`;
-  const summary = { ref: draft.ref, date: draft.date ?? "", route, mode: [...new Set(draft.legs.map((leg) => leg.mode))].join(" + "), tonnes: draft.legs[0]?.tonnes, km: draft.legs.reduce((sum, leg) => sum + (leg.distanceKm ?? 0), 0) };
+  const summary = { ref: draft.ref, refInFile: !!draft.ref, date: draft.date ?? "", route, mode: [...new Set(draft.legs.map((leg) => leg.mode))].join(" + "), tonnes: draft.legs[0]?.tonnes, km: draft.legs.reduce((sum, leg) => sum + (leg.distanceKm ?? 0), 0) };
   if (!draft.date) draft.errors.push("Date is missing or not recognised. Use YYYY-MM-DD or DD/MM/YYYY.");
   if (draft.errors.length) return { line: draft.line, status: "error", messages: [...draft.errors, ...draft.messages], summary };
   try {
     const result = calculateShipment({ legs: draft.legs, hubs: draft.hubs }, options.factorSet);
-    const record = buildRecord({ ref: draft.ref, date: draft.date, businessUnit: draft.businessUnit, commodity: draft.commodity, origin: draft.origin, destination: draft.destination, direction: draft.direction, paidBy: draft.paidBy, kind: draft.kind, legs: draft.legs, legMeta: draft.legMeta, hubs: draft.hubs, source: draft.source, notes: draft.notes });
-    const warnings = draft.messages.filter((message) => !message.startsWith("Distance estimated"));
-    return { line: draft.line, status: warnings.length ? "warning" : "ok", messages: draft.messages, record, summary: { ...summary, kg: result.wtwKg } };
+    const ref = draft.ref || newRef();
+    const record = buildRecord({ ref, date: draft.date, businessUnit: draft.businessUnit, commodity: draft.commodity, origin: draft.origin, destination: draft.destination, direction: draft.direction, paidBy: draft.paidBy, kind: draft.kind, legs: draft.legs, legMeta: draft.legMeta, hubs: draft.hubs, source: draft.source, notes: draft.notes });
+    const warnings = draft.messages.filter((message) => !message.startsWith("Distance calculated"));
+    return { line: draft.line, status: warnings.length ? "warning" : "ok", messages: draft.messages, record, summary: { ...summary, ref, kg: result.wtwKg } };
   } catch (error) {
     return { line: draft.line, status: "error", messages: [error instanceof Error ? error.message : "Could not calculate.", ...draft.messages], summary };
   }
 }
 
 async function temtRows(rows: Raw[], options: ImportOptions): Promise<ImportRow[]> {
+  const newRef = refSequence();
   const lower = rows.map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [norm(key).replace(/ /g, "_"), value])));
   // Rows sharing a reference and carrying leg numbers form one multimodal shipment.
   const groups = new Map<string, { line: number; row: Raw }[]>();
@@ -183,11 +188,11 @@ async function temtRows(rows: Raw[], options: ImportOptions): Promise<ImportRow[
       if (!mode) { errors.push(`Line ${line}: mode “${str(row.mode)}” is not recognised.`); continue; }
       const tonnes = num(row.tonnes) ?? options.defaultTonnes;
       if (!tonnes || Number.isNaN(tonnes) || tonnes <= 0) { errors.push(`Line ${line}: tonnes must be a positive number.`); continue; }
-      const kinds: PlaceKind[] = mode === "air" ? ["airport", "city", "pin"] : mode === "sea" ? ["port", "city", "pin"] : ["city", "pin"];
+      const kinds: PlaceKind[] = mode === "air" ? ["airport", "city", "pin"] : mode === "sea" ? ["port", "city", "pin"] : mode === "rail" ? ["station", "city", "pin"] : ["city", "pin"];
       const from = await resolve(str(row.origin), kinds, errors, `Line ${line}: origin`);
       const to = await resolve(str(row.destination), kinds, errors, `Line ${line}: destination`);
       origin ??= from; destination = to;
-      let dist = distanceFor(mode, from, to, num(row.distance_km), messages);
+      let dist = await distanceFor(mode, from, to, num(row.distance_km), messages);
       if (mode === "sea" && !num(row.distance_km)) {
         const a = from.kind === "port" ? from : hasCoords(from) ? nearestIndianPort(from) : undefined, b = to.kind === "port" ? to : hasCoords(to) ? nearestIndianPort(to) : undefined;
         const route = a?.code && b?.code ? seaRoute(a.code, b.code) : undefined;
@@ -221,12 +226,13 @@ async function temtRows(rows: Raw[], options: ImportOptions): Promise<ImportRow[
       direction: (["inbound", "outbound", "inter-facility"].includes(direction) ? direction : options.direction) as Direction,
       paidBy: (paid.startsWith("cust") ? "customer" : paid.startsWith("own") ? "own-fleet" : paid ? "company" : options.paidBy) as PaidBy,
       notes: str(first.notes) || undefined, legs, legMeta, hubs: [], kind: legs.length > 1 ? "chain" : "single", source: "import", messages, errors,
-    }, options));
+    }, options, newRef));
   }
   return out;
 }
 
 async function legacyRows(format: ImportFormat, rows: Raw[], options: ImportOptions): Promise<ImportRow[]> {
+  const newRef = refSequence();
   const out: ImportRow[] = [];
   for (const [index, raw] of rows.entries()) {
     const row = Object.fromEntries(Object.entries(raw).map(([key, value]) => [norm(key), value]));
@@ -241,22 +247,22 @@ async function legacyRows(format: ImportFormat, rows: Raw[], options: ImportOpti
     if (format === "legacy-road") {
       origin = await resolve(str(row["origin"]), ["city", "pin"], errors, "Origin");
       destination = await resolve(str(row["destination"]), ["city", "pin"], errors, "Destination");
-      const dist = distanceFor("road", origin, destination, undefined, messages);
+      const dist = await distanceFor("road", origin, destination, undefined, messages);
       const vehicle = parseVehicle(str(row["vehicle category"]), t);
       if (!dist) errors.push("Could not place origin or destination to estimate the distance.");
       legs.push({ mode: "road", tonnes: t, distanceKm: dist?.km, vehicleClass: vehicle.id, fuel: (str(row["fuel"]).toLowerCase() || "diesel") as LegInput["fuel"] });
       legMeta.push({ from: origin, to: destination, distanceMethod: dist?.method ?? "user" });
     } else if (format === "legacy-rail") {
-      origin = await resolve(str(row["origin station"]), ["city", "pin"], errors, "Origin station");
-      destination = await resolve(str(row["destination station"]), ["city", "pin"], errors, "Destination station");
-      const dist = distanceFor("rail", origin, destination, undefined, messages);
+      origin = await resolve(str(row["origin station"]), ["station", "city", "pin"], errors, "Origin station");
+      destination = await resolve(str(row["destination station"]), ["station", "city", "pin"], errors, "Destination station");
+      const dist = await distanceFor("rail", origin, destination, undefined, messages);
       if (!dist) errors.push("Could not place the stations to estimate the distance.");
       legs.push({ mode: "rail", tonnes: t, distanceKm: dist?.km });
       legMeta.push({ from: origin, to: destination, distanceMethod: dist?.method ?? "user" });
     } else if (format === "legacy-air") {
       origin = await resolve(str(row["origin"]), ["airport", "city"], errors, "Origin airport");
       destination = await resolve(str(row["destination"]), ["airport", "city"], errors, "Destination airport");
-      const dist = distanceFor("air", origin, destination, undefined, messages);
+      const dist = await distanceFor("air", origin, destination, undefined, messages);
       if (!dist) errors.push("Could not identify the airports.");
       legs.push({ mode: "air", tonnes: t, distanceKm: dist ? Math.round(dist.km) : undefined, airService: "unknown", airScope: origin.country && destination.country && (origin.country !== "IN" || destination.country !== "IN") ? "international" : "domestic" });
       legMeta.push({ from: origin, to: destination, distanceMethod: "great-circle" });
@@ -281,14 +287,14 @@ async function legacyRows(format: ImportFormat, rows: Raw[], options: ImportOpti
       destination = await resolve(str(row["destination"]), ["city", "pin"], errors, "Destination");
       const parts: [Place, Place, string, string, "first" | "mid" | "last"][] = [[origin, hubA, "first mile vehicle", "first mile fuel", "first"], [hubA, hubB, "mid mile vehicle", "mid mile fuel", "mid"], [hubB, destination, "last mile vehicle", "last mile fuel", "last"]];
       for (const [a, b, vehicleKey, fuelKey, role] of parts) {
-        const dist = distanceFor("road", a, b, undefined, messages);
+        const dist = await distanceFor("road", a, b, undefined, messages);
         if (!dist) errors.push(`Could not estimate the ${role}-mile distance.`);
         legs.push({ mode: "road", tonnes: t, distanceKm: dist?.km, vehicleClass: parseVehicle(str(row[vehicleKey]), t).id, fuel: (str(row[fuelKey]).toLowerCase() || "diesel") as LegInput["fuel"], courierLeg: role });
         legMeta.push({ from: a, to: b, distanceMethod: dist?.method ?? "user" });
       }
       hubs.push({ type: "transshipment", tonnes: t, label: `${hubA.label} hub` }, { type: "transshipment", tonnes: t, label: `${hubB.label} hub` });
     }
-    out.push(finish({ line, ref: `TEMT-IMPORT-${line}`, date, businessUnit: options.businessUnit, commodity: "General cargo", origin, destination, direction: options.direction, paidBy: options.paidBy, legs, legMeta, hubs, kind, source: "legacy-temt", messages, errors }, options));
+    out.push(finish({ line, ref: "", date, businessUnit: options.businessUnit, commodity: "General cargo", origin, destination, direction: options.direction, paidBy: options.paidBy, legs, legMeta, hubs, kind, source: "legacy-temt", messages, errors }, options, newRef));
   }
   return out;
 }
@@ -297,6 +303,7 @@ const UQC_TONNES: Record<string, number> = { KGS: 0.001, KG: 0.001, MTS: 1, TON:
 const EWB_MODE: Record<string, TransportMode> = { "1": "road", "2": "rail", "3": "air", "4": "sea" };
 
 async function ewayRows(data: unknown, options: ImportOptions): Promise<ImportRow[]> {
+  const newRef = refSequence();
   const list = Array.isArray(data) ? data : ((data as Raw)?.billLists ?? (data as Raw)?.ewayBills ?? (data as Raw)?.data) as unknown;
   if (!Array.isArray(list)) throw new Error("This JSON does not look like an e-way bill export (expected billLists).");
   const out: ImportRow[] = [];
@@ -313,14 +320,14 @@ async function ewayRows(data: unknown, options: ImportOptions): Promise<ImportRo
     const from = await resolve(str(bill.fromPincode) || str(bill.fromPlace), ["pin", "city"], errors, "From PIN");
     const to = await resolve(str(bill.toPincode) || str(bill.toPlace), ["pin", "city"], errors, "To PIN");
     const declared = num(bill.transDistance);
-    const dist = distanceFor(mode, from, to, declared && !Number.isNaN(declared) && declared > 0 ? declared : undefined, messages);
+    const dist = await distanceFor(mode, from, to, declared && !Number.isNaN(declared) && declared > 0 ? declared : undefined, messages);
     if (!dist) errors.push("No transport distance declared and the PIN codes could not be placed.");
     const t = tonnes || 1;
     const leg: LegInput = { mode, tonnes: t, distanceKm: dist?.km };
     if (mode === "road") Object.assign(leg, { vehicleClass: vehicleForTonnes(t), fuel: "diesel" });
     if (mode === "sea") Object.assign(leg, { seaBasis: "lane", tradeLane: "intra-me-india", containerType: "dry", tonnesPerTeu: 10 });
-    out.push(finish({ line: index + 1, ref: str(bill.ewbNo) || str(bill.docNo) || `EWB-${index + 1}`, date: parseDate(bill.docDate), businessUnit: options.businessUnit, commodity: str(items[0]?.productName) || "General cargo", origin: from, destination: to,
-      direction: options.direction, paidBy: options.paidBy, legs: [leg], legMeta: [{ from, to, distanceMethod: declared ? "user" : dist?.method ?? "user" }], hubs: [], kind: "single", source: "ewaybill", messages: declared ? [`Distance from e-way bill: ${declared} km.`, ...messages] : messages, errors }, options));
+    out.push(finish({ line: index + 1, ref: str(bill.ewbNo) || str(bill.docNo), date: parseDate(bill.docDate), businessUnit: options.businessUnit, commodity: str(items[0]?.productName) || "General cargo", origin: from, destination: to,
+      direction: options.direction, paidBy: options.paidBy, legs: [leg], legMeta: [{ from, to, distanceMethod: declared ? "user" : dist?.method ?? "user" }], hubs: [], kind: "single", source: "ewaybill", messages: declared ? [`Distance from e-way bill: ${declared} km.`, ...messages] : messages, errors }, options, newRef));
   }
   return out;
 }

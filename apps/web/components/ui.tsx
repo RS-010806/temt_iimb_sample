@@ -13,7 +13,7 @@ export function cx(...values: (string | false | null | undefined)[]) {
 /** Lets form controls inside a Field pick up the Field's id, so every label is tied to its control. */
 export const FieldIdContext = createContext<string | undefined>(undefined);
 
-export function Field({ label, hint, error, children, htmlFor, info }: { label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode; htmlFor?: string; info?: ReactNode }) {
+export function Field({ label, hint, error, children, htmlFor, info, required }: { label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode; htmlFor?: string; info?: ReactNode; required?: boolean }) {
   const autoId = useId();
   const id = htmlFor ?? autoId;
   // Plain <input>, <select> and <textarea> children get the id directly; custom controls read it from context.
@@ -21,7 +21,7 @@ export function Field({ label, hint, error, children, htmlFor, info }: { label: 
     ? cloneElement(child as ReactElement<{ id?: string }>, { id }) : child);
   return (
     <div className="field">
-      <label className="label" htmlFor={id}>{label}{info && <InfoTip>{info}</InfoTip>}</label>
+      <label className="label" htmlFor={id}>{label}{required && <span className="text-maroon-700" aria-hidden="true">*</span>}{info && <InfoTip>{info}</InfoTip>}</label>
       <FieldIdContext.Provider value={id}>{content}</FieldIdContext.Provider>
       {error ? <p className="error-text" role="alert">{error}</p> : hint ? <p className="hint">{hint}</p> : null}
     </div>

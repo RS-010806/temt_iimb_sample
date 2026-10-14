@@ -66,7 +66,8 @@ export default function MethodologyPage() {
           <p>Where TEMT does not publish its own value, for example container trade lanes, inland waterways and most hub operations, it uses the ISO 14083-aligned international defaults of the GLEC Framework v3.2. Every value, with its source and version, is listed in the factor library inside TEMT.</p>
 
           <h2>Distances</h2>
-          <p>ISO 14083 asks for the distance type to be stated. Road, rail, waterway and sea legs use the <strong>shortest feasible distance (SFD)</strong>; air legs use the <strong>great-circle distance (GCD)</strong> between airports. When you give a city or 6-digit PIN code, TEMT estimates the distance with a model calibrated on Indian corridors, typically within 10–15%. Actual distances from your systems or e-way bills replace estimates, and every leg records which type was used.</p>
+          <p>ISO 14083 asks for the distance type to be stated. Road, rail, waterway and sea legs use the <strong>shortest feasible distance (SFD)</strong>; air legs use the <strong>great-circle distance (GCD)</strong> between airports, with GLEC's 95 km allowance for routing and holding. For each shipment the user chooses either to calculate the distance from the route or to enter the actual distance from a trip sheet, GPS record, e-way bill or invoice, and every leg records which was used.</p>
+          <p>Rail distances are the shortest route on the Indian Railways network, built from the stops of every scheduled train (datameet railways data, released under CC0), and match published route distances to within about 3% on average. Road distances between cities or 6-digit PIN codes use a model calibrated on Indian corridors, typically within 10–15%. Sea legs follow shipping lanes from port to port.</p>
 
           <h2>Data quality</h2>
           <p>Each leg is labelled <strong>primary</strong> (measured fuel or electricity, or a carrier-specific intensity), <strong>modelled</strong> or <strong>default</strong> (a published factor). Reports show the share of emissions on each basis, and a shipment inherits the label of its weakest leg.</p>
@@ -98,7 +99,7 @@ export default function MethodologyPage() {
           <h2>Limitations</h2>
           <ul>
             <li>Default factors describe typical operations; fuel records or carrier-specific data are more accurate and raise the primary-data share.</li>
-            <li>Indian energy-intensity data for electric trucks above 3.5 tonnes is not yet published; TEMT uses international proxies and recommends entering measured charging energy.</li>
+            <li>Indian energy-use data for electric trucks is not yet published. TEMT uses GLEC v3.2's European values adjusted to Indian truck loading, and recommends entering measured charging energy.</li>
             <li>Mode comparisons cover emissions only; check capacity, transit time and cost before switching modes.</li>
           </ul>
 

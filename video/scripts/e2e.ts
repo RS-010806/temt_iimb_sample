@@ -173,54 +173,100 @@ async function workspace(browser: Browser) {
     for (const heading of ["Monthly emissions", "By transport mode", "Heaviest lanes", "Reduction opportunities", "Data quality", "Recent shipments"]) await page.getByRole("heading", { name: heading }).waitFor();
   });
 
-  await step(page, "Calculator: road by city and PIN code, calculation basis, save", async () => {
+  // The headline result in kg CO₂e, whichever unit the panel shows it in.
+  const headline = async () => {
+    const text = await page.locator('[data-tour="result"] p.flex').first().innerText();
+    const match = text.match(/([\d,.]+)\s*(kg|t)\b/);
+    if (!match) throw new Error(`No headline result: ${text}`);
+    return Number(match[1]!.replace(/,/g, "")) * (match[2] === "t" ? 1000 : 1);
+  };
+  await step(page, "Calculator: road by city and PIN code, distance calculated from the route, working shown", async () => {
     await page.goto(`${BASE}/app/calculate/`, { waitUntil: "networkidle" });
+    await page.getByRole("radio", { name: /Distance-based/ }).waitFor();
     await choosePlace(page, page.locator("#origin"), "Bangalore");
     await choosePlace(page, page.locator("#destination"), "400001");
     await page.locator("#tonnes").fill("18");
     await page.getByText("Well-to-wheel emissions").waitFor();
-    await page.getByRole("button", { name: "Calculation basis" }).click();
-    await page.getByText("Distance type").first().waitFor();
+    await page.getByText("How this was calculated").waitFor();
+    for (const label of ["Transport activity", "Emission factor", "Intensity per ton", "Reference framework: GLEC Framework v3.2"]) await page.getByText(label).first().waitFor();
     const basis = await page.locator('[data-tour="result"]').innerText();
-    if (/×\s*1\.2|straight line|circuity/i.test(basis)) throw new Error("Calculation basis exposes internal modelling parameters");
+    if (/straight line|circuity/i.test(basis)) throw new Error("Calculation basis exposes internal modelling parameters");
     await shot(page, "calculator-road");
-    const headline = await page.locator('[data-tour="result"] .num').first().innerText();
+    const value = await headline();
     await page.getByRole("button", { name: "Save to shipments" }).click();
-    await toast(/^Saved /);
-    return `${headline} t CO₂e for Bengaluru → Mumbai, 18 t`;
+    await page.getByText("Enter the LR number to save this shipment.").waitFor();
+    await page.locator("#reference").fill("LR-E2E-01");
+    await page.getByRole("button", { name: "Save to shipments" }).click();
+    await toast(/^Saved LR-E2E-01/);
+    return `${value.toFixed(0)} kg CO₂e for Bengaluru → Mumbai, 18 TON; saving asks for the LR number first`;
   });
-  const modeCheck = async (mode: string, origin: string, destination: string, name: string) => {
+  await step(page, "Calculator: explicit choice to enter the distance manually", async () => {
+    await page.getByRole("group", { name: "Distance source" }).getByRole("button", { name: "Enter manually" }).click();
+    await page.locator("#distance").fill("1000");
+    await page.getByText("1,000 km · entered").waitFor();
+    await page.getByRole("group", { name: "Distance source" }).getByRole("button", { name: "Calculate from route" }).click();
+    await page.getByText(/km · calculated/).waitFor();
+  });
+  await step(page, "Calculator: the same LR number updates the saved shipment", async () => {
+    const count = async () => Number((await page.locator('a[href="/app/shipments/"] .num').first().innerText()).replace(/\D/g, ""));
+    await page.locator("#reference").fill("LR-E2E-77");
+    await page.getByRole("button", { name: "Save to shipments" }).click();
+    await toast(/^Saved LR-E2E-77/);
+    const before = await count();
+    await page.locator("#tonnes").fill("21");
+    await page.getByRole("button", { name: "Save to shipments" }).click();
+    const dialog = page.getByRole("dialog", { name: "LR-E2E-77 is already saved" });
+    await dialog.waitFor();
+    await shot(page, "calculator-duplicate-reference");
+    await dialog.getByRole("button", { name: "Update the saved shipment" }).click();
+    await toast(/^Updated LR-E2E-77/);
+    if ((await count()) !== before) throw new Error("A second shipment was added instead of updating");
+    return `shipments stay at ${before}`;
+  });
+  const modeCheck = async (mode: string, origin: string, destination: string, name: string, expect?: RegExp) => {
     await page.getByRole("radio", { name: mode, exact: true }).click();
     await choosePlace(page, page.locator("#origin"), origin);
     await choosePlace(page, page.locator("#destination"), destination);
     await page.locator("#tonnes").fill("10");
+    if (expect) await page.getByText(expect).first().waitFor({ timeout: 15000 });
     await page.waitForTimeout(500);
     const text = await page.locator('[data-tour="result"]').innerText();
     if (!/CO₂e/.test(text.split("\n").slice(0, 4).join(" "))) throw new Error(`No result: ${text.slice(0, 140)}`);
     await shot(page, `calculator-${name}`);
     return text.split("\n").slice(1, 3).join(" ");
   };
-  await step(page, "Calculator: rail", () => modeCheck("Rail", "Ludhiana", "Kolkata", "rail"));
+  await step(page, "Calculator: rail between stations on the Indian Railways network", () => modeCheck("Rail", "NDLS", "Howrah", "rail", /Shortest route on the Indian Railways network/));
   await step(page, "Calculator: air via airport codes", () => modeCheck("Air", "DEL", "BLR", "air"));
   await step(page, "Calculator: sea via ports", () => modeCheck("Sea", "Jawaharlal", "Rotterdam", "sea"));
   await step(page, "Calculator: courier / PTL", () => modeCheck("Courier / PTL", "Gurugram", "Lucknow", "courier"));
   await step(page, "Calculator: inland waterway", () => modeCheck("Inland waterway", "Patna", "Kolkata", "iww"));
-  await step(page, "Calculator: fuel-based and electric road", async () => {
+  await step(page, "Calculator: electric truck is compared on Indian loading", async () => {
     await page.getByRole("radio", { name: "Road", exact: true }).click();
     await choosePlace(page, page.locator("#origin"), "Pune");
     await choosePlace(page, page.locator("#destination"), "Nashik");
-    await page.locator("#tonnes").fill("12");
-    await page.getByRole("button", { name: "Fuel-based" }).click();
-    await page.getByPlaceholder("e.g. 315").fill("58");
-    await page.waitForTimeout(400);
-    const fuel = (await page.locator('[data-tour="result"] .num').first().innerText());
-    await page.getByRole("button", { name: "Electric" }).click();
-    await page.getByRole("radio", { name: /Light commercial vehicle/ }).click();
-    await page.getByPlaceholder("From charging logs").fill("24");
+    await page.locator("#tonnes").fill("25");
+    await page.getByRole("radio", { name: /Multi-axle heavy truck/ }).click();
+    await page.waitForTimeout(300);
+    const diesel = await headline();
+    await page.getByRole("group", { name: "Fuel" }).getByRole("button", { name: "Electric" }).click();
+    await page.getByText(/adjusted to Indian truck loading/).first().waitFor();
+    const electric = await headline();
+    if (electric >= diesel) throw new Error(`Electric ${electric} kg not below diesel ${diesel} kg`);
+    return `diesel ${diesel}, electric ${electric}`;
+  });
+  await step(page, "Calculator: fuel-based asks only for the fuel, with electricity in kWh", async () => {
+    await page.getByRole("radio", { name: /Fuel-based/ }).click();
+    if (await page.locator("#distance").count()) throw new Error("Fuel-based still shows distance fields");
+    await page.locator("#fuel-quantity").fill("58");
+    await page.getByText(/kg CO₂e\/litre/).waitFor();
+    const fuel = await headline();
+    await page.getByRole("group", { name: "Fuel or energy" }).getByRole("button", { name: "Electricity" }).click();
+    await page.locator("#fuel-quantity").fill("24");
     await page.waitForTimeout(400);
     await shot(page, "calculator-electric");
-    const ev = await page.locator('[data-tour="result"] .num').first().innerText();
-    return `fuel-based ${fuel}; electric ${ev}`;
+    const ev = await headline();
+    await page.getByRole("radio", { name: /Distance-based/ }).click();
+    return `fuel-based ${fuel} kg; 24 kWh ${ev} kg`;
   });
 
   await step(page, "Compare modes door to door and save the best option", async () => {
@@ -260,6 +306,16 @@ async function workspace(browser: Browser) {
       return summary;
     });
   }
+  await step(page, "Import: city names as people type them, and a reference already saved", async () => {
+    const summary = await readFile("city-names.csv");
+    for (const route of [/Bengaluru → Mumbai/, /Gurugram → Kolkata/, /KSR Bengaluru City Jn \(SBC\) → New Delhi \(NDLS\)/]) await page.getByText(route).first().waitFor();
+    await page.getByText("1 reference is already saved").waitFor();
+    await page.getByText("Updates saved").first().waitFor();
+    await shot(page, "import-city-names");
+    await page.getByRole("button", { name: /^Import \d+ shipments/ }).click();
+    await toast(/^Imported 3 new shipments and updated 1 with a matching reference/);
+    return summary;
+  });
   await step(page, "Import e-way bill JSON, then with a default weight", async () => {
     const first = await readFile("ewaybills.json");
     await page.getByLabel("Default weight").fill("4");
@@ -498,6 +554,7 @@ async function accounts(browser: Browser) {
     await choosePlace(a, a.locator("#origin"), "Pune");
     await choosePlace(a, a.locator("#destination"), "Chennai");
     await a.locator("#tonnes").fill("9");
+    await a.locator("#reference").fill("LR-SYNC-09");
     await a.getByText("Well-to-wheel emissions").waitFor();
     await a.getByRole("button", { name: "Save to shipments" }).click();
     await a.getByText(/^Saved /).first().waitFor({ timeout: 10000 });

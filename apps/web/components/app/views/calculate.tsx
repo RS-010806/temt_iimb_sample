@@ -223,6 +223,7 @@ export function CalculateView() {
   const [form, setForm] = useState<Form>(() => initialForm(settings.businessUnits[0] ?? "Operations"));
   const [editing, setEditing] = useState<ShipmentRecord | null>(null);
   const [showMore, setShowMore] = useState(false);
+  const [missing, setMissing] = useState({ ref: false, date: false });
   const [showRoute, setShowRoute] = useState(false);
   const [duplicate, setDuplicate] = useState<{ existing: ShipmentRecord; record: ShipmentRecord; again: boolean } | null>(null);
   const set = (patch: Partial<Form>) => setForm((current) => ({ ...current, ...patch }));
@@ -312,6 +313,18 @@ export function CalculateView() {
   const save = (again: boolean) => {
     if (!result || "error" in built) return;
     if (!fuelBased && (!form.origin || !form.destination)) { toast({ tone: "warn", message: "Add an origin and destination to save this shipment." }); return; }
+    // The transport document number and dispatch date are what make a saved shipment traceable.
+    const gaps = { ref: !form.ref.trim(), date: !form.date };
+    if (gaps.ref || gaps.date) {
+      setMissing(gaps);
+      // After the error message renders, so the layout shift cannot leave the field off screen.
+      requestAnimationFrame(() => {
+        const field = document.getElementById(gaps.ref ? "reference" : "dispatch-date");
+        field?.scrollIntoView({ block: "center" });
+        field?.focus({ preventScroll: true });
+      });
+      return;
+    }
     const record = buildRecord({ ref: form.ref.trim(), date: form.date, businessUnit: form.businessUnit, commodity: form.commodity, origin: form.origin ?? NOT_SPECIFIED, destination: form.destination ?? NOT_SPECIFIED, direction: form.direction, paidBy: form.paidBy, kind: form.mode === "courier" ? "courier" : "single", legs: built.legs, legMeta: built.legMeta, hubs: built.hubs, source: "manual", notes: form.notes || undefined });
     if (editing) { commit({ ...record, ref: form.ref.trim() || editing.ref }, again, editing); return; }
     const existing = form.ref.trim() ? shipments.find((item) => item.ref.trim().toLowerCase() === form.ref.trim().toLowerCase()) : undefined;
@@ -539,10 +552,14 @@ export function CalculateView() {
             </Step>
           )}
 
-          <Step n={++n} title="Shipment reference" subtitle="Links this calculation to your records. Saving with a reference that already exists offers to update that shipment.">
+          <Step n={++n} title="Shipment reference" subtitle="Needed to save, so every shipment can be traced to its transport document. Saving a reference that already exists offers to update that shipment.">
             <div className="grid items-start gap-4 md:grid-cols-2">
-              <Field label={reference.label} htmlFor="reference"><input id="reference" className="input" value={form.ref} placeholder={reference.placeholder} onChange={(event) => set({ ref: event.target.value })} /></Field>
-              <Field label="Dispatch date" htmlFor="dispatch-date"><input id="dispatch-date" type="date" className="input" value={form.date} onChange={(event) => set({ date: event.target.value })} /></Field>
+              <Field label={reference.label} htmlFor="reference" required error={missing.ref ? `Enter the ${reference.label} to save this shipment.` : undefined}>
+                <input id="reference" className="input" required aria-invalid={missing.ref} value={form.ref} placeholder={reference.placeholder} onChange={(event) => { set({ ref: event.target.value }); setMissing((current) => ({ ...current, ref: false })); }} />
+              </Field>
+              <Field label="Dispatch date" htmlFor="dispatch-date" required error={missing.date ? "Enter the dispatch date to save this shipment." : undefined}>
+                <input id="dispatch-date" type="date" className="input" required aria-invalid={missing.date} value={form.date} onChange={(event) => { set({ date: event.target.value }); setMissing((current) => ({ ...current, date: false })); }} />
+              </Field>
             </div>
             <button type="button" className="mt-4 flex items-center gap-1.5 text-[13px] font-semibold text-maroon-700" onClick={() => setShowMore(!showMore)} aria-expanded={showMore}>
               <ChevronDown size={15} className={cx("transition", showMore && "rotate-180")} aria-hidden="true" /> More details (optional): business unit, commodity, GHG scope
@@ -596,7 +613,7 @@ export function CalculateView() {
             <div className="grid gap-2 border-t border-stone-200 p-4 sm:grid-cols-2">
               <button type="button" className="btn btn-primary sm:col-span-2" disabled={!result} onClick={() => save(false)}><Save size={16} aria-hidden="true" /> {editing ? "Update shipment" : "Save to shipments"}</button>
               {!editing && <button type="button" className="btn btn-secondary" disabled={!result} onClick={() => save(true)}><Plus size={15} aria-hidden="true" /> Save, add another</button>}
-              <button type="button" className={cx("btn btn-ghost", editing && "sm:col-span-2")} onClick={() => { setForm(initialForm(settings.businessUnits[0] ?? "Operations")); setEditing(null); }}><RotateCcw size={15} aria-hidden="true" /> Reset</button>
+              <button type="button" className={cx("btn btn-ghost", editing && "sm:col-span-2")} onClick={() => { setForm(initialForm(settings.businessUnits[0] ?? "Operations")); setEditing(null); setMissing({ ref: false, date: false }); }}><RotateCcw size={15} aria-hidden="true" /> Reset</button>
             </div>
           </div>
           {result && !fuelBased && form.origin && form.destination && hasCoords(form.origin) && hasCoords(form.destination) && (form.mode === "road" || form.mode === "rail") && (

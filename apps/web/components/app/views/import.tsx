@@ -6,9 +6,9 @@ import { AlertTriangle, CheckCircle2, Download, FileJson, FileSpreadsheet, Histo
 import { emissionsText, fmt } from "@/lib/format";
 import { FORMAT_LABELS, parseImport, templateCsv, templateXlsx, type ImportFormat, type ImportRow } from "@/lib/import";
 import { DIRECTION_LABELS, PAID_BY_LABELS, type Direction, type PaidBy } from "@/lib/records";
-import { actions, useSettings } from "@/lib/store";
+import { actions, useSettings, useStore } from "@/lib/store";
 import { downloadBlob } from "@/lib/exports/common";
-import { Field, NumberInput, PageHeader, Segmented, Select, cx, useToast } from "../../ui";
+import { Field, NumberInput, PageHeader, Segmented, Select, Toggle, cx, useToast } from "../../ui";
 
 export function ImportView() {
   const settings = useSettings();
@@ -25,6 +25,8 @@ export function ImportView() {
   const [filter, setFilter] = useState<"all" | "ok" | "warning" | "error">("all");
   const [dragging, setDragging] = useState(false);
   const [done, setDone] = useState<number | null>(null);
+  const [updateMatches, setUpdateMatches] = useState(true);
+  const shipments = useStore((state) => state.shipments);
 
   const read = async (next: File | null = file) => {
     if (!next) return;
@@ -39,11 +41,21 @@ export function ImportView() {
   const total = importable.reduce((sum, row) => sum + (row.summary.kg ?? 0), 0);
   const visible = (result?.rows ?? []).filter((row) => filter === "all" || row.status === filter);
 
+  // Rows whose reference (LR, RR, AWB, B/L) is already saved update that shipment instead of adding a second one.
+  const saved = new Map(shipments.map((item) => [item.ref.trim().toLowerCase(), item]));
+  const matchOf = (row: ImportRow) => (row.record && row.summary.refInFile ? saved.get(row.summary.ref.trim().toLowerCase()) : undefined);
+  const matches = importable.filter((row) => matchOf(row)).length;
+
   const commit = () => {
-    const records = importable.map((row) => row.record!);
-    actions.addShipments(records, `${records.length} shipments from ${file?.name}`);
-    setDone(records.length);
-    toast({ tone: "ok", message: `Imported ${fmt(records.length)} shipments (${emissionsText(total)}).` });
+    let updated = 0;
+    const added = [];
+    for (const row of importable) {
+      const existing = updateMatches ? matchOf(row) : undefined;
+      if (existing) { actions.updateShipment(existing.id, { ...row.record!, id: existing.id, createdAt: existing.createdAt }); updated += 1; } else added.push(row.record!);
+    }
+    if (added.length) actions.addShipments(added, `${added.length} shipments from ${file?.name}`);
+    setDone(importable.length);
+    toast({ tone: "ok", message: `Imported ${fmt(added.length)} new ${added.length === 1 ? "shipment" : "shipments"}${updated ? ` and updated ${fmt(updated)} with ${updated === 1 ? "a matching reference" : "matching references"}` : ""} (${emissionsText(total)}).` });
   };
 
   const errorReport = async () => {
@@ -79,11 +91,11 @@ export function ImportView() {
 
       <section className="card card-pad mb-6">
         <h2 className="card-title mb-4">Defaults for rows that don't say</h2>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid items-start gap-4 md:grid-cols-4">
           <Field label="Business unit"><input className="input" value={businessUnit} onChange={(event) => setBusinessUnit(event.target.value)} /></Field>
           <Field label="Who operates or pays"><Select value={paidBy} onChange={setPaidBy} options={(Object.keys(PAID_BY_LABELS) as PaidBy[]).map((key) => ({ value: key, label: PAID_BY_LABELS[key] }))} /></Field>
           <Field label="Direction"><Select value={direction} onChange={setDirection} options={(Object.keys(DIRECTION_LABELS) as Direction[]).map((key) => ({ value: key, label: DIRECTION_LABELS[key] }))} /></Field>
-          <Field label="Default weight" hint="Used when an e-way bill has no mass units"><NumberInput value={defaultTonnes} onChange={setDefaultTonnes} suffix="t" placeholder="Optional" /></Field>
+          <Field label="Default weight" hint="Used when an e-way bill has no mass units"><NumberInput value={defaultTonnes} onChange={setDefaultTonnes} suffix="TON" placeholder="Optional" /></Field>
         </div>
       </section>
 
@@ -114,6 +126,12 @@ export function ImportView() {
                 : <Link prefetch={false} href="/app/" className="btn btn-primary">Imported {fmt(done)}. View overview</Link>}
             </div>
           </div>
+          {matches > 0 && done === null && (
+            <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+              <Toggle checked={updateMatches} onChange={setUpdateMatches} label={`${fmt(matches)} ${matches === 1 ? "reference is" : "references are"} already saved`}
+                description={updateMatches ? "These rows will update the saved shipments with the same reference, so each LR, RR or AWB stays one shipment." : "These rows will be added as separate shipments."} />
+            </div>
+          )}
           <Segmented ariaLabel="Filter rows" value={filter} onChange={setFilter} options={[{ value: "all", label: `All ${result.rows.length}` }, { value: "ok", label: `Ready ${counts.ok}`, icon: <CheckCircle2 size={13} className="text-ok" aria-hidden="true" /> }, { value: "warning", label: `Check ${counts.warning}`, icon: <AlertTriangle size={13} className="text-warn" aria-hidden="true" /> }, { value: "error", label: `Errors ${counts.error}`, icon: <XCircle size={13} className="text-maroon-600" aria-hidden="true" /> }]} />
           <div className="table-wrap max-h-[560px] overflow-y-auto">
             <table className="table">
@@ -123,7 +141,7 @@ export function ImportView() {
                   <tr key={row.line} className={row.status === "error" ? "bg-maroon-50/40" : undefined}>
                     <td className="num text-grey-500">{row.line}</td>
                     <td>{row.status === "ok" ? <span className="badge badge-ok">Ready</span> : row.status === "warning" ? <span className="badge badge-warn">Check</span> : <span className="badge badge-maroon">Error</span>}</td>
-                    <td className="mono text-[12px]">{row.summary.ref}</td><td className="whitespace-nowrap">{row.summary.date}</td>
+                    <td className="mono text-[12px]">{row.summary.ref || <span className="font-sans text-grey-400">None</span>}{matchOf(row) && updateMatches && <span className="badge badge-info ml-1.5 font-sans">Updates saved</span>}</td><td className="whitespace-nowrap">{row.summary.date}</td>
                     <td className="max-w-[240px] truncate" title={row.summary.route}>{row.summary.route}</td><td className="capitalize">{row.summary.mode}</td>
                     <td className="right num">{row.summary.tonnes !== undefined ? fmt(row.summary.tonnes, 2) : "–"}</td><td className="right num">{row.summary.km ? fmt(row.summary.km, 0) : "–"}</td>
                     <td className="right num font-semibold">{row.summary.kg !== undefined ? emissionsText(row.summary.kg) : "–"}</td>

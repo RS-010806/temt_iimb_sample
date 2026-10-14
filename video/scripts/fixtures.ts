@@ -35,6 +35,14 @@ export async function writeFixtures() {
     "BAD-2026-1007,1,2026-05-20,Foods,Packaged foods,Nowhere Town,Delhi,road,-5,,,,,,,,,,,,,,outbound,company,",
   ].join("\n");
   writeFileSync(join(FIXTURES, "temt-template.csv"), csv);
+  // Common and former city names as people type them, a station name for rail, and a reference that is already saved.
+  writeFileSync(join(FIXTURES, "city-names.csv"), [
+    "reference,date,origin,destination,mode,tonnes",
+    "LR-2026-2001,2026-06-02,Bangalore,Bombay,road,14",
+    "LR-2026-2002,2026-06-03,Gurgaon,Calcutta,road,9",
+    "RR-2026-2003,2026-06-04,Bangalore City,New Delhi railway station,rail,120",
+    "LR-2026-1001,2026-05-04,Silvassa,Delhi,road,24",
+  ].join("\n"));
 
   await sheet("legacy-point-to-point.xlsx", ["Start Date", "End Date", "Origin", "Destination", "Vehicle Category", "Fuel", "Load"], [
     [d("2025-04-01"), d("2025-04-30"), "Mumbai, Maharashtra, India", "Pune, Maharashtra, India", "Ultra Heavy Commercial Vehicles - Rigid Trucks | GVW 30 to 50 MT | Payload Capacity 20 to 40 MT", "Diesel", 22],

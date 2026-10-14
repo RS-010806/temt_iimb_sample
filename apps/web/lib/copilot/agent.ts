@@ -2,7 +2,7 @@ import { calculateShipment, FACTOR_SETS, greatCircleKm, ROAD_CLASSES, seaRoute, 
 import { applyFilters, byLane, byMode, byQuality, fiscalYears, insights, opportunities, previousPeriod, totals } from "../analytics";
 import { buildAlternatives, buildRecord, vehicleForTonnes } from "../builders";
 import { emissionsText, fmt, pct, plural } from "../format";
-import { estimateDistance, hasCoords, nearestAirport, nearestIndianPort, resolvePlace, type Place, type PlaceKind } from "../places";
+import { estimateDistance, hasCoords, measureDistance, nearestAirport, nearestIndianPort, resolvePlace, type Place, type PlaceKind } from "../places";
 import { DEFAULT_LEVERS, runScenario, type Levers } from "../planner";
 import { MODE_HEX, type LegMeta, type ShipmentRecord } from "../records";
 import { makeSampleWorkspace, SAMPLE_SECTORS, type SampleSector } from "../sample-data";
@@ -102,7 +102,7 @@ async function buildFromSlots(slots: Slots): Promise<{ record?: ShipmentRecord; 
   }
   if (tonnes === undefined && slots.litres === undefined && slots.kwh === undefined) return { notes, ask: "tonnes" };
   tonnes ??= 1;
-  const kinds: PlaceKind[] = mode === "air" ? ["airport", "city", "pin"] : mode === "sea" ? ["port", "city", "pin"] : ["city", "pin"];
+  const kinds: PlaceKind[] = mode === "air" ? ["airport", "city", "pin"] : mode === "sea" ? ["port", "city", "pin"] : mode === "rail" ? ["station", "city", "pin"] : ["city", "pin"];
   const [from, to] = await Promise.all([place(slots.origin, kinds), place(slots.destination, kinds)]);
   if ((!slots.origin || !slots.destination) && slots.distanceKm === undefined && slots.litres === undefined && slots.kwh === undefined) return { notes, ask: "route" };
   if ((slots.origin && !from) || (slots.destination && !to)) {
@@ -142,7 +142,7 @@ async function buildFromSlots(slots: Slots): Promise<{ record?: ShipmentRecord; 
     if (route) notes.push(`Port to port: ${a!.label} → ${b!.label}, ${fmt(route.nauticalMiles, 0)} nautical miles.`);
   } else {
     const m = mode === "rail" ? "rail" : mode === "iww" ? "iww" : "road";
-    const estimate = distance(m, from, to);
+    const estimate = m === "rail" ? await measureDistance("rail", from, to) : distance(m, from, to);
     const km = slots.distanceKm ?? estimate?.km;
     if (!km && slots.litres === undefined && slots.kwh === undefined) return { notes, ask: "route" };
     if (m === "road") {
@@ -154,7 +154,7 @@ async function buildFromSlots(slots: Slots): Promise<{ record?: ShipmentRecord; 
       if (!slots.vehicleClass) notes.push(`Truck class chosen for ${fmt(tonnes, 1)} t: ${ROAD_CLASSES.find((item) => item.id === vehicleClass)!.label} (${ROAD_CLASSES.find((item) => item.id === vehicleClass)!.gvw} GVW). Say “by 32 ft truck” or similar to change it.`);
     } else {
       legs.push({ mode: m, tonnes, distanceKm: Math.round(km!) });
-      if (m === "rail") notes.push("Station to station only. Use Compare modes to include road drayage at each end.");
+      if (m === "rail" && estimate?.method !== "rail-network") notes.push("Station to station only. Use Compare modes to include road drayage at each end.");
     }
     legMeta.push({ from, to, distanceMethod: slots.distanceKm ? "user" : estimate?.method ?? "user" });
     if (!slots.distanceKm && estimate) notes.push(estimate.note);

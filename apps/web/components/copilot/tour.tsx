@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { cx } from "../ui";
 
@@ -17,9 +17,9 @@ export const TOUR: Step[] = [
   { path: "/app/", target: "monthly", title: "Month by month", body: "Tank-to-wheel (fuel burned in vehicles) and well-to-tank (producing that fuel or electricity), stacked per month. Hover any bar for exact values." },
   { path: "/app/", target: "mode-breakdown", title: "Where emissions come from", body: "Breakdowns by mode, business unit, lane and GHG Protocol scope, the split BRSR disclosures need." },
   { path: "/app/", target: "insights", title: "Insights and opportunities", body: "TEMT recalculates alternatives with the same engine, for example moving long road hauls to rail, and shows how much each would save." },
-  { path: "/app/calculate/", target: "mode-picker", title: "Calculate any shipment", body: "Road, courier, rail, air, sea, inland waterway or electric vehicles. Use distance, measured fuel or measured electricity, whichever data you have." },
-  { path: "/app/calculate/", target: "route", title: "Type a city or PIN code", body: "Distances fill in from TEMT's Indian location data: 2,900+ cities, 19,000+ PIN codes, airports and ports. Override with the actual kilometres any time." },
-  { path: "/app/calculate/", target: "result", title: "Live results you can explain", body: "The answer updates as you type, split into WTT and TTW, with intensity, GHG scope and data quality. Open the calculation basis to see the activity, factor source and data quality." },
+  { path: "/app/calculate/", target: "method-picker", title: "Start with the method", body: "Distance-based uses cargo weight, distance and a default emission factor. Fuel-based uses the fuel or electricity actually used, which ISO 14083 counts as primary data, and skips the distance fields. Then pick road, courier, rail, air, sea or inland waterway." },
+  { path: "/app/calculate/", target: "route", title: "Pick places, then choose the distance", body: "Search cities, PIN codes, railway stations, airports and ports, and TEMT calculates the distance (rail along the Indian Railways network). Or choose Enter manually to use the kilometres from your own records." },
+  { path: "/app/calculate/", target: "result", title: "Live results you can explain", body: "The answer updates as you type: emissions split into tank-to-wheel and well-to-tank, the emission factor applied, intensity per ton, GHG scope and data quality, with every calculation step shown." },
   { path: "/app/compare/", target: "compare-form", title: "Compare modes door to door", body: "Road, rail with drayage, air via the nearest airports and coastal shipping via the nearest ports, ranked by emissions." },
   { path: "/app/chain/", target: "chain-canvas", title: "Build multimodal chains", body: "Combine legs and hubs exactly as ISO 14083 defines a transport chain. Start from a template such as rail intermodal or export via port." },
   { path: "/app/import/", target: "import-drop", title: "Bring your data in bulk", body: "Upload CSV or Excel, templates from earlier TEMT versions or e-way bill JSON. Every row is validated before anything is saved." },
@@ -37,6 +37,9 @@ export function startTour() {
 export function Tour() {
   const [index, setIndex] = useState<number | null>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  // The card's rendered height, so it is always placed where all of it, including the buttons, is on screen.
+  const card = useRef<HTMLDivElement>(null);
+  const [cardH, setCardH] = useState(240);
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const step = index === null ? null : TOUR[index]!;
@@ -77,6 +80,11 @@ export function Tour() {
     return () => { cancelled = true; window.removeEventListener("resize", update); window.removeEventListener("scroll", update, true); };
   }, [step, pathname]);
 
+  useLayoutEffect(() => {
+    const height = card.current?.offsetHeight;
+    if (height && Math.abs(height - cardH) > 1) setCardH(height);
+  });
+
   useEffect(() => {
     if (index === null) return;
     const handle = (event: KeyboardEvent) => {
@@ -93,13 +101,19 @@ export function Tour() {
   const hole = rect ? { x: rect.left - pad, y: rect.top - pad, w: rect.width + pad * 2, h: rect.height + pad * 2 } : null;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200, vh = typeof window !== "undefined" ? window.innerHeight : 800;
   const cardW = Math.min(360, vw - 32);
-  let cardStyle: React.CSSProperties = { left: (vw - cardW) / 2, top: vh / 2 - 110, width: cardW };
+  const gap = 14, edge = 16;
+  const clampTop = (top: number) => Math.max(edge, Math.min(top, vh - cardH - edge));
+  let cardStyle: React.CSSProperties = { left: (vw - cardW) / 2, top: clampTop((vh - cardH) / 2), width: cardW };
   if (hole) {
-    const below = hole.y + hole.h + 14, above = hole.y - 14;
-    const left = Math.min(Math.max(16, hole.x), vw - cardW - 16);
-    if (below + 220 < vh) cardStyle = { left, top: below, width: cardW };
-    else if (above - 220 > 0) cardStyle = { left, top: above - 220, width: cardW };
-    else cardStyle = { left: Math.min(hole.x + hole.w + 16, vw - cardW - 16), top: Math.max(16, Math.min(hole.y, vh - 240)), width: cardW };
+    // Below the target, else above, else beside it, else over its lower edge: never partly off screen.
+    const left = Math.min(Math.max(edge, hole.x), vw - cardW - edge);
+    const below = hole.y + hole.h + gap, above = hole.y - gap - cardH;
+    const right = hole.x + hole.w + gap, beside = hole.x - gap - cardW;
+    if (below + cardH <= vh - edge) cardStyle = { left, top: below, width: cardW };
+    else if (above >= edge) cardStyle = { left, top: above, width: cardW };
+    else if (right + cardW <= vw - edge) cardStyle = { left: right, top: clampTop(hole.y), width: cardW };
+    else if (beside >= edge) cardStyle = { left: beside, top: clampTop(hole.y), width: cardW };
+    else cardStyle = { left, top: clampTop(vh - cardH - edge), width: cardW };
   }
 
   return (
@@ -114,7 +128,7 @@ export function Tour() {
         <rect width="100%" height="100%" fill="rgba(42,5,5,0.58)" mask="url(#tour-mask)" onClick={close} />
         {hole && <rect x={hole.x} y={hole.y} width={hole.w} height={hole.h} rx="14" fill="none" stroke="#efc4c0" strokeWidth="2" className="animate-pulse" />}
       </svg>
-      <div className="absolute rounded-2xl bg-white p-5 shadow-2xl animate-rise" style={cardStyle} key={index}>
+      <div ref={card} className="absolute max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl animate-rise" style={cardStyle} key={index}>
         <div className="flex items-start justify-between gap-3">
           <p className="eyebrow">Step {index + 1} of {TOUR.length}</p>
           <button type="button" onClick={close} className="-mr-1 -mt-1 rounded-md p-1 text-grey-500 hover:bg-stone-100" aria-label="End tour"><X size={16} /></button>

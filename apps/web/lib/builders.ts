@@ -16,11 +16,14 @@ export function vehicleForTonnes(tonnes: number): RoadClassId {
   return "trailer-30-60";
 }
 
-export function nextRef(prefix = "TEMT") {
+/** Today's references in sequence (TEMT-261014-001, -002, …), for saving several records before any is stored. */
+export function refSequence(prefix = "TEMT") {
   const date = todayIso().replace(/-/g, "").slice(2);
-  const count = getState().shipments.filter((item) => item.ref.startsWith(`${prefix}-${date}`)).length + 1;
-  return `${prefix}-${date}-${String(count).padStart(3, "0")}`;
+  let count = getState().shipments.filter((item) => item.ref.startsWith(`${prefix}-${date}`)).length;
+  return () => `${prefix}-${date}-${String((count += 1)).padStart(3, "0")}`;
 }
+
+export const nextRef = (prefix = "TEMT") => refSequence(prefix)();
 
 export function buildRecord(opts: {
   ref?: string; date?: string; businessUnit?: string; commodity?: string; origin: Place; destination: Place; direction?: Direction; paidBy?: PaidBy;

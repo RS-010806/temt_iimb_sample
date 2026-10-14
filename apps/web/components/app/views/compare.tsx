@@ -59,11 +59,11 @@ export function CompareView() {
     <div>
       <PageHeader eyebrow="Compare modes" title="Which way should this freight move?" description="Door-to-door options for the same cargo and route, including road drayage to rail terminals, airports and ports, ranked by well-to-wheel emissions." />
       <section className="card card-pad mb-6 animate-rise" data-tour="compare-form">
-        <div className="grid items-end gap-3 lg:grid-cols-[1fr_auto_1fr_160px]">
+        <div className="grid items-start gap-3 lg:grid-cols-[1fr_auto_1fr_200px]">
           <Field label="Origin"><PlaceInput value={from} onChange={setFrom} ariaLabel="Origin" /></Field>
-          <button type="button" className="btn btn-ghost btn-icon mb-0.5 justify-self-center" onClick={() => { setFrom(to); setTo(from); }} aria-label="Swap origin and destination"><ArrowRightLeft size={17} /></button>
+          <button type="button" className="btn btn-ghost btn-icon justify-self-center lg:mt-[26px]" onClick={() => { setFrom(to); setTo(from); }} aria-label="Swap origin and destination"><ArrowRightLeft size={17} /></button>
           <Field label="Destination"><PlaceInput value={to} onChange={setTo} ariaLabel="Destination" /></Field>
-          <Field label="Cargo"><NumberInput value={tonnes} onChange={setTonnes} suffix="t" ariaLabel="Cargo tonnes" /></Field>
+          <Field label="Cargo weight"><NumberInput value={tonnes} onChange={setTonnes} suffix="TON" ariaLabel="Cargo tonnes" /></Field>
         </div>
         <div className="mt-4 grid items-start gap-4 border-t border-stone-200 pt-4 md:grid-cols-2">
           <Field label="Truck for road legs"><Select value={vehicle} onChange={setVehicle} options={[{ value: "auto", label: "Automatic, fits the cargo" }, ...ROAD_CLASSES.map((item) => ({ value: item.id, label: `${item.label} (${item.gvw})` }))]} /></Field>

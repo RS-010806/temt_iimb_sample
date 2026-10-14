@@ -55,7 +55,7 @@ export const ARTICLES: Article[] = [
   {
     id: "methods", kind: "concept", title: "Distance-based, fuel-based and energy-based methods",
     keywords: ["method", "fuel based", "distance based", "activity based", "spend based", "energy based", "litres", "fuel data", "primary data", "which method", "accuracy"],
-    body: "- **Distance-based**: cargo tonnes × distance × a default factor. Easiest when you know weight and route.\n- **Fuel-based**: litres or kg of fuel × the fuel's emission factor. More accurate; use fuel cards or carrier reports. For shared trucks, set the share that belongs to your cargo.\n- **Energy-based**: kWh of electricity × the grid factor, for electric vehicles.\nFuel and energy data count as **primary data**, which ISO 14083 prefers over defaults.",
+    body: "The calculator asks for the method first:\n- **Distance-based**: cargo weight × distance × a default emission factor. Easiest when you know the weight and route.\n- **Fuel-based**: litres or kg of fuel, or kWh of electricity, × that fuel's emission factor. More accurate; use fuel cards, carrier reports or charging records. The route is optional, and for shared vehicles you set the share that belongs to your cargo.\nFuel and energy data count as **primary data**, which ISO 14083 prefers over defaults.",
   },
   {
     id: "quality", kind: "concept", title: "Data quality labels",
@@ -86,7 +86,7 @@ export const ARTICLES: Article[] = [
   {
     id: "ev", kind: "concept", title: "Electric trucks and the Indian grid",
     keywords: ["ev", "electric", "battery", "e-truck", "charging", "grid", "cea", "renewable", "kwh"],
-    body: "Electric legs use electricity × grid factor. TEMT uses **CEA V21.0: 0.710 kg CO₂/kWh** (all-India weighted average, FY 2024–25). Enter measured kWh from charging logs for primary data. On India's average grid, an electric truck's emissions can be close to a modern diesel's (GLEC notes parity near 733 g/kWh), so the big gains come with **renewable electricity**: enter your supplier's factor to reflect a green power contract.",
+    body: "Electric legs use electricity × grid factor. TEMT uses **CEA V21.0: 0.710 kg CO₂/kWh** (all-India weighted average, FY 2024–25). Without measured kWh, TEMT estimates energy use from GLEC v3.2's electric-truck data, **adjusted to Indian truck loading** so it compares fairly with Indian diesel factors: a 30–50 t electric truck comes to about 45 g CO₂e per tonne-km against 62 g for diesel. Enter kWh from charging records for primary data, and your supplier's factor for renewable power, where the big gains are.",
   },
   {
     id: "courier", kind: "concept", title: "Courier and part-truckload (PTL)",
@@ -95,9 +95,9 @@ export const ARTICLES: Article[] = [
     actions: [{ label: "Courier calculator", href: "/app/calculate/?mode=courier" }],
   },
   {
-    id: "distance", kind: "product", title: "How TEMT estimates distance without maps",
-    keywords: ["distance", "pin code", "pincode", "google maps", "route", "km", "estimate distance", "how far", "sfd", "gcd"],
-    body: "Type a city (aliases like Bombay or Gurgaon work) or a 6-digit PIN code. TEMT estimates the shortest feasible road, rail or waterway distance with an India network model calibrated on major corridors, uses the great-circle distance for air and routes sea legs port to port. Estimates are typically within 10–15% on the corridors we checked; **type the actual distance** whenever you have it from your transport management system or e-way bill.",
+    id: "distance", kind: "product", title: "How TEMT calculates distance",
+    keywords: ["distance", "pin code", "pincode", "google maps", "route", "km", "estimate distance", "how far", "sfd", "gcd", "rail distance", "railway distance", "station"],
+    body: "Choose **Calculate from route** or **Enter manually**. To calculate, pick places from the suggestions: cities (old names like Bangalore or Bombay work), 6-digit PIN codes, railway stations, airports or ports.\n- **Rail**: the shortest route on the Indian Railways network, built from the stops of every scheduled train; within about 3% of published route distances.\n- **Road**: a model calibrated on Indian corridors, typically within 10–15%.\n- **Air**: great-circle distance between airports plus GLEC's 95 km allowance.\n- **Sea**: shipping lanes from port to port.\nEnter the actual distance whenever you have it from a trip sheet, GPS or e-way bill.",
   },
   {
     id: "howto-calculate", kind: "howto", title: "Calculate a shipment",

@@ -147,7 +147,7 @@
   .check input { width: 18px; height: 18px; accent-color: var(--color-maroon-600); }
 
   /* Segmented control */
-  .segmented { display: inline-flex; padding: 3px; background: var(--color-stone-100); border: 1px solid var(--color-stone-200); border-radius: 11px; gap: 2px; }
+  .segmented { display: inline-flex; flex-wrap: wrap; max-width: 100%; padding: 3px; background: var(--color-stone-100); border: 1px solid var(--color-stone-200); border-radius: 11px; gap: 2px; }
   .segmented button { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--color-grey-700); display: inline-flex; align-items: center; gap: 6px; }
   .segmented button[aria-pressed="true"], .segmented button[aria-selected="true"] { background: white; color: var(--color-maroon-700); box-shadow: 0 1px 3px rgb(28 25 23 / .12); }
 

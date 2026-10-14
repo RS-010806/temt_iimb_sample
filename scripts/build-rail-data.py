@@ -109,6 +109,8 @@ def main():
     rows = []
     for code in codes:
         name, aliases = RENAMES.get(code, (stations[code]["name"], []))
+        if code in RENAMES:
+            aliases = [*aliases, stations[code]["name"]]  # the earlier name stays searchable
         rows.append([code, name, stations[code]["state"], round(stations[code]["at"][0], 5), round(stations[code]["at"][1], 5), served[code], *([aliases] if aliases else [])])
     flat = []
     for (a, b), km in sorted(edges.items()):

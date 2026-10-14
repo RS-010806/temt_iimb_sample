@@ -96,7 +96,8 @@ function CalcCard({ block }: { block: Extract<Block, { type: "calc" }> }) {
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px]">
           <dt className="text-grey-600">Mode</dt><dd className="text-right font-semibold">{[...new Set(legs.map((leg) => MODE_LABELS[leg.mode]))].join(" + ")}</dd>
           <dt className="text-grey-600">Cargo · distance</dt><dd className="num text-right font-semibold">{fmt(result.cargoTonnes, 2)} t · {fmt(result.distanceKm, 0)} km</dd>
-          <dt className="text-grey-600">Intensity</dt><dd className="num text-right font-semibold">{fmt(result.intensityG, 1)} g/t-km</dd>
+          <dt className="text-grey-600">Emission factor</dt><dd className="num text-right font-semibold">{result.tonneKm > 0 ? `${fmt(result.intensityG, 1)} g/t-km` : "–"}</dd>
+          <dt className="text-grey-600">Intensity per ton</dt><dd className="num text-right font-semibold">{fmt(result.kgPerTonne, 1)} kg CO₂e</dd>
           <dt className="text-grey-600">GHG scope</dt><dd className="text-right font-semibold">{SCOPE_LABELS[scopeOf(record, legs[0]?.method)].short}</dd>
           <dt className="text-grey-600">Data quality</dt><dd className="text-right font-semibold capitalize">{result.dataQuality}</dd>
         </dl>

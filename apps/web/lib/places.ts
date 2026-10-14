@@ -73,7 +73,7 @@ function score(text: string, query: string) {
   const value = text.toLowerCase();
   if (value === query) return 0;
   if (value.startsWith(query)) return 1;
-  if (value.split(/[\s,()./-]+/).some((word) => word.startsWith(query))) return 2;
+  if (value.split(/[\s,()./-]+/).some((word) => word.startsWith(query)) || ` ${value}`.includes(` ${query}`)) return 2;
   if (value.includes(query)) return 3;
   return 99;
 }
@@ -108,7 +108,7 @@ export async function rankPlaces(query: string, kinds: PlaceKind[] = ["city", "p
     for (const station of await loadStations()) {
       const code = station.code.toLowerCase();
       const codeRank = code === q || station.aliases.some((alias) => alias.toLowerCase() === q) ? -0.5 : 99;
-      const rank = Math.min(codeRank, best([station.name], queries));
+      const rank = Math.min(codeRank, best([station.name, ...station.aliases], queries));
       if (rank < 99) results.push({ place: { label: `${station.name} (${station.code})`, kind: "station", code: station.code, lat: station.lat, lon: station.lon, state: station.state, country: "IN" }, rank: rank + 0.1, weight: station.trains });
     }
   }
@@ -130,10 +130,12 @@ export async function rankPlaces(query: string, kinds: PlaceKind[] = ["city", "p
       if (rank < 99) results.push({ place: portPlace(port.id)!, rank: rank + (port.country === "IN" ? 0 : 0.25), weight: 0 });
     }
   }
-  // Better matches first; for equally good matches the kind listed first (stations for rail, airports for air),
-  // then bigger cities and busier stations.
+  // Names that equal or start with the query come first, then names with a word starting with it, then the rest.
+  // Within each group, the kind listed first wins (stations for rail, airports for air), then exact names, then
+  // bigger cities and busier stations.
+  const group = (rank: number) => (rank < 2 ? 0 : rank < 3 ? 1 : 2);
   const priority = (place: Place) => kinds.indexOf(place.kind);
-  results.sort((a, b) => Math.floor(a.rank) - Math.floor(b.rank) || priority(a.place) - priority(b.place) || a.rank - b.rank || b.weight - a.weight);
+  results.sort((a, b) => group(a.rank) - group(b.rank) || priority(a.place) - priority(b.place) || Number(a.rank >= 0.5) - Number(b.rank >= 0.5) || b.weight - a.weight || a.rank - b.rank);
   const seen = new Set<string>();
   return results.filter(({ place }) => { const key = `${place.kind}:${place.label}`; if (seen.has(key)) return false; seen.add(key); return true; }).slice(0, limit).map(({ place, rank }) => ({ place, rank }));
 }
@@ -210,7 +212,7 @@ export async function measureDistance(mode: TransportMode, from?: Place, to?: Pl
   const snapped = route.from.distanceKm > 0.5 || route.to.distanceKm > 0.5;
   return {
     km: Math.max(1, route.km), method: "rail-network",
-    note: `Shortest route on the Indian Railways network from ${via(route.from, from)} to ${via(route.to, to)}.${snapped ? " Road transport to and from the stations is not included; use a transport chain to add it." : ""}`,
+    note: `From ${via(route.from, from)} to ${via(route.to, to)}, along the track that scheduled trains run on. On average within about 3% of Indian Railways' published route distances.${snapped ? " Road transport to and from the stations is not included; use a transport chain to add it." : ""}`,
     via: [route.from.code, route.to.code],
   };
 }

@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Anchor, Building2, Package, Plane, Plus, Save, Ship, TrainFront, Trash2, Truck, Waves, Warehouse } from "lucide-react";
-import { calculateShipment, suggestTradeLane, HUB_TYPES, IWW_VESSELS, MODE_LABELS, ROAD_CLASSES, TRADE_LANES, VESSELS, type HubCondition, type HubInput, type HubTypeId, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult, type TransportMode } from "@temt/calculator";
+import { calculateShipment, suggestTradeLane, HUB_TYPES, IWW_VESSELS, MODE_LABELS, ROAD_CLASSES, TRADE_LANES, VESSELS, type DistanceMethod, type HubCondition, type HubInput, type HubTypeId, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult, type TransportMode } from "@temt/calculator";
 import { buildRecord } from "@/lib/builders";
 import { emissions, emissionsText, fmt, todayIso } from "@/lib/format";
-import { estimateDistance, hasCoords, nearestAirport, nearestIndianPort, type Place, type PlaceKind } from "@/lib/places";
+import { estimateDistance, hasCoords, measureDistance, nearestAirport, nearestIndianPort, type Place, type PlaceKind } from "@/lib/places";
 import { PAID_BY_LABELS, type LegMeta, type PaidBy, type ShipmentRecord } from "@/lib/records";
 import { actions, getState, useSettings } from "@/lib/store";
 import { PlaceInput } from "../place-input";
@@ -18,6 +18,8 @@ interface Stop { place?: Place; auto?: boolean; hub: { type: HubTypeId; conditio
 interface ChainLeg {
   mode: TransportMode;
   distanceKm?: number;
+  /** How the estimated distance was found (for example the rail network), until the user types one. */
+  distanceMethod?: DistanceMethod;
   edited: boolean;
   vehicleClass: RoadClassId;
   fuel: RoadFuel;
@@ -45,7 +47,7 @@ const TEMPLATES: { id: string; label: string; icon: typeof Truck; description: s
 ];
 
 const MODE_ICON: Record<TransportMode, typeof Truck> = { road: Truck, rail: TrainFront, air: Plane, sea: Ship, iww: Waves };
-const kinds = (modes: TransportMode[]): PlaceKind[] => modes.includes("air") ? ["airport", "city", "pin"] : modes.includes("sea") ? ["port", "city", "pin"] : ["city", "pin"];
+const kinds = (modes: TransportMode[]): PlaceKind[] => modes.includes("air") ? ["airport", "city", "pin"] : modes.includes("sea") ? ["port", "city", "pin"] : modes.includes("rail") ? ["station", "city", "pin"] : ["city", "pin"];
 
 function ChainDiagram({ stops, legs, result }: { stops: Stop[]; legs: ChainLeg[]; result?: ShipmentResult }) {
   const n = stops.length;
@@ -152,9 +154,20 @@ export function ChainView() {
       const lane = item.mode === "sea" && !item.laneEdited && from?.country && to?.country ? suggestTradeLane(from.country, to.country) : item.tradeLane;
       if (item.edited) return lane === item.tradeLane ? item : { ...item, tradeLane: lane };
       const estimate = estimateDistance(item.mode, from, to);
-      return { ...item, tradeLane: lane, distanceKm: estimate ? Math.round(estimate.km) : undefined };
+      return { ...item, tradeLane: lane, distanceKm: estimate ? Math.round(estimate.km) : undefined, distanceMethod: estimate?.method };
     }));
-  }, [stops, legs.map((item) => `${item.mode}${item.edited}`).join()]);
+    // Rail legs then take the shortest route on the Indian Railways network, which loads on demand.
+    let cancelled = false;
+    stops.slice(0, -1).forEach((stop, i) => {
+      const item = legs[i];
+      if (!item || item.mode !== "rail" || item.edited || !hasCoords(stop.place) || !hasCoords(stops[i + 1]?.place)) return;
+      void measureDistance("rail", stop.place, stops[i + 1]!.place).then((estimate) => {
+        if (cancelled || !estimate) return;
+        setLegs((current) => current.map((leg, j) => (j === i && leg.mode === "rail" && !leg.edited ? { ...leg, distanceKm: Math.round(estimate.km), distanceMethod: estimate.method } : leg)));
+      });
+    });
+    return () => { cancelled = true; };
+  }, [stops, legs.map((item) => `${item.mode}${item.edited}`).join()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setLeg = (index: number, patch: Partial<ChainLeg>) => setLegs((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   const setStop = (index: number, patch: Partial<Stop>) => setStops((current) => current.map((item, i) => (i === index ? { ...item, ...patch, ...("place" in patch ? { auto: false } : {}) } : item)));
@@ -173,7 +186,7 @@ export function ChainView() {
     const missing = inputs.findIndex((item) => !item.distanceKm);
     if (missing >= 0) return { error: `Leg ${missing + 1} needs a distance: choose both stops or type it.` };
     const hubs: HubInput[] = stops.slice(1, -1).flatMap((stop) => stop.hub ? [{ type: stop.hub.type, condition: stop.hub.condition, tonnes, containers: HUB_TYPES[stop.hub.type].unit === "container" ? Math.max(1, Math.ceil(tonnes / (legs.find((item) => item.mode === "sea")?.tonnesPerTeu ?? 20))) : undefined, label: stop.place?.label ? `${stop.place.label} ${HUB_TYPES[stop.hub.type].label.toLowerCase()}` : HUB_TYPES[stop.hub.type].label }] : []);
-    const legMeta: LegMeta[] = legs.map((item, i) => ({ from: stops[i]?.place, to: stops[i + 1]?.place, distanceMethod: item.edited ? "user" : item.mode === "air" ? "great-circle" : item.mode === "sea" ? "sea-route" : item.mode === "rail" ? "rail-estimate" : "road-estimate" }));
+    const legMeta: LegMeta[] = legs.map((item, i) => ({ from: stops[i]?.place, to: stops[i + 1]?.place, distanceMethod: item.edited ? "user" : item.distanceMethod ?? (item.mode === "air" ? "great-circle" : item.mode === "sea" ? "sea-route" : item.mode === "rail" ? "rail-estimate" : "road-estimate") }));
     try { return { result: calculateShipment({ legs: inputs, hubs }, settings.factorSet), inputs, hubs, legMeta }; } catch (error) { return { error: error instanceof Error ? error.message : "Calculation failed." }; }
   }, [legs, stops, tonnes, refrigerated, settings.factorSet]);
 
@@ -210,13 +223,13 @@ export function ChainView() {
           {stops.map((stop, index) => (
             <div key={index} className="grid gap-4">
               <div className="card card-pad animate-rise">
-                <div className="flex flex-wrap items-end gap-3">
+                <div className="flex flex-wrap items-start gap-3">
                   <div className="min-w-[220px] flex-1"><Field label={index === 0 ? "Origin" : index === stops.length - 1 ? "Final destination" : `Stop ${index}`} hint={stop.auto ? `Assumed from the ${index <= (stops.length - 1) / 2 ? "origin" : "destination"}: type the actual ${legs[index - 1]?.mode === "sea" || legs[index]?.mode === "sea" ? "port" : legs[index - 1]?.mode === "air" || legs[index]?.mode === "air" ? "airport" : "terminal or hub"} if different` : undefined}><PlaceInput value={stop.place} onChange={(place) => setStop(index, { place })} kinds={kinds([legs[index - 1]?.mode, legs[index]?.mode].filter(Boolean) as TransportMode[])} ariaLabel={`Stop ${index + 1}`} /></Field></div>
                   {index > 0 && index < stops.length - 1 && (
                     <>
                       <Field label="Hub operation"><Select value={stop.hub?.type ?? "none"} onChange={(value) => setStop(index, { hub: value === "none" ? null : { type: value as HubTypeId, condition: stop.hub?.condition ?? "ambient" } })} options={[{ value: "none", label: "No handling" }, ...(Object.keys(HUB_TYPES) as HubTypeId[]).map((key) => ({ value: key, label: HUB_TYPES[key].label }))]} /></Field>
                       {stop.hub && <Field label="Conditions"><Select value={stop.hub.condition} onChange={(condition) => setStop(index, { hub: { ...stop.hub!, condition } })} options={[{ value: "ambient", label: "Ambient" }, { value: "mixed", label: stop.hub.type === "container-terminal" ? "Temperature-controlled" : "Mixed / cold" }]} /></Field>}
-                      <button type="button" className="btn btn-ghost btn-icon mb-0.5" onClick={() => removeStop(index)} aria-label={`Remove stop ${index}`}><Trash2 size={16} /></button>
+                      <button type="button" className="btn btn-ghost btn-icon mt-[26px]" onClick={() => removeStop(index)} aria-label={`Remove stop ${index}`}><Trash2 size={16} /></button>
                     </>
                   )}
                 </div>
