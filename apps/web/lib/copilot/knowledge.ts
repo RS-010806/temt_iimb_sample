@@ -125,8 +125,8 @@ export const ARTICLES: Article[] = [
   },
   {
     id: "howto-chain", kind: "howto", title: "Build a multimodal transport chain",
-    keywords: ["chain", "multimodal", "intermodal", "multi leg", "legs", "transport chain", "tce", "door to door"],
-    body: "Open **Transport chain**, start from a template (rail intermodal, export via port, air express, courier) or a blank chain. Each leg has its own mode, distance and vehicle; add hubs between legs. The diagram and totals update as you edit. Save the chain as one shipment.",
+    keywords: ["chain", "multimodal", "intermodal", "multi leg", "legs", "transport chain", "tce", "door to door", "stops", "multiple stops", "add stop", "several stops", "via"],
+    body: "Open **Transport chain**. It starts with the origin and destination; press **+** on any leg (or **Add a stop on this leg**) to add a stop where the cargo changes vehicle or mode, up to 12 legs. Examples such as rail intermodal, export via port, air express and courier fill in typical stops, and you can still add, remove or change any of them. Each leg has its own mode and a distance calculated from its two stops (or entered manually); each stop has one handling choice, suggested from the modes either side. Save the chain as one shipment with its LR, RR or AWB number.",
     actions: [{ label: "Open the chain builder", href: "/app/chain/" }],
   },
   {

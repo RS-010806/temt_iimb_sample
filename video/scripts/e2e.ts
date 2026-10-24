@@ -278,15 +278,59 @@ async function workspace(browser: Browser) {
     return (await page.getByText(/lowest-emission practical option/).innerText()).slice(0, 140);
   });
 
-  await step(page, "Transport chain: rail intermodal template saved", async () => {
+  await step(page, "Transport chain: starts at origin to destination, and stops can be added on any leg", async () => {
     await page.goto(`${BASE}/app/chain/`, { waitUntil: "networkidle" });
-    await choosePlace(page, page.getByLabel("Stop 1", { exact: true }), "Hosur");
-    await choosePlace(page, page.getByLabel("Stop 4", { exact: true }), "Guwahati");
-    await page.getByText("Chain total, well-to-wheel").waitFor();
-    await page.waitForTimeout(600);
+    const result = page.locator('[data-tour="chain-result"]');
+    const legCount = async () => page.locator('section[aria-label^="Leg "]').count();
+    if ((await legCount()) !== 1) throw new Error("The chain should start with one leg");
+    await choosePlace(page, page.getByLabel("Origin", { exact: true }), "Hosur");
+    await choosePlace(page, page.getByLabel("Destination", { exact: true }), "Guwahati");
+    await result.getByText("Chain total, well-to-wheel").waitFor();
+    await page.getByRole("radio", { name: /Rail intermodal/ }).click();
+    // The example's transfer stops snap to the nearest well-connected stations.
+    await page.getByText(/Suggested: the nearest well-connected station/).first().waitFor({ timeout: 15000 });
+    const station = await page.getByLabel("Stop 1", { exact: true }).inputValue();
+    if (!/\([A-Z]{2,5}\)$/.test(station)) throw new Error(`Stop 1 is not a station: ${station}`);
+    await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
+    // A third stop on the rail leg, from the route diagram.
+    await page.getByRole("button", { name: /^Add a stop between/ }).nth(1).click();
+    await choosePlace(page, page.getByLabel("Stop 2", { exact: true }), "Kolkata");
+    await result.getByText("Leg 4 · Road").waitFor({ timeout: 15000 });
     await shot(page, "chain");
+    if ((await legCount()) !== 4) throw new Error(`Expected 4 legs, found ${await legCount()}`);
+    await page.getByRole("button", { name: "Remove stop 2" }).click();
+    if ((await legCount()) !== 3) throw new Error("Removing a stop should join its two legs");
+    // Up to 12 legs: then the add buttons are disabled.
+    while ((await legCount()) < 12) await page.getByRole("button", { name: "Add a stop on this leg" }).last().click();
+    if (!(await page.getByRole("button", { name: "Add a stop on this leg" }).first().isDisabled())) throw new Error("Adding beyond 12 legs should be disabled");
+    await page.getByRole("radio", { name: /Rail intermodal/ }).click();
+    await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
+    return `${station}; 4 legs with an added stop, back to 3, capped at 12`;
+  });
+  await step(page, "Transport chain: manual distance, required reference, saved", async () => {
+    const leg = page.locator('section[aria-label="Leg 1"]');
+    await leg.getByRole("button", { name: "Enter manually" }).click();
+    await page.getByLabel("Leg 1 distance in km").fill("42");
+    await page.locator('[data-tour="chain-result"]').getByText(/Leg 1 · Road/).waitFor();
     await page.getByRole("button", { name: "Save chain as a shipment" }).click();
-    await toast(/^Saved /);
+    await page.getByText("Enter the reference to save.").waitFor();
+    await page.locator("#chain-reference").fill("RR-E2E-31");
+    await page.getByRole("button", { name: "Save chain as a shipment" }).click();
+    await toast(/^Saved RR-E2E-31/);
+    const saved = (await page.locator('[data-tour="chain-result"] p.flex').first().innerText()).replace(/\s+/g, " ");
+    // Editing from the ledger brings back every stop, leg and the manual distance.
+    await page.goto(`${BASE}/app/shipments/`, { waitUntil: "networkidle" });
+    await page.getByLabel("Financial year").selectOption("all");
+    await page.getByLabel("Search shipments").fill("RR-E2E-31");
+    await page.getByRole("cell", { name: "RR-E2E-31", exact: true }).first().click();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByText("Editing RR-E2E-31").waitFor();
+    if ((await page.locator('section[aria-label^="Leg "]').count()) !== 3) throw new Error("The saved chain did not reopen with 3 legs");
+    if ((await page.getByLabel("Leg 1 distance in km").inputValue()) !== "42") throw new Error("The manual distance was not kept");
+    await page.locator('[data-tour="chain-result"]').getByText(/Leg 3 · Road/).waitFor({ timeout: 15000 });
+    await page.getByRole("button", { name: "Update chain" }).click();
+    await toast(/^Updated RR-E2E-31/);
+    return `${saved}; reopened and updated`;
   });
 
   const fileInput = () => page.getByLabel("Choose a file to import");

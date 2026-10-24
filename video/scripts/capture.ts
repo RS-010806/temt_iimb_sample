@@ -358,14 +358,18 @@ async function main() {
     await click(page, page.getByRole("button", { name: "Save this option" }).first(), 700);
   });
 
-  await chapter("chain", async () => {
+  await chapter("chain", async (at) => {
     await click(page, nav("nav-chain"), 400);
-    await click(page, page.getByRole("button", { name: /Export via port/ }), 300);
-    await choose(page, page.getByLabel("Stop 1", { exact: true }), "Pune");
-    await choose(page, page.getByLabel("Stop 3", { exact: true }), "Rotterdam");
-    await page.getByText("Chain total, well-to-wheel").waitFor();
-    await smoothScrollTo(page, 0, 700);
-    await hover(page, page.locator('[data-tour="chain-canvas"]'), 900);
+    await click(page, page.getByRole("radio", { name: /Rail intermodal/ }), 300);
+    await choose(page, page.getByLabel("Origin", { exact: true }), "Hosur");
+    await choose(page, page.getByLabel("Destination", { exact: true }), "Guwahati");
+    await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
+    await smoothScrollTo(page, 0, 600);
+    await at(1, -0.4);
+    await click(page, page.getByRole("button", { name: /^Add a stop between/ }).nth(1), 400);
+    await choose(page, page.getByLabel("Stop 2", { exact: true }), "Kolkata");
+    await page.locator('[data-tour="chain-result"]').getByText("Leg 4 · Road").waitFor({ timeout: 15000 });
+    await type(page, page.locator("#chain-reference"), "RR-73120");
     await click(page, page.getByRole("button", { name: "Save chain as a shipment" }), 600);
   });
 

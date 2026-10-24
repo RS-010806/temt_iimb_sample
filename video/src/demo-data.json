@@ -1,135 +1,135 @@
 {
  "fps": 30,
- "total": 289.98554109001157,
+ "total": 291.91057394409177,
  "intro": 13.045957999999999,
- "capture": 263.6140410900116,
+ "capture": 265.5390739440918,
  "outro": 13.325542,
  "chapters": [
   {
    "id": "landing",
    "title": "The website",
-   "start": 13.448507028396605,
-   "end": 29.098507123764037
+   "start": 13.445910888488768,
+   "end": 28.948910909469603
   },
   {
    "id": "onboarding",
    "title": "Getting started",
-   "start": 29.098507123764037,
-   "end": 38.52850719052124
+   "start": 28.948910909469603,
+   "end": 38.37791104870605
   },
   {
    "id": "dashboard",
    "title": "Overview",
-   "start": 38.52850719052124,
-   "end": 56.01150699215698
+   "start": 38.37791104870605,
+   "end": 55.860911088760375
   },
   {
    "id": "quick",
    "title": "Quick calculate",
-   "start": 56.01150699215698,
-   "end": 65.60350699978638
+   "start": 55.860911088760375,
+   "end": 65.70791097241211
   },
   {
    "id": "calculator",
    "title": "Calculator",
-   "start": 65.60350699978638,
-   "end": 104.90250702458191
+   "start": 65.70791097241211,
+   "end": 105.42391105252075
   },
   {
    "id": "modes",
    "title": null,
-   "start": 104.90250702458191,
-   "end": 129.84850712376402
+   "start": 105.42391105252075,
+   "end": 130.7519108827667
   },
   {
    "id": "compare",
    "title": "Compare modes",
-   "start": 129.84850712376402,
-   "end": 139.7405070837097
+   "start": 130.7519108827667,
+   "end": 140.67891092854308
   },
   {
    "id": "chain",
-   "title": "Transport chains",
-   "start": 139.7405070837097,
-   "end": 153.77250714855955
+   "title": "Shipments with several stops",
+   "start": 140.67891092854308,
+   "end": 161.12791104870604
   },
   {
    "id": "import",
    "title": "Bulk import",
-   "start": 153.77250714855955,
-   "end": 166.97250719624327
+   "start": 161.12791104870604,
+   "end": 174.32691093045042
   },
   {
    "id": "ledger",
    "title": "Shipment ledger",
-   "start": 166.97250719624327,
-   "end": 174.98850699024962
+   "start": 174.32691093045042,
+   "end": 182.54391093807982
   },
   {
    "id": "account",
    "title": "Account and sync",
-   "start": 174.98850699024962,
-   "end": 189.84650703030394
+   "start": 182.54391093807982,
+   "end": 197.38491101818846
   },
   {
    "id": "reports",
    "title": "Reports",
-   "start": 189.84650703030394,
-   "end": 209.9945070322113
+   "start": 197.38491101818846,
+   "end": 212.1399108942108
   },
   {
    "id": "export-pdf",
    "title": "Exports",
-   "start": 209.9945070322113,
-   "end": 216.17750711994933
+   "start": 212.1399108942108,
+   "end": 218.26791091519164
   },
   {
    "id": "export-xlsx",
    "title": null,
-   "start": 216.17750711994933,
-   "end": 221.43050714093016
+   "start": 218.26791091519164,
+   "end": 223.4099111135559
   },
   {
    "id": "export-docx",
    "title": null,
-   "start": 221.43050714093016,
-   "end": 224.29350705700682
+   "start": 223.4099111135559,
+   "end": 225.98491092282103
   },
   {
    "id": "export-powerbi",
    "title": null,
-   "start": 224.29350705700682,
-   "end": 228.00650711613463
+   "start": 225.98491092282103,
+   "end": 229.69791098194884
   },
   {
    "id": "export-data",
    "title": null,
-   "start": 228.00650711613463,
-   "end": 231.16850705700682
+   "start": 229.69791098194884,
+   "end": 232.85991092282103
   },
   {
    "id": "planner",
    "title": "Reduction planner",
-   "start": 231.16850705700682,
-   "end": 240.2185070093231
+   "start": 232.85991092282103,
+   "end": 241.91091104107664
   },
   {
    "id": "factors",
    "title": "Factors and settings",
-   "start": 240.2185070093231,
-   "end": 257.95250721531676
+   "start": 241.91091104107664,
+   "end": 259.64591093617247
   },
   {
    "id": "copilot",
    "title": "TEMT Copilot",
-   "start": 257.95250721531676,
-   "end": 272.2255072172241
+   "start": 259.64591093617247,
+   "end": 273.91991110401915
   },
   {
    "id": "help",
    "title": "Guided tour",
-   "start": 272.2255072172241,
-   "end": 275.56650705891417
+   "start": 273.91991110401915,
+   "end": 277.4929110582428
   }
  ],
  "captions": [
@@ -144,607 +144,628 @@
    "text": "Here is the whole product, end to end."
   },
   {
-   "start": 13.598507028396606,
-   "end": 21.635340028396605,
+   "start": 13.595910888488769,
+   "end": 21.63274388848877,
    "text": "The website opens with a live walkthrough of what TEMT does: enter a shipment, get its footprint, compare cleaner modes, and report it."
   },
   {
-   "start": 21.955340028396606,
-   "end": 26.734798028396604,
+   "start": 21.95274388848877,
+   "end": 26.732201888488767,
    "text": "Below are the credentials, every module, and a lane comparison anyone can try."
   },
   {
-   "start": 29.248507123764035,
-   "end": 34.059549123764036,
+   "start": 29.098910909469602,
+   "end": 33.9099529094696,
    "text": "Open the app, and start with your company, the guided tour, or a sample workspace."
   },
   {
-   "start": 34.379549123764036,
-   "end": 38.228382123764035,
+   "start": 34.2299529094696,
+   "end": 38.0787859094696,
    "text": "Let's load the FMCG sample, labelled as sample data everywhere."
   },
   {
-   "start": 38.67850719052124,
-   "end": 44.947465190521235,
+   "start": 38.52791104870605,
+   "end": 44.79686904870605,
    "text": "The overview shows the year's well-to-wheel emissions, intensity per tonne-kilometre, and progress against your target."
   },
   {
-   "start": 45.267465190521236,
-   "end": 55.711298190521234,
+   "start": 45.11686904870605,
+   "end": 55.56070204870605,
    "text": "Each month splits into tank-to-wheel and well-to-tank, as ISO 14083 requires, followed by modes, business units, lanes and reduction opportunities."
   },
   {
-   "start": 56.16150699215698,
-   "end": 64.19783999215699,
+   "start": 56.01091108876037,
+   "end": 64.04724408876038,
    "text": "The quick calculator compares every practical mode, door to door. Pune to Kolkata by rail is about eighty-five percent lower than by truck."
   },
   {
-   "start": 65.75350699978638,
-   "end": 71.94746499978638,
+   "start": 65.85791097241211,
+   "end": 72.05257797241211,
    "text": "The calculator starts with the method: distance-based, or fuel-based when you have fuel records. Then pick the mode."
   },
   {
-   "start": 72.26746499978638,
-   "end": 81.07821499978638,
+   "start": 72.37257797241212,
+   "end": 81.18332797241212,
    "text": "Type a city, even an old name like Bangalore, or a PIN code, and TEMT calculates the distance. Or enter it manually from your trip sheet."
   },
   {
-   "start": 81.39821499978638,
-   "end": 90.02542299978639,
+   "start": 81.50332797241211,
+   "end": 90.13053597241212,
    "text": "Enter the cargo in tons, pick the truck, and the result shows the emission factor, intensity per ton, and every step, with the GLEC reference."
   },
   {
-   "start": 90.34542299978638,
-   "end": 96.19925599978637,
+   "start": 90.45053597241211,
+   "end": 96.3043689724121,
    "text": "The LR number and dispatch date are required, and saving the same LR number again updates that shipment."
   },
   {
-   "start": 96.51925599978638,
-   "end": 101.64217299978638,
+   "start": 96.62436897241211,
+   "end": 101.74728597241212,
    "text": "Fuel-based asks only for the fuel used: here, litres of diesel from a fuel card."
   },
   {
-   "start": 105.05250702458191,
-   "end": 116.98717402458192,
+   "start": 105.57391105252076,
+   "end": 117.50857805252076,
    "text": "For rail, search stations by name or code. TEMT measures the shortest route on the Indian Railways network, station to station: on average within about three percent of published route distances."
   },
   {
-   "start": 117.30717402458191,
-   "end": 125.33971602458192,
+   "start": 117.82857805252075,
+   "end": 125.86112005252076,
    "text": "Air uses great-circle distances between airports, and sea legs are routed port to port through a sea-lane network, by trade lane or vessel type."
   },
   {
-   "start": 129.99850712376403,
-   "end": 138.73984012376403,
+   "start": 130.9019108827667,
+   "end": 139.6432438827667,
    "text": "Compare modes ranks road, rail, air and coastal options for the same cargo, flags impractical ones, and saves your choice to the ledger."
   },
   {
-   "start": 139.8905070837097,
-   "end": 152.7592150837097,
-   "text": "Real freight is often multimodal. The chain builder links legs and hubs in one shipment: here, a factory to the gateway port by trailer, then a container ship, with terminal handling counted as a hub operation."
+   "start": 140.82891092854308,
+   "end": 152.4097439285431,
+   "text": "Many shipments make several stops. Start from the origin and destination, or an example such as rail intermodal: here, Hosur to Guwahati, and TEMT picks the nearest stations."
   },
   {
-   "start": 153.92250714855956,
-   "end": 166.67075714855957,
+   "start": 152.7297439285431,
+   "end": 160.8271609285431,
+   "text": "Press plus on any leg to add another stop, up to twelve legs, each with its own mode, and terminal handling counted at every stop."
+  },
+  {
+   "start": 161.27791104870604,
+   "end": 174.02616104870606,
    "text": "Bulk import reads the TEMT template, six formats from earlier TEMT versions and GST e-way bills. It checks every row before saving, and updates any shipment whose LR number is already saved."
   },
   {
-   "start": 167.12250719624328,
-   "end": 173.72550719624329,
+   "start": 174.47691093045043,
+   "end": 181.07991093045044,
    "text": "Every shipment lands in the ledger. Search, filter, and open any one to see its legs and calculation basis."
   },
   {
-   "start": 175.13850699024962,
-   "end": 180.72375699024963,
+   "start": 182.69391093807982,
+   "end": 188.27624393807983,
    "text": "Accounts are optional. Sign in on its own page, and your workspace syncs securely across devices."
   },
   {
-   "start": 181.04375699024962,
-   "end": 185.83279899024961,
+   "start": 188.59624393807982,
+   "end": 193.38528593807982,
    "text": "The server recalculates it independently, and your sessions and report history live here."
   },
   {
-   "start": 189.99650703030395,
-   "end": 195.05729903030394,
+   "start": 197.53491101818847,
+   "end": 202.59570301818846,
    "text": "Reports are read in the tool first, down to the SEBI BRSR Principle 6 mapping."
   },
   {
-   "start": 195.37729903030396,
-   "end": 202.12371603030394,
+   "start": 202.91570301818848,
+   "end": 209.66212001818846,
    "text": "Then export them in six formats: PDF, Excel, Word, CSV, JSON and Power BI."
   },
   {
-   "start": 210.1445070322113,
-   "end": 215.6878820322113,
+   "start": 212.2899108942108,
+   "end": 217.8271188942108,
    "text": "A board-ready PDF, with charts, the BRSR table, methodology and factors."
   },
   {
-   "start": 216.32750711994933,
-   "end": 220.01638211994933,
+   "start": 218.41791091519164,
+   "end": 222.10678591519164,
    "text": "An Excel workbook with a sheet for every view, down to each leg."
   },
   {
-   "start": 221.58050714093017,
-   "end": 222.90450714093018,
+   "start": 223.5599111135559,
+   "end": 224.8839531135559,
    "text": "An editable Word report."
   },
   {
-   "start": 224.44350705700683,
-   "end": 227.7057150570068,
+   "start": 226.13491092282104,
+   "end": 229.39711892282102,
    "text": "A Power BI pack with a star schema and DAX measures."
   },
   {
-   "start": 228.15650711613463,
-   "end": 230.86834011613465,
+   "start": 229.84791098194884,
+   "end": 232.55974398194886,
    "text": "Plus CSV and JSON for any other system."
   },
   {
-   "start": 231.31850705700683,
-   "end": 239.9184650570068,
+   "start": 233.00991092282104,
+   "end": 241.60986892282102,
    "text": "The reduction planner tests rail shift, air to road, consolidation, electric trucks and load factors, and measures each lever against your target."
   },
   {
-   "start": 240.3685070093231,
-   "end": 251.44067400932312,
+   "start": 242.06091104107665,
+   "end": 253.13307804107666,
    "text": "The factor library lists every value TEMT applies, with its source: TEMT's own India-specific factors first, and the GLEC defaults alongside for comparison."
   },
   {
-   "start": 251.7606740093231,
-   "end": 257.6524660093231,
+   "start": 253.45307804107665,
+   "end": 259.34487004107666,
    "text": "Settings hold your NIFTY 500 company, targets, backups, and an optional local AI model."
   },
   {
-   "start": 258.10250721531673,
-   "end": 259.62684021531675,
+   "start": 259.79591093617245,
+   "end": 261.32024393617246,
    "text": "The Copilot runs in your browser."
   },
   {
-   "start": 259.94684021531674,
-   "end": 262.9291732153167,
+   "start": 261.64024393617245,
+   "end": 264.62257693617244,
    "text": "Twenty tonnes from Mumbai to Delhi by thirty-two foot truck."
   },
   {
-   "start": 263.2491732153167,
-   "end": 264.2949232153167,
+   "start": 264.94257693617243,
+   "end": 265.9883269361724,
    "text": "Compare that with rail."
   },
   {
-   "start": 264.6149232153167,
-   "end": 271.92450621531674,
+   "start": 266.3083269361724,
+   "end": 273.61790993617245,
    "text": "Summarise FY 2025\u201326. It calculates, compares, analyses and exports, on request."
   },
   {
-   "start": 272.3755072172241,
-   "end": 275.2651322172241,
+   "start": 274.0699111040191,
+   "end": 276.95953610401915,
    "text": "And a fourteen-step guided tour explains every screen."
   },
   {
-   "start": 277.4599990900116,
-   "end": 285.7245410900116,
+   "start": 279.3850319440918,
+   "end": 287.6495739440918,
    "text": "TEMT: India-specific factors, ISO 14083 certification, and reports that stand up to scrutiny."
   },
   {
-   "start": 286.0445410900116,
-   "end": 287.3855410900116,
+   "start": 287.9695739440918,
+   "end": 289.3105739440918,
    "text": "Measure your next shipment today."
   }
  ],
  "events": [
   {
    "kind": "click",
-   "t": 17.62350721913147
+   "t": 17.557911115463256
   },
   {
    "kind": "click",
-   "t": 19.73750706272888
+   "t": 19.639910894210814
   },
   {
    "kind": "click",
-   "t": 21.85550709324646
+   "t": 21.75691099720764
   },
   {
    "kind": "click",
-   "t": 28.238506990249633
+   "t": 28.091911035354613
   },
   {
    "kind": "click",
-   "t": 30.603506999786376
+   "t": 30.605910974319457
   },
   {
    "kind": "click",
-   "t": 35.18550701695251
+   "t": 35.12091107922363
   },
   {
    "kind": "click",
-   "t": 57.68250699597168
+   "t": 57.587911086853026
   },
   {
    "kind": "click",
-   "t": 58.989507156188964
+   "t": 58.92291088658142
   },
   {
    "kind": "click",
-   "t": 59.80350704747009
+   "t": 59.77291102963257
   },
   {
    "kind": "click",
-   "t": 61.269507127578734
+   "t": 61.27391095715332
   },
   {
    "kind": "click",
-   "t": 62.0865070398407
+   "t": 62.10691090184021
   },
   {
    "kind": "click",
-   "t": 64.04850717144775
+   "t": 64.10291095333862
   },
   {
    "kind": "click",
-   "t": 66.415507036026
+   "t": 66.58591099339294
   },
   {
    "kind": "click",
-   "t": 72.4375071104126
+   "t": 72.65591092663574
   },
   {
    "kind": "click",
-   "t": 75.03350706654358
+   "t": 75.30391092854309
   },
   {
    "kind": "click",
-   "t": 76.1175071771698
+   "t": 76.52091093617248
   },
   {
    "kind": "click",
-   "t": 77.55550714093017
+   "t": 77.9559111173706
   },
   {
    "kind": "click",
-   "t": 78.33250709133911
+   "t": 78.81991096096802
   },
   {
    "kind": "click",
-   "t": 80.95350714283752
+   "t": 81.60591097431946
   },
   {
    "kind": "click",
-   "t": 82.14750714855957
+   "t": 82.90191097813415
   },
   {
    "kind": "click",
-   "t": 84.21850700932312
+   "t": 85.0389110620575
   },
   {
    "kind": "click",
-   "t": 87.84850712376404
+   "t": 88.85191102581787
   },
   {
    "kind": "click",
-   "t": 91.34850712376404
+   "t": 92.43091102200317
   },
   {
    "kind": "click",
-   "t": 94.43250699597168
+   "t": 95.10191102581787
   },
   {
    "kind": "click",
-   "t": 95.60950704174805
+   "t": 96.29391093807983
   },
   {
    "kind": "click",
-   "t": 97.6985070283966
+   "t": 98.41891093807983
   },
   {
    "kind": "click",
-   "t": 99.915507036026
+   "t": 100.58591099339294
   },
   {
    "kind": "click",
-   "t": 102.1325070436554
+   "t": 102.68591089802551
   },
   {
    "kind": "click",
-   "t": 106.34850712376404
+   "t": 106.91891093807983
   },
   {
    "kind": "click",
-   "t": 107.67750711994934
+   "t": 108.25291104870605
   },
   {
    "kind": "click",
-   "t": 108.7295071657257
+   "t": 109.3679110582428
   },
   {
    "kind": "click",
-   "t": 110.05150719242859
+   "t": 110.7209109838562
   },
   {
    "kind": "click",
-   "t": 111.1325070436554
+   "t": 111.90191097813415
   },
   {
    "kind": "click",
-   "t": 112.5845071847992
+   "t": 113.35291095333862
   },
   {
    "kind": "click",
-   "t": 117.71550698834228
+   "t": 118.25191088276672
   },
   {
    "kind": "click",
-   "t": 118.87950702267456
+   "t": 119.41791101055908
   },
   {
    "kind": "click",
-   "t": 120.12050719815063
+   "t": 120.68891091900635
   },
   {
    "kind": "click",
-   "t": 121.21350713330078
+   "t": 121.76791091519165
   },
   {
    "kind": "click",
-   "t": 122.45250721531677
+   "t": 123.02291102963257
   },
   {
    "kind": "click",
-   "t": 123.78150721150207
+   "t": 124.48891110974121
   },
   {
    "kind": "click",
-   "t": 124.87950702267456
+   "t": 125.68391104298401
   },
   {
    "kind": "click",
-   "t": 126.53450699406433
+   "t": 127.35291095333862
   },
   {
    "kind": "click",
-   "t": 127.57950707035828
+   "t": 128.4669110353546
   },
   {
    "kind": "click",
-   "t": 129.16850705700682
+   "t": 130.069910960968
   },
   {
    "kind": "click",
-   "t": 130.6615070875244
+   "t": 131.51691098767088
   },
   {
    "kind": "click",
-   "t": 131.92750711994933
+   "t": 132.81691093998717
   },
   {
    "kind": "click",
-   "t": 133.4295072134094
+   "t": 134.2979108865814
   },
   {
    "kind": "click",
-   "t": 134.52250714855955
+   "t": 135.45091100292967
   },
   {
    "kind": "click",
-   "t": 135.8895070131378
+   "t": 136.81291099148558
   },
   {
    "kind": "click",
-   "t": 137.18050714093016
+   "t": 138.1379110391693
   },
   {
    "kind": "click",
-   "t": 138.96450706082152
+   "t": 139.90191097813414
   },
   {
    "kind": "click",
-   "t": 140.5785071428375
+   "t": 141.6509110506134
   },
   {
    "kind": "click",
-   "t": 141.84450717526244
+   "t": 143.0329110200958
   },
   {
    "kind": "click",
-   "t": 143.0935070093231
+   "t": 144.76591106015013
   },
   {
    "kind": "click",
-   "t": 144.56250711041258
+   "t": 146.34991093235777
   },
   {
    "kind": "click",
-   "t": 146.26050706463622
+   "t": 148.86891098576353
   },
   {
    "kind": "click",
-   "t": 148.11150713520811
+   "t": 150.63491101818846
   },
   {
    "kind": "click",
-   "t": 153.0955071027832
+   "t": 153.34991093235777
   },
   {
    "kind": "click",
-   "t": 154.60950704174803
+   "t": 155.66691108303831
   },
   {
    "kind": "click",
-   "t": 156.71050711231993
+   "t": 157.39991088467406
   },
   {
    "kind": "click",
-   "t": 160.49550719815062
+   "t": 158.66691108303831
   },
   {
    "kind": "click",
-   "t": 167.75950713711546
+   "t": 160.2849111135559
   },
   {
    "kind": "click",
-   "t": 168.94550700741576
+   "t": 162.16691108303831
   },
   {
    "kind": "click",
-   "t": 169.95650716381834
+   "t": 164.26591106015013
   },
   {
    "kind": "click",
-   "t": 171.22650714474486
+   "t": 168.1819109495239
   },
   {
    "kind": "click",
-   "t": 176.4245070989685
+   "t": 175.2319109018402
   },
   {
    "kind": "click",
-   "t": 177.7585072095947
+   "t": 176.46791096287535
   },
   {
    "kind": "click",
-   "t": 178.57550712185667
+   "t": 177.4949109132843
   },
   {
    "kind": "click",
-   "t": 179.8285071428375
+   "t": 178.7979108865814
   },
   {
    "kind": "click",
-   "t": 181.0915071542816
+   "t": 183.8989109571533
   },
   {
    "kind": "click",
-   "t": 182.4775070722656
+   "t": 185.28191109257506
   },
   {
    "kind": "click",
-   "t": 183.9005071695404
+   "t": 186.1469111021118
   },
   {
    "kind": "click",
-   "t": 185.60950704174803
+   "t": 187.3859109457092
   },
   {
    "kind": "click",
-   "t": 186.87350721913145
+   "t": 188.6819109495239
   },
   {
    "kind": "click",
-   "t": 190.74250717716978
+   "t": 190.05291100102232
   },
   {
    "kind": "click",
-   "t": 192.11150713520811
+   "t": 191.46591110783385
   },
   {
    "kind": "click",
-   "t": 196.61450715618895
+   "t": 193.16691108303831
   },
   {
    "kind": "click",
-   "t": 198.0275070245819
+   "t": 194.41991110401915
   },
   {
    "kind": "click",
-   "t": 199.50050707417296
+   "t": 198.14791102963255
   },
   {
    "kind": "click",
-   "t": 201.0085072095947
+   "t": 199.53391094761656
   },
   {
    "kind": "click",
-   "t": 202.28050704556273
+   "t": 203.8509110982971
   },
   {
    "kind": "click",
-   "t": 203.5565070684509
+   "t": 204.78091092663573
   },
   {
    "kind": "click",
-   "t": 217.12750716763304
+   "t": 205.91491098957823
   },
   {
    "kind": "click",
-   "t": 219.14150710659789
+   "t": 206.8639111097412
   },
   {
    "kind": "click",
-   "t": 220.90350719052122
+   "t": 207.84791107731627
   },
   {
    "kind": "click",
-   "t": 222.49150701123045
+   "t": 208.79691095906065
   },
   {
    "kind": "click",
-   "t": 225.0565070684509
+   "t": 219.0809111173706
   },
   {
    "kind": "click",
-   "t": 228.75650711613463
+   "t": 221.14591093617247
   },
   {
    "kind": "click",
-   "t": 230.32650704937743
+   "t": 222.88091106968687
   },
   {
    "kind": "click",
-   "t": 232.65950699406432
+   "t": 224.16291089611815
   },
   {
    "kind": "click",
-   "t": 234.80750699597166
+   "t": 226.8309111173706
   },
   {
    "kind": "click",
-   "t": 236.19550700741576
+   "t": 230.4799110467987
   },
   {
    "kind": "click",
-   "t": 240.87150712567137
+   "t": 232.01691098767088
   },
   {
    "kind": "click",
-   "t": 244.27250714855955
+   "t": 234.21091099339293
   },
   {
    "kind": "click",
-   "t": 252.12050719815062
+   "t": 236.33491106587218
   },
   {
    "kind": "click",
-   "t": 259.8705071981506
+   "t": 237.79091091709898
   },
   {
    "kind": "click",
-   "t": 261.92150707798766
+   "t": 242.59791107731627
   },
   {
    "kind": "click",
-   "t": 263.86650701123045
+   "t": 246.06291099148558
   },
   {
    "kind": "click",
-   "t": 264.9755072172241
+   "t": 253.89591093617247
   },
   {
    "kind": "click",
-   "t": 266.348507123764
+   "t": 261.54491110401915
   },
   {
    "kind": "click",
-   "t": 267.45650716381834
+   "t": 263.64591093617247
   },
   {
    "kind": "click",
-   "t": 268.72650714474486
+   "t": 265.5759110029297
   },
   {
    "kind": "click",
-   "t": 273.07050700741576
+   "t": 266.70491095143126
   },
   {
    "kind": "click",
-   "t": 274.3105070169525
+   "t": 268.0549110944824
+  },
+  {
+   "kind": "click",
+   "t": 269.223911004837
+  },
+  {
+   "kind": "click",
+   "t": 270.47891111927794
+  },
+  {
+   "kind": "click",
+   "t": 274.9499110754089
+  },
+  {
+   "kind": "click",
+   "t": 276.31491108494566
   }
  ]
 }

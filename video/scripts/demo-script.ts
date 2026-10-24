@@ -42,8 +42,9 @@ export const CHAPTERS: ChapterScript[] = [
   { id: "compare", title: "Compare modes", lines: [
     "Compare modes ranks road, rail, air and coastal options for the same cargo, flags impractical ones, and saves your choice to the ledger.",
   ] },
-  { id: "chain", title: "Transport chains", lines: [
-    "Real freight is often multimodal. The chain builder links legs and hubs in one shipment: here, a factory to the gateway port by trailer, then a container ship, with terminal handling counted as a hub operation.",
+  { id: "chain", title: "Shipments with several stops", lines: [
+    "Many shipments make several stops. Start from the origin and destination, or an example such as rail intermodal: here, Hosur to Guwahati, and TEMT picks the nearest stations.",
+    "Press plus on any leg to add another stop, up to twelve legs, each with its own mode, and terminal handling counted at every stop.",
   ] },
   { id: "import", title: "Bulk import", lines: [
     "Bulk import reads the TEMT template, six formats from earlier TEMT versions and GST e-way bills. It checks every row before saving, and updates any shipment whose LR number is already saved.",

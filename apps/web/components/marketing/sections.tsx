@@ -85,7 +85,7 @@ export function ProblemStats() {
 const MODULES = [
   { icon: Calculator, title: "Calculate any shipment", body: "Road (7 truck classes, diesel, CNG, petrol or electric), courier and PTL, rail, air, sea and inland waterways. Road can also use measured fuel or electricity.", href: "/app/calculate/" },
   { icon: Route, title: "Compare modes door to door", body: "Road, rail with drayage, air via airports and coastal shipping via ports, ranked by emissions for the same cargo.", href: "/app/compare/" },
-  { icon: GitBranch, title: "Build multimodal chains", body: "Legs and hubs, exactly as ISO 14083 defines a transport chain, with templates for intermodal, export, air express and courier.", href: "/app/chain/" },
+  { icon: GitBranch, title: "Shipments with several stops", body: "Add as many stops as the cargo makes, each leg with its own mode, and terminal handling at the stops, exactly as ISO 14083 defines a transport chain.", href: "/app/chain/" },
   { icon: Upload, title: "Import in bulk", body: "The TEMT template, files exported from earlier TEMT versions, or GST e-way bill JSON. Distances from city names or PIN codes.", href: "/app/import/" },
   { icon: BarChart3, title: "See the whole network", body: "Monthly trends, modes, business units, lanes, GHG scopes and data quality, filtered by financial year.", href: "/app/" },
   { icon: FileText, title: "Report in every format", body: "PDF, Excel and Word reports with methodology and BRSR mapping, plus CSV, JSON and a Power BI pack for your own tools.", href: "/app/reports/" },

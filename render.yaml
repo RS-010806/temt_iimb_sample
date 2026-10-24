@@ -31,22 +31,31 @@ services:
       # Earlier cuts of the product tour; links to them open the current video.
       - type: redirect
         source: /video/temt-tour.mp4
-        destination: /video/temt-tour-2026-10-14.mp4
+        destination: /video/temt-tour-2026-10-24.mp4
       - type: redirect
         source: /video/temt-tour.vtt
-        destination: /video/temt-tour-2026-10-14.vtt
+        destination: /video/temt-tour-2026-10-24.vtt
       - type: redirect
         source: /video/temt-tour-poster.jpg
-        destination: /video/temt-tour-2026-10-14-poster.jpg
+        destination: /video/temt-tour-2026-10-24-poster.jpg
       - type: redirect
         source: /video/temt-tour-2026-10-03.mp4
-        destination: /video/temt-tour-2026-10-14.mp4
+        destination: /video/temt-tour-2026-10-24.mp4
       - type: redirect
         source: /video/temt-tour-2026-10-03.vtt
-        destination: /video/temt-tour-2026-10-14.vtt
+        destination: /video/temt-tour-2026-10-24.vtt
       - type: redirect
         source: /video/temt-tour-2026-10-03-poster.jpg
-        destination: /video/temt-tour-2026-10-14-poster.jpg
+        destination: /video/temt-tour-2026-10-24-poster.jpg
+      - type: redirect
+        source: /video/temt-tour-2026-10-14.mp4
+        destination: /video/temt-tour-2026-10-24.mp4
+      - type: redirect
+        source: /video/temt-tour-2026-10-14.vtt
+        destination: /video/temt-tour-2026-10-24.vtt
+      - type: redirect
+        source: /video/temt-tour-2026-10-14-poster.jpg
+        destination: /video/temt-tour-2026-10-24-poster.jpg
     headers:
       - path: /manifest.webmanifest
         name: Content-Type
