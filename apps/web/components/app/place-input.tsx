@@ -1,18 +1,20 @@
 "use client";
 
 import { useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Anchor, Building2, Hash, MapPin, Plane, TrainFront, X } from "lucide-react";
-import { loadAirports, loadCities, loadPins, loadStations, searchPlaces, stateName, type Place, type PlaceKind } from "@/lib/places";
+import { Anchor, Building2, Hash, MapPin, Plane, TrainFront, Waves, X } from "lucide-react";
+import { TERMINAL_KINDS, loadAirports, loadCities, loadPins, loadStations, searchPlaces, stateName, type Place, type PlaceKind } from "@/lib/places";
 import { FieldIdContext, cx } from "../ui";
 
-const ICONS: Record<PlaceKind, typeof MapPin> = { city: Building2, pin: Hash, station: TrainFront, airport: Plane, port: Anchor, custom: MapPin };
-const KIND_LABEL: Record<PlaceKind, string> = { city: "City or town", pin: "PIN code", station: "Railway station", airport: "Airport", port: "Port", custom: "As typed" };
+const ICONS: Record<PlaceKind, typeof MapPin> = { city: Building2, pin: Hash, station: TrainFront, airport: Plane, port: Anchor, terminal: Waves, custom: MapPin };
+const KIND_LABEL: Record<PlaceKind, string> = { city: "City or town", pin: "PIN code", station: "Railway station", airport: "Airport", port: "Port", terminal: "Waterway terminal", custom: "As typed" };
+const LIST_NAME: Partial<Record<PlaceKind, string>> = { station: "railway stations", airport: "airports", port: "ports", terminal: "waterway terminals" };
 const COUNTRY = new Intl.DisplayNames(["en-IN"], { type: "region" });
 
 /** Second line of a suggestion: what kind of place it is and where. */
 function describe(place: Place) {
   const where = place.country && place.country !== "IN" ? COUNTRY.of(place.country) : stateName(place.state) ?? (place.country === "IN" ? "India" : undefined);
-  return [KIND_LABEL[place.kind], where, place.approximate ? "district-level location" : undefined].filter(Boolean).join(" · ");
+  const city = place.kind === "terminal" ? place.city : place.city && place.city !== where ? place.city : undefined;
+  return [KIND_LABEL[place.kind], [city, where].filter(Boolean).join(", "), place.approximate ? "district-level location" : undefined].filter(Boolean).join(" · ");
 }
 
 /** The typed text in bold within a suggestion, as map searches show it. */
@@ -81,7 +83,11 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
   }, []);
 
   const typed = query.trim();
-  const options: Place[] = [...results, ...(typed && !loading && !results.some((item) => item.label.toLowerCase() === typed.toLowerCase()) && typed !== value?.label ? [{ label: typed, kind: "custom" as const }] : [])];
+  // Airports, ports, stations and terminals come from TEMT's lists; free text is offered only when nothing matches.
+  const listOnly = kinds.every((kind) => TERMINAL_KINDS.includes(kind));
+  const offerTyped = typed && !loading && typed !== value?.label && (listOnly ? results.length === 0 : !results.some((item) => item.label.toLowerCase() === typed.toLowerCase()));
+  const options: Place[] = [...results, ...(offerTyped ? [{ label: typed, kind: "custom" as const }] : [])];
+  const listName = kinds.map((kind) => LIST_NAME[kind]).filter(Boolean).join(" or ");
   const choose = (place: Place) => { onChange(place); setQuery(place.label); setOpen(false); };
   const Icon = value ? ICONS[value.kind] : MapPin;
 
@@ -115,7 +121,7 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
                 <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", place.kind === "custom" ? "bg-stone-100 text-grey-500" : "bg-maroon-50 text-maroon-600")}><ItemIcon size={15} aria-hidden="true" /></span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14px] text-grey-800">{place.kind === "custom" ? <>Use “{place.label}” as typed</> : highlight(place.label, typed)}</span>
-                  <span className="block truncate text-[12px] text-grey-500">{place.kind === "custom" ? "Not on the map: you will enter the distance yourself" : describe(place)}</span>
+                  <span className="block truncate text-[12px] text-grey-500">{place.kind === "custom" ? (listOnly ? `Not in TEMT's list of ${listName}: you will enter the distance yourself` : "Not on the map: you will enter the distance yourself") : describe(place)}</span>
                 </span>
               </li>
             );

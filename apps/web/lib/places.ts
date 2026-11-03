@@ -1,7 +1,18 @@
 import { AIR_DISTANCE_ADJUSTMENT_KM, CIRCUITY, PORTS, greatCircleKm, landPathKm, nearestPort, seaRoute, type DistanceMethod, type LatLon, type TransportMode } from "@temt/calculator";
 import { loadStations, railRoute } from "./rail";
+import { TERMINALS, waterwayKm, waterwayName } from "./waterways";
 
-export type PlaceKind = "city" | "pin" | "station" | "airport" | "port" | "custom";
+export type PlaceKind = "city" | "pin" | "station" | "airport" | "port" | "terminal" | "custom";
+
+/**
+ * What each transport mode's places must be: freight leaves and arrives by air at airports, by sea at ports, by rail
+ * at stations and by inland waterway at waterway terminals; road and courier go door to door (cities and PIN codes).
+ */
+export const MODE_PLACE_KINDS: Record<TransportMode | "courier", PlaceKind[]> = {
+  road: ["city", "pin"], courier: ["city", "pin"], rail: ["station"], air: ["airport"], sea: ["port"], iww: ["terminal"],
+};
+/** Kinds where TEMT's list is the full set of valid places, so free text is offered only when nothing matches. */
+export const TERMINAL_KINDS: PlaceKind[] = ["station", "airport", "port", "terminal"];
 
 /** Full names for the two-letter state and union territory codes used in the location data. */
 export const STATE_NAMES: Record<string, string> = {
@@ -37,8 +48,10 @@ export interface Place {
   kind: PlaceKind;
   lat?: number;
   lon?: number;
-  /** PIN code, station code, IATA code or port id. */
+  /** PIN code, station code, IATA code, port id or waterway terminal id. */
   code?: string;
+  /** The city an airport or port serves, or the National Waterway a terminal is on, for display. */
+  city?: string;
   state?: string;
   country?: string;
   /** District-level PIN coordinates are less precise than city coordinates. */
@@ -63,11 +76,54 @@ export const loadPins = () => (cache.pins ??= getJson<Record<string, PinRow>>("/
 export { loadStations };
 
 const cityPlace = (row: CityRow): Place => ({ label: row.n, kind: "city", lat: row.la, lon: row.lo, state: row.s, country: "IN" });
-const airportPlace = (row: AirportRow): Place => ({ label: `${row.m || row.n} (${row.c})`, kind: "airport", code: row.c, lat: row.la, lon: row.lo, country: row.k });
+const airportPlace = (row: AirportRow): Place => ({ label: `${row.c} · ${row.n}`, kind: "airport", code: row.c, city: row.m || undefined, lat: row.la, lon: row.lo, country: row.k });
+
+/** The city each port serves and the names people use for it (Nhava Sheva for JNPT, Tuticorin for V.O. Chidambaranar). */
+const PORT_INFO: Record<string, [city: string, state: string | undefined, aliases: string[]]> = {
+  "in-deendayal": ["Gandhidham", "GJ", ["Kandla", "Deendayal"]], "in-mundra": ["Mundra", "GJ", ["Adani Mundra"]], "in-sikka": ["Jamnagar", "GJ", []],
+  "in-bedi": ["Jamnagar", "GJ", []], "in-navlakhi": ["Morbi", "GJ", []], "in-porbandar": ["Porbandar", "GJ", []], "in-pipavav": ["Rajula", "GJ", ["APM Pipavav"]],
+  "in-jafrabad": ["Jafrabad", "GJ", []], "in-pindhara": ["Devbhumi Dwarka", "GJ", []], "in-dahej": ["Bharuch", "GJ", []], "in-hazira": ["Surat", "GJ", []],
+  "in-mumbai": ["Mumbai", "MH", ["Bombay", "Mumbai Port Authority"]], "in-jawaharlal-nehru": ["Navi Mumbai", "MH", ["JNPT", "JNPA", "Nhava Sheva", "Mumbai", "Uran"]],
+  "in-mormugao": ["Vasco da Gama", "GA", ["Goa", "Marmagao", "Vasco"]], "in-belekeri": ["Ankola", "KA", []], "in-karwar": ["Karwar", "KA", []],
+  "in-new-mangalore": ["Mangaluru", "KA", ["Mangalore", "NMPT", "Panambur"]], "in-kasaragod": ["Kasaragod", "KL", []], "in-azhikkal": ["Kannur", "KL", []],
+  "in-kannur": ["Kannur", "KL", ["Cannanore"]], "in-thalassery": ["Thalassery", "KL", ["Tellicherry"]], "in-beypore": ["Kozhikode", "KL", ["Calicut"]],
+  "in-ponnani": ["Ponnani", "KL", []], "in-cochin": ["Kochi", "KL", ["Cochin", "Willingdon Island", "Ernakulam", "Vallarpadam"]],
+  "in-vizhinjam": ["Thiruvananthapuram", "KL", ["Trivandrum"]], "in-neendakara": ["Kollam", "KL", ["Quilon"]],
+  "in-v-o-chidambaranar": ["Thoothukudi", "TN", ["Tuticorin", "VOC"]], "in-chennai": ["Chennai", "TN", ["Madras"]], "in-kamarajar": ["Chennai", "TN", ["Ennore"]],
+  "in-krishnapatnam": ["Nellore", "AP", []], "in-kakinada": ["Kakinada", "AP", []], "in-visakhapatnam": ["Visakhapatnam", "AP", ["Vizag"]],
+  "in-gangavaram": ["Visakhapatnam", "AP", ["Vizag"]], "in-paradip": ["Paradip", "OD", ["Paradeep"]], "in-dhamra": ["Bhadrak", "OD", []],
+  "in-haldia": ["Haldia", "WB", []], "in-syama-prasad-mookerjee": ["Kolkata", "WB", ["Calcutta", "Kolkata Port", "Kidderpore"]],
+  "ae-jebel-ali": ["Dubai", undefined, []], "om-salalah": ["Salalah", undefined, []], "sa-jeddah": ["Jeddah", undefined, []], "lk-colombo": ["Colombo", undefined, []],
+  "bd-chattogram": ["Chattogram", undefined, ["Chittagong"]], "sg-singapore": ["Singapore", undefined, []], "my-klang": ["Kuala Lumpur", undefined, ["Klang"]],
+  "hk-hong-kong": ["Hong Kong", undefined, []], "cn-shenzhen": ["Shenzhen", undefined, ["Yantian"]], "cn-shanghai": ["Shanghai", undefined, ["Yangshan"]],
+  "kr-busan": ["Busan", undefined, ["Pusan"]], "jp-tokyo": ["Tokyo", undefined, []], "us-los-angeles-long-beach": ["Los Angeles", undefined, ["Long Beach", "LA"]],
+  "us-new-york-new-jersey": ["New York", undefined, ["New Jersey", "Newark"]], "us-savannah": ["Savannah", undefined, []], "nl-rotterdam": ["Rotterdam", undefined, []],
+  "be-antwerp-bruges": ["Antwerp", undefined, ["Bruges", "Zeebrugge"]], "de-hamburg": ["Hamburg", undefined, []], "gb-felixstowe": ["Felixstowe", undefined, []],
+  "gr-piraeus": ["Athens", undefined, ["Piraeus"]], "it-genoa": ["Genoa", undefined, ["Genova"]], "es-valencia": ["Valencia", undefined, []],
+  "ke-mombasa": ["Mombasa", undefined, []], "za-durban": ["Durban", undefined, []], "br-santos": ["São Paulo", undefined, ["Santos", "Sao Paulo"]],
+};
 export const portPlace = (id: string): Place | undefined => {
   const port = PORTS.find((item) => item.id === id);
-  return port && { label: port.name, kind: "port", code: port.id, lat: port.lat, lon: port.lon, country: port.country };
+  const [city, state] = PORT_INFO[id] ?? [];
+  return port && { label: port.name, kind: "port", code: port.id, city, state, lat: port.lat, lon: port.lon, country: port.country };
 };
+const terminalPlace = (terminal: (typeof TERMINALS)[number]): Place => ({ label: `${terminal.name} terminal`, kind: "terminal", code: terminal.id, city: waterwayName(terminal.waterway), lat: terminal.lat, lon: terminal.lon, state: terminal.state, country: "IN" });
+
+/** A short label for diagrams and lists: airports by city and code, terminals without the word "terminal". */
+export function compactLabel(place?: Place) {
+  if (!place) return "";
+  if (place.kind === "airport" && place.city && place.code) return `${place.city} (${place.code})`;
+  if (place.kind === "terminal") return place.label.replace(/ terminal$/, "");
+  return place.label.replace(/^\d{6} · /, "");
+}
+
+/** The town a place is in, for lanes and for re-using a route with another mode (BOM → Mumbai, Pune Jn (PUNE) → Pune). */
+export function townOf(place: Place) {
+  if ((place.kind === "airport" || place.kind === "port") && place.city) return place.city;
+  if (place.kind === "terminal") return place.label.replace(/ terminal$/, "").replace(/\s*\(.*\)$/, "");
+  if (place.kind === "station") return place.label.replace(/\s*\(.*\)$/, "").replace(/\s+(jn|junction|cantt|terminus|central|city)$/i, "");
+  return place.label.replace(/^\d{6} · /, "").replace(/ \([A-Z]{3}\)$/, "");
+}
 
 function score(text: string, query: string) {
   const value = text.toLowerCase();
@@ -119,15 +175,24 @@ export async function rankPlaces(query: string, kinds: PlaceKind[] = ["city", "p
     }
   }
   if (kinds.includes("airport")) {
+    // By IATA code, the city it serves or its name; larger Indian airports first.
+    const size = { L: 3, M: 2, S: 1 };
     for (const row of await loadAirports()) {
-      const rank = Math.min(score(row.c, q) - 0.5, best([row.m], queries), best([row.n], queries) + 0.5);
-      if (rank < 99) results.push({ place: airportPlace(row), rank: rank + (row.k === "IN" ? 0 : 0.25), weight: row.k === "IN" ? 1 : 0 });
+      const rank = Math.min(score(row.c.toLowerCase(), q) - 0.5, best([row.m], queries), best([row.n], queries) + 0.25);
+      if (rank < 99) results.push({ place: airportPlace(row), rank: rank + (row.k === "IN" ? 0 : 0.25), weight: (row.k === "IN" ? 10 : 0) + size[row.t ?? "S"] });
     }
   }
   if (kinds.includes("port")) {
     for (const port of PORTS) {
-      const rank = best([port.name], queries);
-      if (rank < 99) results.push({ place: portPlace(port.id)!, rank: rank + (port.country === "IN" ? 0 : 0.25), weight: 0 });
+      const [city, , aliases] = PORT_INFO[port.id] ?? ["", undefined, []];
+      const rank = Math.min(best([port.name], queries), best([city, ...aliases], queries) + 0.05);
+      if (rank < 99) results.push({ place: portPlace(port.id)!, rank: rank + (port.country === "IN" ? 0 : 0.25), weight: port.country === "IN" ? 1 : 0 });
+    }
+  }
+  if (kinds.includes("terminal")) {
+    for (const terminal of TERMINALS) {
+      const rank = Math.min(best([terminal.name], queries), best(terminal.aliases, queries) + 0.05, score(terminal.waterway.toLowerCase(), q) + 0.5);
+      if (rank < 99) results.push({ place: terminalPlace(terminal), rank, weight: 0 });
     }
   }
   // Names that equal or start with the query come first, then names with a word starting with it, then the rest.
@@ -162,7 +227,7 @@ export async function resolvePlace(text: string, kinds: PlaceKind[] = ["city", "
       if (hit && (value.length === 3 || value.includes(" - ") || value.includes("("))) return airportPlace(hit);
     }
   }
-  const base = value.replace(/\s*\(.*?\)\s*/g, " ").split(",")[0]!.replace(/\b(port|dock complex|railway station|rly stn|station)\b/gi, "").trim();
+  const base = value.replace(/\s*\(.*?\)\s*/g, " ").split(",")[0]!.replace(/\b(port|dock complex|railway station|rly stn|station|international airport|airport|terminal)\b/gi, "").trim();
   const [first] = await rankPlaces(base, kinds, 1);
   // Accept an exact or leading match on the name or a known earlier name ("Bangalore" finds Bengaluru), not a loose one.
   return first && first.rank < 2 ? first.place : undefined;
@@ -189,12 +254,17 @@ export function estimateDistance(mode: TransportMode, from?: Place, to?: Place):
     if (route) return { km: route.km, method: "sea-route", note: `Shortest sea-lane route, ${Math.round(route.nauticalMiles).toLocaleString("en-IN")} nautical miles.`, via: route.via };
     return { km: gcd * 1.2, method: "great-circle", note: "Approximate sea distance." };
   }
+  if (mode === "iww") {
+    const along = from.kind === "terminal" && to.kind === "terminal" ? waterwayKm(from.code, to.code) : undefined;
+    if (along) return { km: Math.max(1, along.km), method: "iww-network", note: `Along ${waterwayName(along.waterway)}, scaled to the waterway's official length published by IWAI.` };
+  }
   const circuity = mode === "rail" ? CIRCUITY.rail : mode === "iww" ? CIRCUITY.iww : CIRCUITY.road;
   const method: DistanceMethod = mode === "rail" ? "rail-estimate" : mode === "iww" ? "iww-estimate" : "road-estimate";
   const approx = from.approximate || to.approximate ? " One location is a district-level PIN estimate." : "";
   const path = landPathKm(from, to);
   const basis = mode === "road" ? "Calculated from the two locations with TEMT's model of Indian road distances, usually within 10–15% of the distance driven."
     : mode === "rail" ? "Calculated from the two locations; the rail network was not available for this route."
+    : from.kind === "terminal" && to.kind === "terminal" ? "These terminals are on different waterways, so the distance is approximate: enter the actual distance if you have it."
     : "Calculated from the two locations with TEMT's model of Indian waterway distances.";
   return { km: Math.max(1, path * circuity), method, note: `${basis}${approx}` };
 }
@@ -225,6 +295,18 @@ export async function nearestAirport(place: LatLon, indiaOnly = true): Promise<P
   const rank = { L: 0, M: 1, S: 2 };
   const major = ranked.filter((item) => item.km <= nearest.km + 60).sort((a, b) => rank[a.row.t ?? "S"] - rank[b.row.t ?? "S"] || a.km - b.km)[0]!;
   return airportPlace(major.row);
+}
+
+/** The nearest inland waterway terminal on TEMT's National Waterways list. */
+export function nearestTerminal(place: LatLon): Place {
+  return terminalPlace(TERMINALS.reduce((best, item) => (greatCircleKm(place, item) < greatCircleKm(place, best) ? item : best)));
+}
+
+/** Whether a place can start or end a leg by this mode: air needs an airport, sea a port, rail a station, waterway a terminal. */
+export function placeFitsMode(place: Place | undefined, mode: TransportMode) {
+  if (!place) return true;
+  const kinds = MODE_PLACE_KINDS[mode];
+  return mode === "road" || place.kind === "custom" || kinds.includes(place.kind);
 }
 
 export function nearestIndianPort(place: LatLon): Place {

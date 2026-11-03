@@ -169,6 +169,8 @@
   .table th { position: sticky; top: 0; z-index: 1; background: var(--color-stone-50); text-align: left; font-size: 12px; font-weight: 700; color: var(--color-grey-700); padding: 10px 14px; border-bottom: 1px solid var(--color-stone-200); white-space: nowrap; }
   .table td { padding: 11px 14px; border-bottom: 1px solid var(--color-grey-100); vertical-align: middle; }
   .table tr:last-child td { border-bottom: 0; }
+  /* References, numbers and amounts never break across lines; the table scrolls sideways instead. */
+  .table td.mono, .table td.num { white-space: nowrap; }
   .table tbody tr { transition: background-color .12s; }
   .table tbody tr:hover { background: var(--color-maroon-50); }
   .table .right { text-align: right; white-space: nowrap; }

@@ -19,6 +19,7 @@ export const DISTANCE_LABELS: Record<DistanceMethod, string> = {
   "rail-estimate": "Shortest feasible rail distance, estimated from the locations",
   "rail-network": "Shortest route on the Indian Railways network, station to station",
   "iww-estimate": "Shortest feasible waterway distance, estimated from the locations",
+  "iww-network": "Distance along the National Waterway, terminal to terminal",
   "great-circle": "Great-circle distance between the airports",
   "air-gcd-95": "Great-circle distance between the airports",
   "sea-route": "Port-to-port sea route over shipping lanes",

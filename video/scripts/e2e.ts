@@ -235,11 +235,28 @@ async function workspace(browser: Browser) {
     await shot(page, `calculator-${name}`);
     return text.split("\n").slice(1, 3).join(" ");
   };
+  // Each mode lists only its own places: airports for air, ports for sea, stations for rail, terminals for waterways.
+  const onlyKind = async (mode: string, query: string, kind: RegExp) => {
+    await page.getByRole("radio", { name: mode, exact: true }).click();
+    await page.locator("#origin").fill(query);
+    const options = page.locator('[role="listbox"] [role="option"]');
+    await options.first().waitFor({ timeout: 8000 });
+    await page.waitForTimeout(300);
+    const texts = await options.allInnerTexts();
+    const wrong = texts.filter((text) => !kind.test(text));
+    await page.locator("#origin").fill("");
+    if (wrong.length) throw new Error(`${mode} search for “${query}” also listed: ${wrong.join(" | ").replace(/\s+/g, " ")}`);
+    return `${texts.length} results, first: ${texts[0]!.split("\n")[0]}`;
+  };
+  await step(page, "Calculator: air lists only airports, sea only ports, rail only stations, waterways only terminals", async () => {
+    const results = [await onlyKind("Air", "Mumbai", /Airport/), await onlyKind("Sea", "Chennai", /Port/), await onlyKind("Rail", "Pune", /Railway station/), await onlyKind("Inland waterway", "Patna", /Waterway terminal/)];
+    return results.join("; ");
+  });
   await step(page, "Calculator: rail between stations on the Indian Railways network", () => modeCheck("Rail", "NDLS", "Howrah", "rail", /Shortest route on the Indian Railways network/));
   await step(page, "Calculator: air via airport codes", () => modeCheck("Air", "DEL", "BLR", "air"));
   await step(page, "Calculator: sea via ports", () => modeCheck("Sea", "Jawaharlal", "Rotterdam", "sea"));
   await step(page, "Calculator: courier / PTL", () => modeCheck("Courier / PTL", "Gurugram", "Lucknow", "courier"));
-  await step(page, "Calculator: inland waterway", () => modeCheck("Inland waterway", "Patna", "Kolkata", "iww"));
+  await step(page, "Calculator: inland waterway along the National Waterway", () => modeCheck("Inland waterway", "Patna", "Kolkata", "iww", /Distance along the National Waterway/));
   await step(page, "Calculator: electric truck is compared on Indian loading", async () => {
     await page.getByRole("radio", { name: "Road", exact: true }).click();
     await choosePlace(page, page.locator("#origin"), "Pune");
@@ -350,6 +367,19 @@ async function workspace(browser: Browser) {
       return summary;
     });
   }
+  await step(page, "Import: a template per mode, each detected and read with its own columns", async () => {
+    const cards = page.getByRole("button", { name: /^Download the .* template as Excel$/ });
+    if ((await cards.count()) !== 7) throw new Error(`Expected 7 templates, found ${await cards.count()}`);
+    const excel = await validateDownload(await download(page, () => page.getByRole("button", { name: "Download the Sea template as Excel" }).click()));
+    const csv = await download(page, () => page.getByRole("button", { name: "Download the Air template as CSV" }).click());
+    const path = join(OUT, "downloads", csv.suggestedFilename());
+    await csv.saveAs(path);
+    await fileInput().setInputFiles(path);
+    await page.getByText(/read from TEMT-air-template\.csv/).waitFor({ timeout: 30000 });
+    await page.getByText("Air template", { exact: true }).waitFor();
+    await page.getByText(/New Delhi \(DEL\) → Bengaluru \(BLR\)/).first().waitFor();
+    return `${excel}; air CSV read: ${(await page.locator('[role="group"][aria-label="Filter rows"]').innerText()).replace(/\s+/g, " ")}`;
+  });
   await step(page, "Import: city names as people type them, and a reference already saved", async () => {
     const summary = await readFile("city-names.csv");
     for (const route of [/Bengaluru → Mumbai/, /Gurugram → Kolkata/, /KSR Bengaluru City Jn \(SBC\) → New Delhi \(NDLS\)/]) await page.getByText(route).first().waitFor();

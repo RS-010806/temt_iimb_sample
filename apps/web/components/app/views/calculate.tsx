@@ -7,8 +7,8 @@ import { AlertTriangle, ArrowLeftRight, ArrowRightLeft, BadgeCheck, Calculator, 
 import { calculateShipment, suggestTradeLane, FUELS, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, ROAD_CLASSES, ROAD_FACTORS, TEU_LOADS, TRADE_LANES, VESSELS, type FuelId, type HubInput, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult } from "@temt/calculator";
 import { buildRecord, vehicleForTonnes } from "@/lib/builders";
 import { emissions, emissionsText, fmt, formatDate, todayIso } from "@/lib/format";
-import { estimateDistance, hasCoords, measureDistance, type DistanceEstimate, type Place, type PlaceKind } from "@/lib/places";
-import { DIRECTION_LABELS, PAID_BY_LABELS, SCOPE_LABELS, scopeOf, type Direction, type LegMeta, type PaidBy, type ShipmentRecord } from "@/lib/records";
+import { MODE_PLACE_KINDS, estimateDistance, hasCoords, measureDistance, type DistanceEstimate, type Place, type PlaceKind } from "@/lib/places";
+import { DIRECTION_LABELS, type Direction, type LegMeta, type PaidBy, type ShipmentRecord } from "@/lib/records";
 import { actions, getState, useSettings, useStore } from "@/lib/store";
 import { PlaceInput } from "../place-input";
 import { StageBar } from "../charts";
@@ -50,13 +50,14 @@ const REFERENCE: Record<CalcMode, { label: string; placeholder: string }> = {
   iww: { label: "Consignment note number", placeholder: "e.g. CN-4402" },
 };
 
+/** Each mode searches only the places freight can use for it: airports for air, ports for sea, stations for rail, waterway terminals for inland waterways. */
 const PLACE: Record<CalcMode, { kinds: PlaceKind[]; placeholder: string }> = {
-  road: { kinds: ["city", "pin"], placeholder: "City, town or 6-digit PIN code" },
-  courier: { kinds: ["city", "pin"], placeholder: "City, town or 6-digit PIN code" },
-  rail: { kinds: ["station", "city", "pin"], placeholder: "Station name or code, e.g. NDLS" },
-  air: { kinds: ["airport", "city"], placeholder: "Airport, city or IATA code" },
-  sea: { kinds: ["port", "city"], placeholder: "Port or city" },
-  iww: { kinds: ["port", "city"], placeholder: "Terminal city or port" },
+  road: { kinds: MODE_PLACE_KINDS.road, placeholder: "City, town or 6-digit PIN code" },
+  courier: { kinds: MODE_PLACE_KINDS.courier, placeholder: "City, town or 6-digit PIN code" },
+  rail: { kinds: MODE_PLACE_KINDS.rail, placeholder: "Station name or code, e.g. NDLS or Howrah" },
+  air: { kinds: MODE_PLACE_KINDS.air, placeholder: "Airport name, city or code, e.g. BOM" },
+  sea: { kinds: MODE_PLACE_KINDS.sea, placeholder: "Port name or city, e.g. Nhava Sheva" },
+  iww: { kinds: MODE_PLACE_KINDS.iww, placeholder: "Waterway terminal, e.g. Patna or Pandu" },
 };
 
 interface Form {
@@ -288,7 +289,6 @@ export function CalculateView() {
   const headline = result ? emissions(result.wtwKg) : null;
   const mainLeg = result?.legs[form.mode === "courier" ? 1 : 0];
   const vehicle = ROAD_CLASSES.find((item) => item.id === form.vehicleClass)!;
-  const scopeKey = scopeOf({ paidBy: form.paidBy }, result?.legs[0]?.method);
   const reference = REFERENCE[form.mode];
   const place = PLACE[form.mode];
   const fuelBased = form.method === "fuel";
@@ -302,7 +302,8 @@ export function CalculateView() {
     if (form.fuelId !== fuelOption.id || !fuelOption.units.includes(form.fuelUnit)) set({ fuelId: fuelOption.id, fuelUnit: fuelOption.units.includes(form.fuelUnit) ? form.fuelUnit : fuelOption.units[0]! });
   }, [fuelBased, fuelOption, form.fuelId, form.fuelUnit]); // eslint-disable-line react-hooks/exhaustive-deps
   const chooseMode = (mode: CalcMode) => {
-    const placesChange = (["air", "sea"] as CalcMode[]).includes(mode) || (["air", "sea"] as CalcMode[]).includes(form.mode) || (mode === "rail") !== (form.mode === "rail");
+    // Places carry over only between modes that use the same kind of place (road and courier).
+    const placesChange = PLACE[mode].kinds.join() !== PLACE[form.mode].kinds.join();
     const options = mode === "courier" ? [] : FUEL_OPTIONS[mode];
     const fuel = options.find((option) => option.id === form.fuelId) ?? options[0];
     set({ mode, origin: placesChange ? undefined : form.origin, destination: placesChange ? undefined : form.destination, fuelId: fuel?.id ?? form.fuelId, fuelUnit: fuel && !fuel.units.includes(form.fuelUnit) ? fuel.units[0]! : form.fuelUnit });
@@ -349,7 +350,7 @@ export function CalculateView() {
     <div>
       <PageHeader eyebrow={editing ? `Editing ${editing.ref}` : "Calculate"} title={editing ? "Edit shipment" : "Calculate a shipment"} description="Choose how you want to calculate, then enter only what that method needs. The result updates as you type, with every step shown."
         actions={<><Link prefetch={false} href="/app/compare/" className="btn btn-secondary"><ArrowLeftRight size={16} aria-hidden="true" /> Compare modes</Link><Link prefetch={false} href="/app/chain/" className="btn btn-secondary"><GitBranch size={16} aria-hidden="true" /> Multimodal chain</Link></>} />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="grid content-start gap-5">
           <Step n={++n} title="How do you want to calculate?" subtitle="ISO 14083 prefers measured fuel or energy where you have it." dataTour="method-picker">
             <div className="grid gap-3 md:grid-cols-2" role="radiogroup" aria-label="Calculation method">
@@ -361,7 +362,7 @@ export function CalculateView() {
           </Step>
 
           <Step n={++n} title="Transport mode" dataTour="mode-picker">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" role="radiogroup" aria-label="Transport mode">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-6" role="radiogroup" aria-label="Transport mode">
               {MODES.map((mode) => {
                 const Icon = mode.icon;
                 const active = form.mode === mode.id;
@@ -407,9 +408,9 @@ export function CalculateView() {
           ) : (
             <Step n={++n} title="Route and distance" subtitle="Calculate the distance from the route, or enter the distance from your own records." dataTour="route">
               <div className="grid items-start gap-3 md:grid-cols-[1fr_auto_1fr]">
-                <Field label={form.mode === "rail" ? "From station" : form.mode === "air" ? "From airport" : form.mode === "sea" ? "From port" : "From"} htmlFor="origin"><PlaceInput id="origin" value={form.origin} onChange={(origin) => set({ origin })} kinds={place.kinds} placeholder={place.placeholder} /></Field>
+                <Field label={form.mode === "rail" ? "From station" : form.mode === "air" ? "From airport" : form.mode === "sea" ? "From port" : form.mode === "iww" ? "From terminal" : "From"} htmlFor="origin"><PlaceInput id="origin" value={form.origin} onChange={(origin) => set({ origin })} kinds={place.kinds} placeholder={place.placeholder} /></Field>
                 <button type="button" className="btn btn-ghost btn-icon justify-self-center md:mt-[26px]" onClick={() => set({ origin: form.destination, destination: form.origin })} aria-label="Swap origin and destination"><ArrowRightLeft size={17} /></button>
-                <Field label={form.mode === "rail" ? "To station" : form.mode === "air" ? "To airport" : form.mode === "sea" ? "To port" : "To"} htmlFor="destination"><PlaceInput id="destination" value={form.destination} onChange={(destination) => set({ destination })} kinds={place.kinds} placeholder={place.placeholder} /></Field>
+                <Field label={form.mode === "rail" ? "To station" : form.mode === "air" ? "To airport" : form.mode === "sea" ? "To port" : form.mode === "iww" ? "To terminal" : "To"} htmlFor="destination"><PlaceInput id="destination" value={form.destination} onChange={(destination) => set({ destination })} kinds={place.kinds} placeholder={place.placeholder} /></Field>
               </div>
 
               <div className="mt-5 grid gap-3">
@@ -493,7 +494,7 @@ export function CalculateView() {
             <Step n={++n} title={form.mode === "road" ? "Vehicle" : form.mode === "courier" ? "Carrier vehicles" : form.mode === "sea" ? "Vessel or container" : form.mode === "air" ? "Aircraft" : form.mode === "iww" ? "Inland vessel" : "Rail service"}>
               {form.mode === "road" && (
                 <div className="grid gap-5">
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4" role="radiogroup" aria-label="Truck class">
+                  <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4" role="radiogroup" aria-label="Truck class">
                     {ROAD_CLASSES.map((item) => (
                       <button key={item.id} type="button" role="radio" aria-checked={form.vehicleClass === item.id} onClick={() => set({ vehicleClass: item.id, vehicleAuto: false })}
                         className={cx("rounded-xl border p-3 text-left transition", form.vehicleClass === item.id ? "border-maroon-600 bg-maroon-50 shadow-[inset_0_0_0_1px_var(--color-maroon-600)]" : "border-stone-200 bg-white hover:border-maroon-300")}>
@@ -521,11 +522,11 @@ export function CalculateView() {
                 </div>
               )}
               {form.mode === "courier" && (
-                <div className="grid items-start gap-3 md:grid-cols-3">
+                <div className="grid items-start gap-3">
                   {([["firstVehicle", "First-mile vehicle"], ["midVehicle", "Line-haul vehicle"], ["lastVehicle", "Last-mile vehicle"]] as const).map(([key, label]) => (
                     <Field key={key} label={label}><Select value={form[key]} onChange={(value) => set({ [key]: value } as Partial<Form>)} options={ROAD_CLASSES.map((item) => ({ value: item.id, label: `${item.label} (${item.gvw})` }))} /></Field>
                   ))}
-                  <p className="text-[13px] text-grey-600 md:col-span-3">Includes two hub transshipments ({settings.factorSet === "temt" ? "TEMT courier hub default" : `${HUB_TYPES.transshipment.ambient} kg CO₂e per tonne each, GLEC Table 3`}).{settings.factorSet === "temt" && " Each leg uses TEMT's courier defaults."}</p>
+                  <p className="text-[13px] text-grey-600">Includes two hub transshipments ({settings.factorSet === "temt" ? "TEMT courier hub default" : `${HUB_TYPES.transshipment.ambient} kg CO₂e per tonne each, GLEC Table 3`}).{settings.factorSet === "temt" && " Each leg uses TEMT's courier defaults."}</p>
                 </div>
               )}
               {form.mode === "rail" && <p className="text-[14px] leading-relaxed text-grey-700">Indian Railways average for mixed diesel and electric traction. The distance is measured station to station; to add road transport to and from the stations, use <Link href="/app/compare/" className="font-semibold text-maroon-700 underline">Compare modes</Link> or the <Link href="/app/chain/" className="font-semibold text-maroon-700 underline">chain builder</Link>.</p>}
@@ -538,8 +539,8 @@ export function CalculateView() {
                 <div className="grid gap-4">
                   <Segmented ariaLabel="Sea calculation basis" value={form.seaBasis} onChange={(seaBasis) => set({ seaBasis })} options={[{ value: "lane", label: "Container by trade lane" }, { value: "vessel", label: "Vessel type and size" }]} />
                   {form.seaBasis === "lane" ? (
-                    <div className="grid items-start gap-3 md:grid-cols-3">
-                      <Field label="Trade lane" hint={form.tradeLaneEdited ? undefined : "Suggested from the route"}><Select value={form.tradeLane} onChange={(tradeLane) => set({ tradeLane, tradeLaneEdited: true })} options={TRADE_LANES.map((lane) => ({ value: lane.id, label: lane.label }))} /></Field>
+                    <div className="grid items-start gap-3 md:grid-cols-2">
+                      <div className="md:col-span-2"><Field label="Trade lane" hint={form.tradeLaneEdited ? undefined : "Suggested from the route"}><Select value={form.tradeLane} onChange={(tradeLane) => set({ tradeLane, tradeLaneEdited: true })} options={TRADE_LANES.map((lane) => ({ value: lane.id, label: lane.label }))} /></Field></div>
                       <Field label="Container"><Segmented ariaLabel="Container type" value={form.containerType} onChange={(containerType) => set({ containerType })} options={[{ value: "dry", label: "Dry" }, { value: "reefer", label: "Reefer" }]} /></Field>
                       <Field label="Cargo per TEU"><Select value={String(form.tonnesPerTeu)} onChange={(value) => set({ tonnesPerTeu: Number(value) })} options={TEU_LOADS.map((item) => ({ value: String(item.tonnes), label: `${item.label} (${item.tonnes} t)` }))} /></Field>
                     </div>
@@ -574,14 +575,13 @@ export function CalculateView() {
               </Field>
             </div>
             <button type="button" className="mt-4 flex items-center gap-1.5 text-[13px] font-semibold text-maroon-700" onClick={() => setShowMore(!showMore)} aria-expanded={showMore}>
-              <ChevronDown size={15} className={cx("transition", showMore && "rotate-180")} aria-hidden="true" /> More details (optional): business unit, commodity, GHG scope
+              <ChevronDown size={15} className={cx("transition", showMore && "rotate-180")} aria-hidden="true" /> More details (optional): business unit, commodity, direction, notes
             </button>
             {showMore && (
-              <div className="mt-3 grid items-start gap-3 border-t border-stone-200 pt-4 md:grid-cols-3 animate-fade">
+              <div className="mt-3 grid items-start gap-3 border-t border-stone-200 pt-4 md:grid-cols-2 animate-fade">
                 <Field label="Business unit"><input className="input" list="bu-list" value={form.businessUnit} onChange={(event) => set({ businessUnit: event.target.value })} /><datalist id="bu-list">{[...new Set([...settings.businessUnits, ...shipments.map((row) => row.businessUnit)])].map((unit) => <option key={unit} value={unit} />)}</datalist></Field>
                 <Field label="Commodity"><input className="input" value={form.commodity} onChange={(event) => set({ commodity: event.target.value })} /></Field>
                 <Field label="Direction"><Select value={form.direction} onChange={(direction) => set({ direction })} options={(Object.keys(DIRECTION_LABELS) as Direction[]).map((key) => ({ value: key, label: DIRECTION_LABELS[key] }))} /></Field>
-                <Field label="Who operates or pays" info="Decides the GHG Protocol scope: own fleet is Scope 1 (Scope 2 for EV electricity), purchased transport is Scope 3 Category 4, customer-paid delivery is Category 9."><Select value={form.paidBy} onChange={(paidBy) => set({ paidBy })} options={(Object.keys(PAID_BY_LABELS) as PaidBy[]).map((key) => ({ value: key, label: PAID_BY_LABELS[key] }))} /></Field>
                 <div className="md:col-span-2"><Field label="Notes"><input className="input" value={form.notes} onChange={(event) => set({ notes: event.target.value })} placeholder="Optional" /></Field></div>
               </div>
             )}
@@ -589,8 +589,8 @@ export function CalculateView() {
         </div>
 
         {/* On wide screens the result stays in view: the headline and Save stay put while the working scrolls between them. */}
-        <aside className="xl:sticky xl:top-24 xl:flex xl:max-h-[calc(100vh-7.5rem)] xl:flex-col xl:self-start" data-tour="result">
-          <div className="overflow-hidden rounded-[var(--radius-card)] border border-stone-200 bg-white shadow-[var(--shadow-card)] xl:flex xl:min-h-0 xl:flex-col">
+        <aside className="lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100vh-7.5rem)] lg:flex-col lg:self-start" data-tour="result">
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-stone-200 bg-white shadow-[var(--shadow-card)] lg:flex lg:min-h-0 lg:flex-col">
             <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-maroon-800 via-maroon-800 to-maroon-950 px-6 py-6 text-white">
               <svg className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 text-white/[0.06]" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="12" /></svg>
               <p className="text-[13px] font-semibold text-maroon-100">Well-to-wheel emissions</p>
@@ -599,8 +599,8 @@ export function CalculateView() {
               {result && <p className="mt-2 text-[13px] text-maroon-100">{fuelBased ? `${fmt(form.fuelQuantity ?? 0, 2)} ${form.fuelUnit === "l" ? "litres" : form.fuelUnit === "t" ? "tonnes" : form.fuelUnit} of ${form.fuelId === "electricity" ? "electricity" : FUELS[form.fuelId].label}` : `${fmt(result.cargoTonnes, 2)} ton over ${fmt(result.distanceKm, 0)} km`} · {fuelBased ? "fuel-based" : "distance-based"}</p>}
             </div>
             {result && mainLeg && (
-              <div className="relative xl:flex xl:min-h-0 xl:flex-1 xl:flex-col">
-              <div ref={details} onScroll={checkMore} className="relative grid gap-5 p-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
+              <div className="relative lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+              <div ref={details} onScroll={checkMore} className="relative grid gap-5 p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
                 <StageBar ttw={result.ttwKg} wtt={result.wttKg} hub={result.hubKg} />
                 <dl className="grid grid-cols-2 gap-3 text-[13px]">
                   {([
@@ -615,7 +615,6 @@ export function CalculateView() {
                   ))}
                 </dl>
                 <div className="flex flex-wrap gap-2">
-                  <span className="badge badge-maroon">{SCOPE_LABELS[scopeKey].short}</span>
                   <span className={cx("badge", result.dataQuality === "primary" ? "badge-ok" : "badge-stone")}>{result.dataQuality === "primary" && <BadgeCheck size={12} aria-hidden="true" />}{result.dataQuality === "primary" ? "Primary data" : result.dataQuality === "modelled" ? "Modelled data" : "Default factors"}</span>
                   {result.legs.some((leg) => leg.uplifts.length) && <span className="badge badge-info">Adjusted</span>}
                 </div>
@@ -625,7 +624,7 @@ export function CalculateView() {
               </div>
               {moreBelow && (
                 <button type="button" onClick={() => details.current?.scrollTo({ top: basisBelow ? basis.current!.offsetTop - 12 : details.current.scrollTop + details.current.clientHeight * 0.8, behavior: "smooth" })}
-                  className="absolute inset-x-0 bottom-0 hidden justify-center bg-gradient-to-t from-white via-white/90 to-transparent pb-2.5 pt-10 xl:flex">
+                  className="absolute inset-x-0 bottom-0 hidden justify-center bg-gradient-to-t from-white via-white/90 to-transparent pb-2.5 pt-10 lg:flex">
                   <span className="flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[12.5px] font-semibold text-maroon-700 shadow-sm ring-1 ring-stone-200"><ChevronDown size={14} aria-hidden="true" /> {basisBelow ? "See how this was calculated" : "More"}</span>
                 </button>
               )}

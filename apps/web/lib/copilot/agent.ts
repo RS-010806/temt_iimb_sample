@@ -2,7 +2,7 @@ import { calculateShipment, FACTOR_SETS, greatCircleKm, ROAD_CLASSES, seaRoute, 
 import { applyFilters, byLane, byMode, byQuality, fiscalYears, insights, opportunities, previousPeriod, totals } from "../analytics";
 import { buildAlternatives, buildRecord, vehicleForTonnes } from "../builders";
 import { emissionsText, fmt, pct, plural } from "../format";
-import { estimateDistance, hasCoords, measureDistance, nearestAirport, nearestIndianPort, resolvePlace, type Place, type PlaceKind } from "../places";
+import { MODE_PLACE_KINDS, estimateDistance, hasCoords, measureDistance, nearestAirport, nearestIndianPort, resolvePlace, townOf, type Place, type PlaceKind } from "../places";
 import { DEFAULT_LEVERS, runScenario, type Levers } from "../planner";
 import { MODE_HEX, type LegMeta, type ShipmentRecord } from "../records";
 import { makeSampleWorkspace, SAMPLE_SECTORS, type SampleSector } from "../sample-data";
@@ -102,11 +102,12 @@ async function buildFromSlots(slots: Slots): Promise<{ record?: ShipmentRecord; 
   }
   if (tonnes === undefined && slots.litres === undefined && slots.kwh === undefined) return { notes, ask: "tonnes" };
   tonnes ??= 1;
-  const kinds: PlaceKind[] = mode === "air" ? ["airport", "city", "pin"] : mode === "sea" ? ["port", "city", "pin"] : mode === "rail" ? ["station", "city", "pin"] : ["city", "pin"];
+  // Each mode looks up only its own places: airports for air, ports for sea, stations for rail.
+  const kinds: PlaceKind[] = MODE_PLACE_KINDS[mode];
   const [from, to] = await Promise.all([place(slots.origin, kinds), place(slots.destination, kinds)]);
   if ((!slots.origin || !slots.destination) && slots.distanceKm === undefined && slots.litres === undefined && slots.kwh === undefined) return { notes, ask: "route" };
   if ((slots.origin && !from) || (slots.destination && !to)) {
-    if (slots.distanceKm === undefined) return { notes, error: `I couldn't find ${!from ? `“${slots.origin}”` : `“${slots.destination}”`}. Try a city name, a 6-digit PIN code${mode === "air" ? " or an airport code such as BLR" : ""}, or add the distance in km.` };
+    if (slots.distanceKm === undefined) return { notes, error: `I couldn't find ${!from ? `“${slots.origin}”` : `“${slots.destination}”`}. ${mode === "air" ? "Try an airport name, its city or its code, such as BLR" : mode === "sea" ? "Try a port name or the city it serves, such as Nhava Sheva" : mode === "rail" ? "Try a railway station name or code, such as NDLS" : mode === "iww" ? "Try a National Waterway terminal, such as Haldia or Patna" : "Try a city name or a 6-digit PIN code"}, or add the distance in km.` };
   }
   const origin: Place = from ?? { label: slots.origin ?? "Origin", kind: "custom" };
   const destination: Place = to ?? { label: slots.destination ?? "Destination", kind: "custom" };
@@ -193,7 +194,7 @@ async function handle(raw: string, ctx: AgentContext, carried?: Pending): Promis
   const refersBack = /\b(that|this|it|same|previous|above|the shipment|the lane)\b/i.test(raw);
   if (ctx.last && !slots.origin && (intent === "followup" || ((intent === "compare" || intent === "calculate") && refersBack))) {
     const last = ctx.last;
-    const clean = (place: Place) => (place.kind === "pin" && place.code ? place.code : place.label.replace(/ \([A-Z]{3}\)$/, ""));
+    const clean = (place: Place) => (place.kind === "pin" && place.code ? place.code : townOf(place));
     slots = { ...slots, origin: clean(last.origin), destination: clean(last.destination), tonnes: slots.tonnes ?? Math.max(...last.input.legs.map((leg) => leg.tonnes)) };
     if (intent === "followup") intent = slots.mode && /\bcompare\b/i.test(raw) ? "compare" : "calculate";
   }

@@ -1,5 +1,5 @@
 import { calculateShipment, CalculationError, MODE_LABELS, ROAD_CLASSES, type DistanceMethod, type FactorSetId, type ShipmentInput, type ShipmentResult, type TransportMode } from "@temt/calculator";
-import type { Place } from "./places";
+import { townOf, type Place } from "./places";
 
 export type Direction = "inbound" | "outbound" | "inter-facility";
 /** Who operates or pays for the transport decides the GHG Protocol scope. */
@@ -19,6 +19,8 @@ export function distanceType(method: DistanceMethod | undefined, mode: Transport
   if (method === "user") return "Actual (supplied)";
   if (method === "great-circle" || method === "air-gcd-95" || (!method && mode === "air")) return "GCD";
   if (method === "rail-network") return "SFD (rail network)";
+  if (method === "iww-network") return "SFD (waterway)";
+  if (method === "sea-route") return "SFD (sea lanes)";
   return "SFD (estimated)";
 }
 
@@ -91,6 +93,5 @@ export function describeLeg(record: ShipmentRecord, index: number) {
 }
 
 export function laneKey(record: ShipmentRecord) {
-  const clean = (place: Place) => place.label.replace(/^\d{6} · /, "").replace(/ \([A-Z]{3}\)$/, "");
-  return `${clean(record.origin)} → ${clean(record.destination)}`;
+  return `${townOf(record.origin)} → ${townOf(record.destination)}`;
 }

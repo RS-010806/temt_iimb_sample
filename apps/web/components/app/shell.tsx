@@ -73,7 +73,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   const onDashboard = (usePathname() ?? "").replace(/\/$/, "") === "/app";
   return (
     <header className="no-print sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-stone-200 bg-paper/85 px-4 backdrop-blur-md md:px-8">
-      <button type="button" className="btn btn-ghost btn-icon lg:hidden" onClick={onMenu} aria-label="Open navigation"><Menu size={20} /></button>
+      <button type="button" className="btn btn-ghost btn-icon xl:hidden" onClick={onMenu} aria-label="Open navigation"><Menu size={20} /></button>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-grey-800">{settings.organisation.name || "Your organisation"}</p>
         <p className="hidden text-xs text-grey-500 sm:block">{hydrated ? (storage === "memory" ? "Session only" : "Saved privately in this browser") : "Loading workspace…"}</p>
@@ -102,11 +102,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <div className="min-h-dvh bg-paper">
-        <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-[264px] lg:block">
+        <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-[264px] xl:block">
           <Sidebar />
         </aside>
         {menuOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 z-50 xl:hidden">
             <button type="button" className="absolute inset-0 bg-maroon-950/40 animate-fade" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />
             <div className="absolute inset-y-0 left-0 w-[280px] animate-rise">
               <Sidebar onNavigate={() => setMenuOpen(false)} />
@@ -114,7 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         )}
-        <div className="app-content lg:pl-[264px]">
+        <div className="app-content xl:pl-[264px]">
           <TopBar onMenu={() => setMenuOpen(true)} />
           <main id="main" className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-6 md:px-8 md:pt-8"><div key={pathname} className="page-enter">{children}</div></main>
         </div>

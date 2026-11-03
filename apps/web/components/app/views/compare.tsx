@@ -94,10 +94,12 @@ export function CompareView() {
               const Icon = ICONS[option.id];
               const headline = emissions(option.result.wtwKg);
               return (
-                <article key={option.id} className={cx("card card-pad relative animate-rise", option === best && "ring-2 ring-maroon-600", !option.practical && "opacity-75")} style={{ animationDelay: `${index * 80}ms` }}>
-                  {option === best && <span className="badge absolute right-5 top-5 bg-maroon-600 text-white">Lowest emission</span>}
-                  {!option.practical && <span className="badge badge-stone absolute right-5 top-5">Not practical here</span>}
-                  <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${COLORS[option.id]} 12%, white)`, color: COLORS[option.id] }}><Icon size={20} aria-hidden="true" /></span><div><h3 className="font-bold">{option.label}</h3><p className="text-[13px] text-grey-600">{option.summary}</p></div></div>
+                <article key={option.id} className={cx("card card-pad animate-rise", option === best && "ring-2 ring-maroon-600", !option.practical && "opacity-75")} style={{ animationDelay: `${index * 80}ms` }}>
+                  <div className="flex flex-wrap-reverse items-start justify-between gap-x-3 gap-y-2">
+                    <div className="flex min-w-0 items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${COLORS[option.id]} 12%, white)`, color: COLORS[option.id] }}><Icon size={20} aria-hidden="true" /></span><div className="min-w-0"><h3 className="font-bold">{option.label}</h3><p className="text-[13px] text-grey-600">{option.summary}</p></div></div>
+                    {option === best && <span className="badge shrink-0 bg-maroon-600 text-white">Lowest emission</span>}
+                    {!option.practical && <span className="badge badge-stone shrink-0">Not practical here</span>}
+                  </div>
                   <p className="mt-5 flex items-baseline gap-2"><span className="num text-[34px] font-bold leading-none">{headline.value}</span><span className="font-semibold text-grey-600">{headline.unit}</span></p>
                   <div className="mt-3 h-2 rounded-full bg-stone-100"><div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${Math.max(2, (option.result.wtwKg / max) * 100)}%`, background: COLORS[option.id] }} /></div>
                   <div className="mt-4"><StageBar ttw={option.result.ttwKg} wtt={option.result.wttKg} hub={option.result.hubKg} compact /></div>

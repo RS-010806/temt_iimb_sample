@@ -7,7 +7,7 @@ import { ArrowUp, Check, CircleAlert, Cpu, Mic, RotateCcw, ShieldCheck, Sparkles
 import { respond, suggestionsFor, type Block, type CopilotAction, type Pending } from "@/lib/copilot/agent";
 import { askLocalModel } from "@/lib/copilot/local-llm";
 import { emissionsText, fmt } from "@/lib/format";
-import { MODE_LABELS, scopeOf, SCOPE_LABELS, type ShipmentRecord } from "@/lib/records";
+import { MODE_LABELS, type ShipmentRecord } from "@/lib/records";
 import { actions, getState, hydrate, selectComputed, useStore } from "@/lib/store";
 import { applyFilters, fiscalYears, totals } from "@/lib/analytics";
 import { StageBar, BarList } from "../app/charts";
@@ -98,7 +98,6 @@ function CalcCard({ block }: { block: Extract<Block, { type: "calc" }> }) {
           <dt className="text-grey-600">Cargo · distance</dt><dd className="num text-right font-semibold">{fmt(result.cargoTonnes, 2)} t · {fmt(result.distanceKm, 0)} km</dd>
           <dt className="text-grey-600">Emission factor</dt><dd className="num text-right font-semibold">{result.tonneKm > 0 ? `${fmt(result.intensityG, 1)} g/t-km` : "–"}</dd>
           <dt className="text-grey-600">Intensity per ton</dt><dd className="num text-right font-semibold">{fmt(result.kgPerTonne, 1)} kg CO₂e</dd>
-          <dt className="text-grey-600">GHG scope</dt><dd className="text-right font-semibold">{SCOPE_LABELS[scopeOf(record, legs[0]?.method)].short}</dd>
           <dt className="text-grey-600">Data quality</dt><dd className="text-right font-semibold capitalize">{result.dataQuality}</dd>
         </dl>
         <CalculationBasis result={result} legMeta={record.legMeta} size="sm" />

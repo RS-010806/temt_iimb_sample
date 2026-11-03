@@ -39,7 +39,7 @@ export const ARTICLES: Article[] = [
   {
     id: "scopes", kind: "concept", title: "Scope 1, 2 and 3 (Category 4 and 9) for freight",
     keywords: ["scope", "scope 1", "scope 2", "scope 3", "category 4", "category 9", "cat 4", "cat 9", "upstream transportation", "downstream transportation", "ghg protocol", "own fleet"],
-    body: "Under the GHG Protocol, freight lands in different scopes depending on **who operates or pays**:\n- **Own fleet** fuel → Scope 1 (electricity for own EVs → Scope 2)\n- **Transport you buy** (inbound, outbound and between your sites) → Scope 3 Category 4\n- **Transport your customer pays for** after sale → Scope 3 Category 9\nSet “Who pays” on each shipment and TEMT classifies every leg automatically. Reports show the split.",
+    body: "Under the GHG Protocol, freight lands in different scopes depending on **who operates or pays**:\n- **Own fleet** fuel → Scope 1 (electricity for own EVs → Scope 2)\n- **Transport you buy** (inbound, outbound and between your sites) → Scope 3 Category 4\n- **Transport your customer pays for** after sale → Scope 3 Category 9\nNew shipments are recorded as transport your company buys (Scope 3 Category 4); the dashboard and reports show the split across all saved shipments, including any own-fleet or customer-paid shipments from earlier data.",
   },
   {
     id: "brsr", kind: "concept", title: "BRSR and freight emissions",

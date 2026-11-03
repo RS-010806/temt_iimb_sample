@@ -6,9 +6,9 @@ import { AlertTriangle, Anchor, ArrowRight, Building2, ChevronDown, Flag, Loader
 import { calculateShipment, nearestPort, suggestTradeLane, HUB_TYPES, IWW_VESSELS, MODE_LABELS, ROAD_CLASSES, TEU_LOADS, TRADE_LANES, VESSELS, type HubInput, type HubTypeId, type LegInput, type RoadClassId, type RoadFuel, type TransportMode } from "@temt/calculator";
 import { buildRecord } from "@/lib/builders";
 import { emissions, emissionsText, fmt, formatDate, todayIso } from "@/lib/format";
-import { estimateDistance, hasCoords, measureDistance, nearestAirport, portPlace, type DistanceEstimate, type Place, type PlaceKind } from "@/lib/places";
+import { MODE_PLACE_KINDS, compactLabel, estimateDistance, hasCoords, measureDistance, nearestAirport, nearestTerminal, placeFitsMode, portPlace, type DistanceEstimate, type Place, type PlaceKind } from "@/lib/places";
 import { loadStations, nearestStation } from "@/lib/rail";
-import { PAID_BY_LABELS, type LegMeta, type PaidBy, type ShipmentRecord } from "@/lib/records";
+import { type LegMeta, type PaidBy, type ShipmentRecord } from "@/lib/records";
 import { actions, getState, useSettings, useStore } from "@/lib/store";
 import { PlaceInput } from "../place-input";
 import { StageBar } from "../charts";
@@ -86,17 +86,20 @@ const COURIER_LEG = { first: "Courier first mile", mid: "Courier line haul", las
 
 /** Handling TEMT suggests from the modes either side of a stop: a container terminal where rail or sea meets, otherwise a transfer hub. */
 const suggestedHandling = (before?: TransportMode, after?: TransportMode): Handling => ([before, after].some((mode) => mode === "rail" || mode === "sea") ? "container-terminal" : "transshipment");
-const kindsFor = (modes: TransportMode[]): PlaceKind[] => modes.includes("air") ? ["airport", "city", "pin"] : modes.includes("sea") ? ["port", "city", "pin"] : modes.includes("rail") ? ["station", "city", "pin"] : ["city", "pin"];
-const placeholderFor = (modes: TransportMode[]) => modes.includes("air") ? "Airport, code or city" : modes.includes("sea") ? "Port or city" : modes.includes("rail") ? "Station, code or city" : "City or PIN code";
+/** A stop must be the place its legs need: an airport next to an air leg, a port next to sea, a station next to rail, a terminal next to a waterway; road-only stops are cities or PIN codes. */
+const kindsFor = (modes: TransportMode[]): PlaceKind[] => { const kinds = [...new Set(modes.filter((mode) => mode !== "road").flatMap((mode) => MODE_PLACE_KINDS[mode]))]; return kinds.length ? kinds : MODE_PLACE_KINDS.road; };
+const PLACE_WORD: Partial<Record<PlaceKind, string>> = { airport: "an airport", port: "a port", station: "a railway station", terminal: "a waterway terminal" };
+const placeholderFor = (modes: TransportMode[]) => { const kinds = kindsFor(modes); return kinds.includes("city") ? "City or PIN code" : kinds.map((kind) => ({ airport: "Airport or code", port: "Port or city", station: "Station or code", terminal: "Waterway terminal" } as Partial<Record<PlaceKind, string>>)[kind]).join(", or "); };
 const stopName = (index: number, count: number) => (index === 0 ? "Origin" : index === count - 1 ? "Destination" : `Stop ${index}`);
 const placeKey = (place?: Place) => (hasCoords(place) ? `${place.kind}:${place.code ?? ""}:${place.lat.toFixed(4)},${place.lon.toFixed(4)}` : "");
-const shortLabel = (place?: Place) => place?.label.replace(/^\d{6} · /, "") ?? "";
+const shortLabel = (place?: Place) => compactLabel(place);
 
 /** Where a transfer stop most likely is: the nearest port, major airport or well-connected station to the anchor, else the anchor city. */
 async function suggestPlace(anchor: Place & { lat: number; lon: number }, modes: TransportMode[]): Promise<Place> {
   const abroad = !!anchor.country && anchor.country !== "IN";
   if (modes.includes("sea")) return portPlace(nearestPort(anchor, abroad ? undefined : "IN").id) ?? anchor;
   if (modes.includes("air")) return nearestAirport(anchor, !abroad);
+  if (modes.includes("iww") && !abroad) return nearestTerminal(anchor);
   if (modes.includes("rail") && !abroad) {
     const station = nearestStation(await loadStations(), anchor);
     return { label: `${station.name} (${station.code})`, kind: "station", code: station.code, lat: station.lat, lon: station.lon, state: station.state, country: "IN" };
@@ -297,9 +300,16 @@ export function ChainView() {
   // Calculate the whole chain.
   let error: string | undefined;
   let calculation: { result: ReturnType<typeof calculateShipment>; inputs: LegInput[]; hubs: HubInput[]; legMeta: LegMeta[] } | undefined;
+  // A leg by air, sea, rail or waterway must start and end at an airport, port, station or terminal.
+  const misfits = legs.map((item, i) => {
+    const bad = [i, i + 1].find((at) => !placeFitsMode(stops[at]?.place, item.mode));
+    return bad === undefined ? undefined : `${stopName(bad, stops.length)} must be ${PLACE_WORD[MODE_PLACE_KINDS[item.mode][0]!]} for this ${MODE_LABELS[item.mode].toLowerCase()} leg.`;
+  });
+  const misfit = misfits.findIndex(Boolean);
   const waiting = legs.findIndex((item, i) => item.source === "route" && estimates[i] === "loading");
   const gap = legs.findIndex((_, i) => !kms[i]);
   if (!tonnes) error = "Enter the cargo weight.";
+  else if (misfit >= 0) error = `Leg ${misfit + 1}: ${misfits[misfit]}`;
   else if (waiting >= 0) error = `Finding the rail route for leg ${waiting + 1}…`;
   else if (gap >= 0) error = `Leg ${gap + 1} needs a distance: choose both of its stops, or enter the distance manually.`;
   else {
@@ -384,7 +394,7 @@ export function ChainView() {
       <RouteDiagram stops={stops} legs={legs} kms={kms} kgs={legs.map((_, i) => result?.legs[i]?.wtwKg)} handling={handling} canAdd={canAdd} onAdd={addStop} />
       <p className="mt-2 text-[12.5px] text-grey-600">{stops.length} stops: origin, {between === 0 ? "no stops" : between === 1 ? "1 stop" : `${between} stops`} in between and destination · {legs.length} {legs.length === 1 ? "leg" : "legs"} (up to {MAX_LEGS}). Use <Plus size={12} className="inline align-[-1px]" aria-label="the plus button" /> on any leg to add a stop there.</p>
 
-      <div className="mt-5 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="grid gap-3">
           <section className="card card-pad grid items-start gap-4 md:grid-cols-2" aria-label="Cargo">
             <Field label="Cargo weight" htmlFor="chain-weight" hint="The same cargo travels on every leg.">
@@ -413,7 +423,7 @@ export function ChainView() {
                     </h2>
                     {!edge && <button type="button" className="btn btn-ghost btn-sm text-grey-600" onClick={() => removeStop(index)} aria-label={`Remove stop ${index}`}><Trash2 size={15} aria-hidden="true" /> Remove</button>}
                   </div>
-                  <div className={cx("grid items-start gap-3", !edge && "md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]")}>
+                  <div className={cx("grid items-start gap-3", !edge && "md:grid-cols-[minmax(0,1fr)_minmax(0,17.5rem)]")}>
                     <Field label="Place" htmlFor={`stop-${stop.id}`} hint={stop.auto ? `Suggested: the nearest ${modes.includes("sea") ? "port" : modes.includes("air") ? "major airport" : modes.includes("rail") ? "well-connected station" : "hub"} to the ${index <= (stops.length - 1) / 2 ? "origin" : "destination"}. Change it if the cargo uses another.` : undefined}>
                       <PlaceInput id={`stop-${stop.id}`} ariaLabel={stopName(index, stops.length)} value={stop.place} onChange={(place) => setStop(index, { place, auto: false, suggest: false })} kinds={kindsFor(modes)} placeholder={placeholderFor(modes)} />
                     </Field>
@@ -425,7 +435,7 @@ export function ChainView() {
                   </div>
                 </section>
                 {item && (
-                  <LegEditor index={index} leg={item} from={stops[index]?.place} to={stops[index + 1]?.place} fromName={stopName(index, stops.length)} toName={stopName(index + 1, stops.length)} estimate={estimates[index]} kg={result?.legs[index]?.wtwKg}
+                  <LegEditor index={index} leg={item} from={stops[index]?.place} to={stops[index + 1]?.place} fromName={stopName(index, stops.length)} toName={stopName(index + 1, stops.length)} misfit={misfits[index]} estimate={estimates[index]} kg={result?.legs[index]?.wtwKg}
                     onChange={(patch) => setLeg(index, patch)} onAdd={() => addStop(index)} canAdd={canAdd} />
                 )}
               </Fragment>
@@ -434,8 +444,8 @@ export function ChainView() {
         </div>
 
         {/* On wide screens the total and Save stay in view while the breakdown scrolls between them. */}
-        <aside className="min-w-0 xl:sticky xl:top-24 xl:flex xl:max-h-[calc(100vh-7.5rem)] xl:flex-col xl:self-start" data-tour="chain-result">
-          <div className="overflow-hidden rounded-[var(--radius-card)] border border-stone-200 bg-white shadow-[var(--shadow-card)] xl:flex xl:min-h-0 xl:flex-col">
+        <aside className="min-w-0 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100vh-7.5rem)] lg:flex-col lg:self-start" data-tour="chain-result">
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-stone-200 bg-white shadow-[var(--shadow-card)] lg:flex lg:min-h-0 lg:flex-col">
             <div className="shrink-0 bg-gradient-to-br from-maroon-800 to-maroon-950 px-6 py-5 text-white">
               <p className="text-[13px] font-semibold text-maroon-100">Chain total, well-to-wheel</p>
               {headline ? <p className="mt-2 flex items-baseline gap-2"><span className="num text-[40px] font-bold leading-none">{headline.value}</span><span className="text-lg text-maroon-100">{headline.unit}</span></p>
@@ -443,7 +453,7 @@ export function ChainView() {
               {result && <p className="mt-2 text-[13px] text-maroon-100">{fmt(tonnes!, 2)} ton over {fmt(result.distanceKm, 0)} km · {legs.length} {legs.length === 1 ? "leg" : "legs"}, {calculation!.hubs.length} {calculation!.hubs.length === 1 ? "hub" : "hubs"}</p>}
             </div>
             {result && (
-              <div className="grid gap-4 p-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-contain">
+              <div className="grid gap-4 p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
                 <StageBar ttw={result.ttwKg} wtt={result.wttKg} hub={result.hubKg} />
                 <dl className="grid grid-cols-2 gap-2 text-[12.5px]">
                   <div className="rounded-lg bg-stone-50 p-2.5"><dt className="text-grey-600">Emission factor, chain average</dt><dd className="num mt-0.5 font-bold">{fmt(result.intensityG, 1)} g CO₂e/t-km</dd></div>
@@ -463,8 +473,8 @@ export function ChainView() {
             )}
             <div className="grid shrink-0 gap-3 border-t border-stone-200 p-4">
               <div className="grid grid-cols-2 items-start gap-2">
-                <Field label="LR / RR / AWB / B/L no." htmlFor="chain-reference" required error={missing.ref ? "Enter the reference to save." : undefined}>
-                  <input id="chain-reference" className="input" required aria-invalid={missing.ref} placeholder="e.g. LR-20481" value={details.ref} onChange={(event) => { setDetails({ ...details, ref: event.target.value }); setMissing((current) => ({ ...current, ref: false })); }} />
+                <Field label="LR / RR / AWB no." htmlFor="chain-reference" required error={missing.ref ? "Enter the reference to save." : undefined}>
+                  <input id="chain-reference" className="input" required aria-invalid={missing.ref} placeholder="Or B/L number" value={details.ref} onChange={(event) => { setDetails({ ...details, ref: event.target.value }); setMissing((current) => ({ ...current, ref: false })); }} />
                 </Field>
                 <Field label="Dispatch date" htmlFor="chain-date" required error={missing.date ? "Enter the date to save." : undefined}>
                   <input id="chain-date" className="input" type="date" required aria-invalid={missing.date} value={details.date} onChange={(event) => { setDetails({ ...details, date: event.target.value }); setMissing((current) => ({ ...current, date: false })); }} />
@@ -477,7 +487,6 @@ export function ChainView() {
                 <div className="grid gap-2 animate-fade">
                   <Field label="Business unit"><input className="input" value={details.businessUnit} onChange={(event) => setDetails({ ...details, businessUnit: event.target.value })} /></Field>
                   <Field label="Commodity"><input className="input" value={details.commodity} onChange={(event) => setDetails({ ...details, commodity: event.target.value })} /></Field>
-                  <Field label="Who operates or pays" info="Decides the GHG Protocol scope: own fleet is Scope 1, purchased transport is Scope 3 Category 4, customer-paid delivery is Category 9."><Select value={details.paidBy} onChange={(paidBy) => setDetails({ ...details, paidBy })} options={(Object.keys(PAID_BY_LABELS) as PaidBy[]).map((key) => ({ value: key, label: PAID_BY_LABELS[key] }))} /></Field>
                 </div>
               )}
               <button type="button" className="btn btn-primary" onClick={save} disabled={!result}><Save size={16} aria-hidden="true" /> {editing ? "Update chain" : "Save chain as a shipment"}</button>
@@ -503,7 +512,7 @@ export function ChainView() {
 }
 
 /** One leg: its mode, its distance (calculated from the stops or entered), and only the options that mode needs. */
-function LegEditor({ index, leg, from, to, fromName, toName, estimate, kg, onChange, onAdd, canAdd }: { index: number; leg: ChainLeg; from?: Place; to?: Place; fromName: string; toName: string; estimate: Estimate; kg?: number; onChange: (patch: Partial<ChainLeg>) => void; onAdd: () => void; canAdd: boolean }) {
+function LegEditor({ index, leg, from, to, fromName, toName, misfit, estimate, kg, onChange, onAdd, canAdd }: { index: number; leg: ChainLeg; from?: Place; to?: Place; fromName: string; toName: string; misfit?: string; estimate: Estimate; kg?: number; onChange: (patch: Partial<ChainLeg>) => void; onAdd: () => void; canAdd: boolean }) {
   const Icon = MODE_ICON[leg.mode];
   const lane = leg.tradeLane ?? suggestTradeLane(from?.country, to?.country);
   return (
@@ -521,6 +530,7 @@ function LegEditor({ index, leg, from, to, fromName, toName, estimate, kg, onCha
 
         <Segmented ariaLabel={`Leg ${index + 1} mode`} value={leg.mode} onChange={(mode) => onChange({ mode, courierLeg: undefined })}
           options={(Object.keys(MODE_ICON) as TransportMode[]).map((mode) => { const ModeIcon = MODE_ICON[mode]; return { value: mode, label: MODE_SHORT[mode], icon: <ModeIcon size={13} aria-hidden="true" /> }; })} />
+        {misfit && <p className="callout callout-warn !py-2 text-[13px]" role="alert"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />{misfit}</p>}
 
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -540,7 +550,7 @@ function LegEditor({ index, leg, from, to, fromName, toName, estimate, kg, onCha
         </div>
 
         {leg.mode === "road" && (
-          <div className="grid items-start gap-3 md:grid-cols-2">
+          <div className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
             <Field label="Truck type"><Select ariaLabel={`Leg ${index + 1} truck type`} value={leg.vehicleClass} onChange={(vehicleClass) => onChange({ vehicleClass })} options={ROAD_CLASSES.map((road) => ({ value: road.id, label: `${road.label} (${road.gvw})` }))} /></Field>
             <Field label="Fuel"><Segmented ariaLabel={`Leg ${index + 1} fuel`} value={leg.fuel} onChange={(fuel) => onChange({ fuel })} options={[{ value: "diesel", label: "Diesel" }, { value: "cng", label: "CNG" }, { value: "petrol", label: "Petrol" }]} /></Field>
           </div>
