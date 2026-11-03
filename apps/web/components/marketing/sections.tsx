@@ -270,7 +270,7 @@ export function ReportsSection() {
             <a href="/downloads/temt-sample-report.xlsx" download className="hover:underline">Excel</a>
             <a href="/downloads/temt-sample-report.docx" download className="hover:underline">Word</a>
             <a href="/downloads/temt-sample-power-bi.zip" download className="hover:underline">Power BI pack</a>
-            <a href="/downloads/TEMT-import-template.xlsx" download className="hover:underline">Import template</a>
+            <a href="/app/import/" className="hover:underline">Import templates</a>
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

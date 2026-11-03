@@ -35,6 +35,15 @@ export async function writeFixtures() {
     "BAD-2026-1007,1,2026-05-20,Foods,Packaged foods,Nowhere Town,Delhi,road,-5,,,,,,,,,,,,,,outbound,company,",
   ].join("\n");
   writeFileSync(join(FIXTURES, "temt-template.csv"), csv);
+  // The road template as a transport team would fill it in, with one row TEMT cannot place.
+  writeFileSync(join(FIXTURES, "road-shipments.csv"), [
+    "lr_number,dispatch_date,origin,destination,cargo_weight,weight_unit,truck_type,fuel,refrigerated,distance_km,fuel_used,fuel_unit,business_unit,commodity,notes",
+    "LR-30411,2026-06-02,Bhiwandi,Ahmedabad,18,ton,32 ft,diesel,no,,,,Foods,Packaged foods,",
+    "LR-30412,2026-06-03,Bangalore,Chennai,9500,kg,19 ft,cng,no,,,,Home Care,Detergents,",
+    "LR-30413,2026-06-04,Pune,Nashik,12,ton,GVW 12 to 20 MT,diesel,no,212,58,litres,Foods,,Own truck",
+    "LR-30414,2026-06-05,Indore,Kolkata,24,ton,trailer,diesel,yes,,,,Foods,Frozen foods,",
+    "LR-30415,2026-06-06,Nowhere Town,Delhi,10,ton,24 ft,diesel,no,,,,Foods,,",
+  ].join("\n"));
   // Common and former city names as people type them, a station name for rail, and a reference that is already saved.
   writeFileSync(join(FIXTURES, "city-names.csv"), [
     "reference,date,origin,destination,mode,tonnes",

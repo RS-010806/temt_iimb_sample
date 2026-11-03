@@ -373,13 +373,15 @@ async function main() {
     await click(page, page.getByRole("button", { name: "Save chain as a shipment" }), 600);
   });
 
-  await chapter("import", async () => {
+  await chapter("import", async (at) => {
     await click(page, nav("nav-import"), 500);
-    pendingFile = join(FIXTURES, "temt-template.csv");
+    for (const mode of ["Road (truckload)", "Rail", "Air", "Sea", "Inland waterway"]) await hover(page, page.getByRole("button", { name: `Download the ${mode} template as Excel` }), 350);
+    await at(1, -0.6);
+    pendingFile = join(FIXTURES, "road-shipments.csv");
     await click(page, page.getByRole("button", { name: "Choose file" }), 200);
-    await page.getByText(/read from temt-template\.csv/).waitFor({ timeout: 30000 });
+    await page.getByText(/read from road-shipments\.csv/).waitFor({ timeout: 30000 });
     await sleep(300);
-    const problem = page.locator("tr", { hasText: "BAD" }).first();
+    const problem = page.locator("tr", { hasText: "Nowhere Town" }).first();
     if (await problem.count()) await hover(page, problem, 1200); else await sleep(1000);
     await click(page, page.getByRole("button", { name: /^Import \d+ shipments/ }), 700);
   });

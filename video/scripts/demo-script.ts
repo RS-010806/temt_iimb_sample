@@ -37,7 +37,7 @@ export const CHAPTERS: ChapterScript[] = [
   ] },
   { id: "modes", lines: [
     "For rail, search stations by name or code. TEMT measures the shortest route on the Indian Railways network, station to station: on average within about three percent of published route distances.",
-    "Air uses great-circle distances between airports, and sea legs are routed port to port through a sea-lane network, by trade lane or vessel type.",
+    "Air searches only airports and sea only ports: flights use great-circle distances, and sea legs follow shipping lanes, by trade lane or vessel type.",
   ] },
   { id: "compare", title: "Compare modes", lines: [
     "Compare modes ranks road, rail, air and coastal options for the same cargo, flags impractical ones, and saves your choice to the ledger.",
@@ -47,7 +47,8 @@ export const CHAPTERS: ChapterScript[] = [
     "Press plus on any leg to add another stop, up to twelve legs, each with its own mode, and terminal handling counted at every stop.",
   ] },
   { id: "import", title: "Bulk import", lines: [
-    "Bulk import reads the TEMT template, six formats from earlier TEMT versions and GST e-way bills. It checks every row before saving, and updates any shipment whose LR number is already saved.",
+    "Bulk import has a template for each way you ship, from road and courier to rail, air, sea and inland waterways, with only the columns that mode needs.",
+    "Every row is checked before saving, and a shipment whose LR number is already saved is updated, not duplicated.",
   ] },
   { id: "ledger", title: "Shipment ledger", lines: [
     "Every shipment lands in the ledger. Search, filter, and open any one to see its legs and calculation basis.",

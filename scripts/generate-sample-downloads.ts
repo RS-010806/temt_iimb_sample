@@ -12,7 +12,7 @@ import { buildPdf } from "../apps/web/lib/exports/pdf";
 import { buildWorkbook } from "../apps/web/lib/exports/xlsx";
 import { buildDocx } from "../apps/web/lib/exports/docx";
 import { buildPowerBiPack } from "../apps/web/lib/exports/powerbi";
-import { templateCsv, templateXlsx } from "../apps/web/lib/import";
+import { IMPORT_TEMPLATES, templateCsv, templateXlsx } from "../apps/web/lib/import";
 
 async function main() {
   const out = join(import.meta.dirname, "../apps/web/public/downloads");
@@ -24,8 +24,10 @@ async function main() {
   writeFileSync(join(out, "temt-sample-report.xlsx"), Buffer.from(await (await buildWorkbook(model)).xlsx.writeBuffer()));
   writeFileSync(join(out, "temt-sample-report.docx"), Buffer.from(await (await buildDocx(model)).arrayBuffer()));
   writeFileSync(join(out, "temt-sample-power-bi.zip"), Buffer.from(await (await buildPowerBiPack(model)).arrayBuffer()));
-  writeFileSync(join(out, "TEMT-import-template.xlsx"), Buffer.from(await templateXlsx()));
-  writeFileSync(join(out, "TEMT-import-template.csv"), await templateCsv());
+  // One template per mode, plus the multi-stop template under its earlier name so existing links keep working.
+  for (const template of IMPORT_TEMPLATES) writeFileSync(join(out, `${template.file}.xlsx`), Buffer.from(await templateXlsx(template.id)));
+  writeFileSync(join(out, "TEMT-import-template.xlsx"), Buffer.from(await templateXlsx("temt")));
+  writeFileSync(join(out, "TEMT-import-template.csv"), await templateCsv("temt"));
   console.log(`Sample downloads written for ${model.totals.shipments} shipments (${(model.totals.wtwKg / 1000).toFixed(1)} t CO2e).`);
 }
 
