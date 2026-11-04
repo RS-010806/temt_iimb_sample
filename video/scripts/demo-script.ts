@@ -36,7 +36,7 @@ export const CHAPTERS: ChapterScript[] = [
     "Fuel-based asks only for the fuel used: here, litres of diesel from a fuel card.",
   ] },
   { id: "modes", lines: [
-    "For rail, search stations by name or code. TEMT measures the shortest route on the Indian Railways network, station to station: on average within about three percent of published route distances.",
+    "For rail, search stations and freight terminals by name or code. The distance comes from FOIS, Indian Railways' own freight system: the route it charges freight over, station to station.",
     "Air searches only airports and sea only ports: flights use great-circle distances, and sea legs follow shipping lanes, by trade lane or vessel type.",
   ] },
   { id: "compare", title: "Compare modes", lines: [

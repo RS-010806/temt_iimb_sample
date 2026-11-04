@@ -422,7 +422,7 @@ export function CalculateView() {
                 {form.distanceSource === "route" ? (
                   <div className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4" aria-live="polite">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-maroon-700 ring-1 ring-stone-200">{route.loading ? <LoaderCircle size={17} className="animate-spin" aria-hidden="true" /> : <Calculator size={17} aria-hidden="true" />}</span>
-                    {route.loading ? <p className="text-[14px] text-grey-600">Finding the rail route…</p>
+                    {route.loading ? <p className="text-[14px] text-grey-600">Getting the Indian Railways distance from FOIS…</p>
                       : route.estimate ? (
                         <div className="min-w-0">
                           <p className="num text-[22px] font-bold leading-tight">{fmt(calculatedKm!, 0)} km</p>

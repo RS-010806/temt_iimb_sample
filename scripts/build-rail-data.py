@@ -9,6 +9,8 @@ Sources
   as published on the RailSAHAY freight calculator (resources/js/asttn.js). Codes and names follow FOIS.
 - datameet railways (CC0, https://github.com/datameet/railways): station coordinates, and the timetable of 2016
   whose consecutive stops form the track graph.
+- FOIS coordinates (scripts/data/fois-stations.json, from scripts/fetch-fois-stations.mjs) for points the 2016
+  dataset does not have, mostly stations opened since.
 
 Network: edges join consecutive stops of every scheduled train, with a curvature allowance that grows with the
 hop length (short hops follow the track; long express hops cut corners). Stations no passenger train stops at are
@@ -39,6 +41,8 @@ SHORT_HOP, LONG_HOP = 15, 40
 FACTORS = (1.05, 1.10, 1.20)
 MAX_HOP_KM = 400  # longer hops between consecutive stops are data errors
 CONNECT_KM = 30  # an unserved station joins the network through served stations within this distance
+FOIS_CONNECT_KM = 80  # a station located by FOIS itself (often on a line opened after 2016) may be further out
+FOIS_POINTS = os.path.join(ROOT, "scripts", "data", "fois-stations.json")  # from scripts/fetch-fois-stations.mjs
 
 # datameet (2016) codes that FOIS has since replaced, checked against the FOIS master: old code -> FOIS code.
 CODE_CHANGES = {"BCT": "MMCT", "ALD": "PRYJ", "MGS": "DDU", "CSTM": "CSMT"}
@@ -195,6 +199,16 @@ def main():
             if 6 <= lat <= 37.5 and 68 <= lon <= 98:
                 coords.setdefault(code, (lat, lon))
 
+    # Coordinates FOIS itself gives, for points the 2016 dataset does not have (scripts/fetch-fois-stations.mjs).
+    fois_located = set()
+    if os.path.exists(FOIS_POINTS):
+        with open(FOIS_POINTS, encoding="utf8") as handle:
+            for code, point in json.load(handle)["points"].items():
+                if code in fois and code not in coords:
+                    coords[code] = (point[1], point[2])
+                    fois_located.add(code)
+    print(f"Located from FOIS coordinates: {len(fois_located)}")
+
     trains = collections.defaultdict(list)
     for row in json.loads(load("schedules.json", DATAMEET + "schedules.json")):
         trains[row["train_number"]].append(row)
@@ -221,8 +235,9 @@ def main():
     for code, (name, _) in fois.items():
         if code in served or code not in coords or kind_of(name) == "exclude":
             continue
-        near = sorted(((great_circle(coords[code], coords[other]), other) for other in served_codes if abs(coords[other][0] - coords[code][0]) < 0.4), key=lambda item: item[0])[:2]
-        near = [item for item in near if item[0] <= CONNECT_KM]
+        reach = FOIS_CONNECT_KM if code in fois_located else CONNECT_KM
+        near = sorted(((great_circle(coords[code], coords[other]), other) for other in served_codes if abs(coords[other][0] - coords[code][0]) < reach / 75), key=lambda item: item[0])[:2]
+        near = [item for item in near if item[0] <= reach]
         for km, other in near:
             edges[tuple(sorted((code, other)))] = km * FACTORS[1]
         connected += bool(near)

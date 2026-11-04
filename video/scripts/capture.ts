@@ -336,7 +336,7 @@ async function main() {
     await click(page, page.getByRole("radio", { name: "Rail", exact: true }), 300);
     await choose(page, page.locator("#origin"), "NDLS");
     await choose(page, page.locator("#destination"), "Howrah");
-    await hover(page, page.getByText("Shortest route on the Indian Railways network, station to station").first(), 700);
+    await hover(page, page.getByText("Indian Railways' freight route distance from FOIS, station to station").first(), 700);
     await at(1, -0.5);
     await click(page, page.getByRole("radio", { name: "Air", exact: true }), 200);
     await choose(page, page.locator("#origin"), "DEL");
@@ -363,7 +363,7 @@ async function main() {
     await click(page, page.getByRole("radio", { name: /Rail intermodal/ }), 300);
     await choose(page, page.getByLabel("Origin", { exact: true }), "Hosur");
     await choose(page, page.getByLabel("Destination", { exact: true }), "Guwahati");
-    await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
+    await page.getByText("Indian Railways' freight route distance from FOIS, station to station").first().waitFor({ timeout: 15000 });
     await smoothScrollTo(page, 0, 600);
     await at(1, -0.4);
     await click(page, page.getByRole("button", { name: /^Add a stop between/ }).nth(1), 400);

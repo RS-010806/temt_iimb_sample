@@ -1,6 +1,6 @@
 import { calculateShipment, seaRoute, type FactorSetId, type HubInput, type LegInput, type RoadClassId, type ShipmentInput, type ShipmentResult } from "@temt/calculator";
 import { estimateDistance, hasCoords, nearestAirport, nearestIndianPort, type Place } from "./places";
-import { railRoute } from "./rail";
+import { foisDistance, railRoute } from "./rail";
 import { getState } from "./store";
 import { todayIso, uid } from "./format";
 import type { Direction, LegMeta, PaidBy, RecordKind, RecordSource, ShipmentRecord } from "./records";
@@ -67,14 +67,18 @@ export async function buildAlternatives(from: Place, to: Place, tonnes: number, 
 
   // Rail: road to the best-connected station near each end, then the shortest route on the Indian Railways network.
   const network = opts.drayageKm === undefined ? await railRoute(from, to).catch(() => undefined) : undefined;
+  // Indian Railways' own freight distance between the two stations, when FOIS gives one.
+  const answer = network ? await foisDistance(network.from.code, network.to.code) : undefined;
+  const official = typeof answer === "object" ? answer : undefined;
+  if (network && official) network.km = official.km;
   if (network && network.km >= 150) {
     const station = (item: typeof network.from): Place => ({ label: `${item.name} (${item.code})`, kind: "station", code: item.code, lat: item.lat, lon: item.lon, state: item.state, country: "IN" });
     const [stationA, stationB] = [station(network.from), station(network.to)];
     const first = Math.max(5, estimateDistance("road", from, stationA)!.km), last = Math.max(5, estimateDistance("road", stationB, to)!.km);
     const input: ShipmentInput = { legs: [collection(first), { mode: "rail", tonnes, distanceKm: round(network.km) }, collection(last)], hubs: [{ type: "container-terminal", containers, label: `${network.from.name} rail terminal` }, { type: "container-terminal", containers, label: `${network.to.name} rail terminal` }] };
     out.push({ id: "rail", label: "Rail with road drayage", summary: `${network.from.code} → ${network.to.code}, ${round(network.km).toLocaleString("en-IN")} km by rail`, input,
-      legMeta: [{ from, to: stationA, distanceMethod: "road-estimate" }, { from: stationA, to: stationB, distanceMethod: "rail-network" }, { from: stationB, to, distanceMethod: "road-estimate" }], result: calculateShipment(input, factorSet), practical: true,
-      notes: [`Trucks to ${stationA.label} (${round(first)} km) and from ${stationB.label} (${round(last)} km), with ${containers} container${containers > 1 ? "s" : ""} handled at each terminal. The rail distance is the shortest route on the Indian Railways network.`] });
+      legMeta: [{ from, to: stationA, distanceMethod: "road-estimate" }, { from: stationA, to: stationB, distanceMethod: official ? "rail-fois" : "rail-network" }, { from: stationB, to, distanceMethod: "road-estimate" }], result: calculateShipment(input, factorSet), practical: true,
+      notes: [`Trucks to ${stationA.label} (${round(first)} km) and from ${stationB.label} (${round(last)} km), with ${containers} container${containers > 1 ? "s" : ""} handled at each terminal. ${official ? "The rail distance is Indian Railways' freight distance from FOIS." : "The rail distance is the shortest route on the Indian Railways network."}`] });
   } else if (!network) {
     const rail = estimateDistance("rail", from, to)!;
     if (rail.km >= 150) {

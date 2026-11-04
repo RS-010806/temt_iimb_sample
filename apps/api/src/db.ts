@@ -88,9 +88,19 @@ const MIGRATIONS = [
     at TEXT NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS temt_login_failures_idx ON temt_login_failures (key, at)`,
+  // Official Indian Railways distances already read from FOIS, so each station pair is asked once (see fois.ts).
+  `CREATE TABLE IF NOT EXISTS temt_rail_distances (
+    from_code TEXT NOT NULL,
+    to_code TEXT NOT NULL,
+    km INTEGER NOT NULL,
+    route TEXT NOT NULL,
+    via TEXT NOT NULL DEFAULT '',
+    fetched_at TEXT NOT NULL,
+    PRIMARY KEY (from_code, to_code)
+  )`,
 ];
 
-const TABLES = ["temt_users", "temt_sessions", "temt_workspaces", "temt_reports", "temt_activity", "temt_login_failures"];
+const TABLES = ["temt_users", "temt_sessions", "temt_workspaces", "temt_reports", "temt_activity", "temt_login_failures", "temt_rail_distances"];
 const SCHEMA = "temt";
 
 /**
