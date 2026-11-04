@@ -30,7 +30,7 @@ export interface RailDistance {
   fetchedAt: string;
 }
 
-export type FoisAnswer = { ok: true; distance: RailDistance } | { ok: false; reason: "no_route" | "unavailable" | "busy" };
+export type FoisAnswer = { ok: true; distance: RailDistance } | { ok: false; reason: "no_route" | "unavailable" | "busy"; cause?: string };
 
 export interface FoisOptions {
   /** Defaults to the global fetch. Tests pass a stub. */
@@ -70,7 +70,7 @@ export function createFois(getDb: () => Promise<Db>, options: FoisOptions = {}) 
   const memory = new Map<string, RailDistance | "no_route">();
   const pending = new Map<string, Promise<FoisAnswer>>();
   let chain: Promise<unknown> = Promise.resolve();
-  let queued = 0, lastStart = 0, failures = 0, pausedUntil = 0;
+  let queued = 0, lastStart = 0, failures = 0, pausedUntil = 0, lastCause = "";
 
   const remember = (key: string, value: RailDistance | "no_route") => {
     if (memory.size >= 20_000) memory.delete(memory.keys().next().value!);
@@ -99,7 +99,7 @@ export function createFois(getDb: () => Promise<Db>, options: FoisOptions = {}) 
     queued += 1;
     const run = chain.then(async (): Promise<FoisAnswer> => {
       for (const [commodity, wagon] of CARGO) {
-        if (Date.now() < pausedUntil) return { ok: false, reason: "unavailable" };
+        if (Date.now() < pausedUntil) return { ok: false, reason: "unavailable", cause: `paused after repeated failures (last: ${lastCause})` };
         const wait = lastStart + minGapMs - Date.now();
         if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
         lastStart = Date.now();
@@ -111,19 +111,22 @@ export function createFois(getDb: () => Promise<Db>, options: FoisOptions = {}) 
             body: new URLSearchParams({ txtCmdtName: commodity, txtSttnFrom: from, txtSttnTo: to, txtWgonType: wagon, selRKPM: "R", txtWgonNumb: "" }),
             signal: AbortSignal.timeout(timeoutMs),
           });
-          if (!response.ok) throw new Error(`FOIS answered ${response.status}`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
           html = await response.text();
-        } catch {
+        } catch (error) {
           failures += 1;
+          // Why FOIS did not answer (timeout, refused connection, TLS, HTTP status): no shipment data is involved.
+          const inner = error instanceof Error ? (error.cause as { code?: string } | undefined)?.code ?? error.name : "";
+          lastCause = error instanceof Error ? `${error.message}${inner && inner !== "Error" ? ` (${inner})` : ""}`.slice(0, 160) : "unknown";
           // After three failures in a row FOIS is probably down: stop asking for five minutes.
           if (failures >= 3) { pausedUntil = Date.now() + 5 * 60_000; failures = 0; }
-          return { ok: false, reason: "unavailable" };
+          return { ok: false, reason: "unavailable", cause: lastCause };
         }
         failures = 0;
         const parsed = parseFoisPage(html);
         if (parsed) return { ok: true, distance: { from, to, ...parsed, fetchedAt: new Date().toISOString() } };
         // A page without the freight form at all is FOIS's own error page, not an answer about this route.
-        if (!/frmFrgtC/.test(html)) return { ok: false, reason: "unavailable" };
+        if (!/frmFrgtC/.test(html)) { lastCause = `FOIS error page: ${(html.match(/<title>([^<]{0,80})/i)?.[1] ?? "no title").trim()}`; return { ok: false, reason: "unavailable", cause: lastCause }; }
       }
       return { ok: false, reason: "no_route" };
     });

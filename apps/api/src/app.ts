@@ -167,7 +167,7 @@ export function createApp(options: AppOptions = {}) {
       unavailable: "FOIS did not answer. Use TEMT's network estimate for now.",
       busy: "Many rail distances are being looked up. Use TEMT's network estimate for now.",
     } as const;
-    res.status(answer.reason === "no_route" ? 404 : 503).json({ error: { code: answer.reason === "no_route" ? "no_route" : "fois_unavailable", message: messages[answer.reason] } });
+    res.status(answer.reason === "no_route" ? 404 : 503).json({ error: { code: answer.reason === "no_route" ? "no_route" : "fois_unavailable", message: messages[answer.reason], ...(answer.cause ? { cause: answer.cause } : {}) } });
   });
 
   app.use("/api", createPortal(getDb));
