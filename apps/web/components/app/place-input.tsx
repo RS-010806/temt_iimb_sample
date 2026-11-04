@@ -14,7 +14,7 @@ const COUNTRY = new Intl.DisplayNames(["en-IN"], { type: "region" });
 function describe(place: Place) {
   const where = place.country && place.country !== "IN" ? COUNTRY.of(place.country) : stateName(place.state) ?? (place.country === "IN" ? "India" : undefined);
   const city = place.kind === "terminal" ? place.city : place.city && place.city !== where ? place.city : undefined;
-  return [KIND_LABEL[place.kind], [city, where].filter(Boolean).join(", "), place.approximate ? "district-level location" : undefined].filter(Boolean).join(" · ");
+  return [place.detail ?? KIND_LABEL[place.kind], [city, where].filter(Boolean).join(", "), place.approximate ? "district-level location" : undefined].filter(Boolean).join(" · ");
 }
 
 /** The typed text in bold within a suggestion, as map searches show it. */
@@ -30,6 +30,8 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
   const id = ownId ?? contextId;
   const [query, setQuery] = useState(value?.label ?? "");
   const [results, setResults] = useState<Place[]>([]);
+  // The text the current results were found for, so "use as typed" never shows for stale or pending results.
+  const [resultsFor, setResultsFor] = useState("");
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -62,16 +64,17 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
   useEffect(() => {
     if (!open) return;
     const q = query.trim();
-    if (!q || q === value?.label) { setResults([]); return; }
+    if (!q || q === value?.label) { setResults([]); setResultsFor(q); return; }
     let cancelled = false;
     setLoading(true);
     const timer = setTimeout(() => {
       searchPlaces(q, kindsKey.split(",") as PlaceKind[], 5).then((found) => {
         if (cancelled) return;
         setResults(found);
+        setResultsFor(q);
         setCursor(0);
         if (pendingEnter.current) { pendingEnter.current = false; choose(found[0] ?? { label: q, kind: "custom" }); }
-      }).catch(() => { if (!cancelled) setResults([]); }).finally(() => { if (!cancelled) setLoading(false); });
+      }).catch(() => { if (!cancelled) { setResults([]); setResultsFor(q); } }).finally(() => { if (!cancelled) setLoading(false); });
     }, 120);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [query, open, kindsKey, value?.label]);
@@ -85,8 +88,11 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
   const typed = query.trim();
   // Airports, ports, stations and terminals come from TEMT's lists; free text is offered only when nothing matches.
   const listOnly = kinds.every((kind) => TERMINAL_KINDS.includes(kind));
-  const offerTyped = typed && !loading && typed !== value?.label && (listOnly ? results.length === 0 : !results.some((item) => item.label.toLowerCase() === typed.toLowerCase()));
-  const options: Place[] = [...results, ...(offerTyped ? [{ label: typed, kind: "custom" as const }] : [])];
+  // While a search for new text is pending, earlier results are hidden rather than shown as if they matched.
+  const pending = !!typed && typed !== value?.label && (loading || resultsFor !== typed);
+  const current = pending ? [] : results;
+  const offerTyped = typed && !pending && typed !== value?.label && (listOnly ? current.length === 0 : !current.some((item) => item.label.toLowerCase() === typed.toLowerCase()));
+  const options: Place[] = [...current, ...(offerTyped ? [{ label: typed, kind: "custom" as const }] : [])];
   const listName = kinds.map((kind) => LIST_NAME[kind]).filter(Boolean).join(" or ");
   const choose = (place: Place) => { onChange(place); setQuery(place.label); setOpen(false); };
   const Icon = value ? ICONS[value.kind] : MapPin;
@@ -103,15 +109,15 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); setCursor((c) => Math.min(c + 1, options.length - 1)); }
             if (event.key === "ArrowUp") { event.preventDefault(); setCursor((c) => Math.max(c - 1, 0)); }
-            if (event.key === "Enter" && open && loading && typed) { event.preventDefault(); pendingEnter.current = true; return; }
+            if (event.key === "Enter" && open && pending) { event.preventDefault(); pendingEnter.current = true; return; }
             if (event.key === "Enter" && open && options[cursor]) { event.preventDefault(); choose(options[cursor]!); }
             if (event.key === "Escape") setOpen(false);
           }} />
         {query && <button type="button" aria-label="Clear location" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-grey-400 hover:bg-stone-100 hover:text-grey-700" onClick={() => { setQuery(""); onChange(undefined); setOpen(true); inputRef.current?.focus(); }}><X size={14} /></button>}
       </div>
-      {open && (options.length > 0 || loading) && (
+      {open && (options.length > 0 || pending) && (
         <ul id={listId} role="listbox" className="absolute z-40 mt-1.5 w-full overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-[var(--shadow-float)] animate-fade">
-          {loading && !results.length && <li className="px-3 py-2.5 text-sm text-grey-500">Searching…</li>}
+          {pending && <li className="px-3 py-2.5 text-sm text-grey-500">Searching…</li>}
           {options.map((place, index) => {
             const ItemIcon = ICONS[place.kind];
             return (

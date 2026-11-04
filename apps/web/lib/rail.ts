@@ -1,19 +1,28 @@
 import { greatCircleKm, type LatLon } from "@temt/calculator";
 
 /**
- * Indian Railways stations and network, built by scripts/build-rail-data.py from the datameet railways dataset
- * (CC0). Rail distances are shortest paths over the track segments joining consecutive stops of every scheduled
- * train, which match published route distances to within about 3% on average.
+ * Indian Railways stations, freight terminals and network, built by scripts/build-rail-data.py. Codes, names and
+ * zones follow the FOIS station master (Indian Railways' Freight Operations Information System); coordinates and
+ * the track graph come from the datameet railways dataset (CC0). Sidings, goods sheds and container depots without
+ * coordinates of their own sit at the station that serves them, as FOIS charges their traffic. Rail distances are
+ * shortest paths over the network, on average within about 3% of published and FOIS freight-calculator distances.
  */
-type StationRow = [code: string, name: string, state: string, lat: number, lon: number, trains: number, aliases?: string[]];
+export type StationKind = "station" | "siding" | "container" | "goods" | "port";
+type StationRow = [code: string, name: string, state: string, lat: number, lon: number, trains: number, aliases?: string[], kind?: StationKind | "", zone?: string, servedBy?: string];
 
 export interface Station extends LatLon {
   code: string;
   name: string;
   state: string;
-  /** Number of scheduled trains that stop here: a measure of how well connected the station is. */
+  /** Number of scheduled passenger trains that stop here: a measure of how well connected the station is. */
   trains: number;
   aliases: string[];
+  /** What FOIS lists it as: a station, or a freight siding, container terminal, goods shed or port railhead. */
+  kind: StationKind;
+  /** Indian Railways zone, as FOIS gives it (NR, CR, SE…). */
+  zone?: string;
+  /** For a siding or terminal placed at its serving station: that station's code. */
+  servedBy?: string;
 }
 
 interface Network {
@@ -34,7 +43,7 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export const loadStations = () => (cache.stations ??= getJson<StationRow[]>("/data/geo/stations.json")
-  .then((rows) => rows.map(([code, name, state, lat, lon, trains, aliases]) => ({ code, name, state, lat, lon, trains, aliases: aliases ?? [] })))
+  .then((rows) => rows.map(([code, name, state, lat, lon, trains, aliases, kind, zone, servedBy]) => ({ code, name, state, lat, lon, trains, aliases: aliases ?? [], kind: kind || "station", zone: zone || undefined, servedBy: servedBy || undefined })))
   .catch((error) => { cache.stations = undefined; throw error; }));
 
 export const loadRailNetwork = () => (cache.network ??= Promise.all([loadStations(), getJson<{ edges: number[] }>("/data/geo/rail-graph.json")])
@@ -52,7 +61,10 @@ export const loadRailNetwork = () => (cache.network ??= Promise.all([loadStation
       targets[fill[a]!] = b; km[fill[a]!] = length; fill[a]! += 1;
       targets[fill[b]!] = a; km[fill[b]!] = length; fill[b]! += 1;
     }
-    return { stations, index: new Map(stations.map((station, i) => [station.code, i])), offsets, targets, km };
+    // Earlier codes (CSTM for CSMT, BCT for MMCT…) still find their station, so saved shipments keep their route.
+    const index = new Map(stations.map((station, i) => [station.code, i]));
+    stations.forEach((station, i) => station.aliases.forEach((alias) => { if (/^[A-Z]{2,5}$/.test(alias) && !index.has(alias)) index.set(alias, i); }));
+    return { stations, index, offsets, targets, km };
   })
   .catch((error) => { cache.network = undefined; throw error; }));
 
@@ -102,7 +114,8 @@ function shortestKm(network: Network, from: number, to: number): number | undefi
  * nearest station served by at least five trains.
  */
 export function nearestStation(stations: Station[], place: LatLon): Station & { distanceKm: number } {
-  const ranked = stations.map((station) => ({ station, km: greatCircleKm(place, station) })).sort((a, b) => a.km - b.km);
+  // Passenger-served stations only: a place's railhead is a station, not a private siding.
+  const ranked = stations.filter((station) => station.kind === "station").map((station) => ({ station, km: greatCircleKm(place, station) })).sort((a, b) => a.km - b.km);
   const nearby = ranked.filter((item) => item.km <= 25).sort((a, b) => b.station.trains - a.station.trains)[0];
   const chosen = nearby ?? ranked.find((item) => item.station.trains >= 5) ?? ranked[0]!;
   return { ...chosen.station, distanceKm: chosen.km };

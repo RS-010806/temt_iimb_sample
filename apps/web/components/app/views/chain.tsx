@@ -6,7 +6,7 @@ import { AlertTriangle, Anchor, ArrowRight, Building2, ChevronDown, Flag, Loader
 import { calculateShipment, nearestPort, suggestTradeLane, HUB_TYPES, IWW_VESSELS, MODE_LABELS, ROAD_CLASSES, TEU_LOADS, TRADE_LANES, VESSELS, type HubInput, type HubTypeId, type LegInput, type RoadClassId, type RoadFuel, type TransportMode } from "@temt/calculator";
 import { buildRecord } from "@/lib/builders";
 import { emissions, emissionsText, fmt, formatDate, todayIso } from "@/lib/format";
-import { MODE_PLACE_KINDS, compactLabel, estimateDistance, hasCoords, measureDistance, nearestAirport, nearestTerminal, placeFitsMode, portPlace, type DistanceEstimate, type Place, type PlaceKind } from "@/lib/places";
+import { MODE_PLACE_KINDS, compactLabel, stationPlace, estimateDistance, hasCoords, measureDistance, nearestAirport, nearestTerminal, placeFitsMode, portPlace, type DistanceEstimate, type Place, type PlaceKind } from "@/lib/places";
 import { loadStations, nearestStation } from "@/lib/rail";
 import { type LegMeta, type PaidBy, type ShipmentRecord } from "@/lib/records";
 import { actions, getState, useSettings, useStore } from "@/lib/store";
@@ -102,7 +102,7 @@ async function suggestPlace(anchor: Place & { lat: number; lon: number }, modes:
   if (modes.includes("iww") && !abroad) return nearestTerminal(anchor);
   if (modes.includes("rail") && !abroad) {
     const station = nearestStation(await loadStations(), anchor);
-    return { label: `${station.name} (${station.code})`, kind: "station", code: station.code, lat: station.lat, lon: station.lon, state: station.state, country: "IN" };
+    return stationPlace(station);
   }
   return { ...anchor, label: shortLabel(anchor).replace(/ \([A-Z0-9]{3,5}\)$/, "") };
 }

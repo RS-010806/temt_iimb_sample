@@ -253,6 +253,22 @@ async function workspace(browser: Browser) {
     return results.join("; ");
   });
   await step(page, "Calculator: rail between stations on the Indian Railways network", () => modeCheck("Rail", "NDLS", "Howrah", "rail", /Shortest route on the Indian Railways network/));
+  await step(page, "Calculator: rail finds FOIS freight terminals, measured from their serving station", async () => {
+    await page.getByRole("radio", { name: "Rail", exact: true }).click();
+    await page.locator("#origin").fill("ICD Dadri");
+    const option = page.locator('[role="listbox"] [role="option"]').first();
+    await option.waitFor({ timeout: 8000 });
+    const text = (await option.innerText()).replace(/\s+/g, " ");
+    if (!/Container terminal · served by Dadri \(DER\)/.test(text)) throw new Error(`ICD Dadri suggestion: ${text}`);
+    await page.waitForTimeout(250);
+    await page.locator("#origin").press("Enter");
+    await choosePlace(page, page.locator("#destination"), "CTCS");
+    await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
+    const km = await page.locator('[data-tour="route"] p.num').first().innerText();
+    const value = Number(km.replace(/[^\d]/g, ""));
+    if (Math.abs(value / 1416 - 1) > 0.05) throw new Error(`ICDD to CTCS ${km}, FOIS gives 1,416 km`);
+    return `${text}; ICDD → CTCS ${km} (FOIS 1,416 km)`;
+  });
   await step(page, "Calculator: air via airport codes", () => modeCheck("Air", "DEL", "BLR", "air"));
   await step(page, "Calculator: sea via ports", () => modeCheck("Sea", "Jawaharlal", "Rotterdam", "sea"));
   await step(page, "Calculator: courier / PTL", () => modeCheck("Courier / PTL", "Gurugram", "Lucknow", "courier"));
@@ -382,7 +398,7 @@ async function workspace(browser: Browser) {
   });
   await step(page, "Import: city names as people type them, and a reference already saved", async () => {
     const summary = await readFile("city-names.csv");
-    for (const route of [/Bengaluru → Mumbai/, /Gurugram → Kolkata/, /KSR Bengaluru City Jn \(SBC\) → New Delhi \(NDLS\)/]) await page.getByText(route).first().waitFor();
+    for (const route of [/Bengaluru → Mumbai/, /Gurugram → Kolkata/, /Bengaluru Station\) \(SBC\) → New Delhi \(NDLS\)/]) await page.getByText(route).first().waitFor();
     await page.getByText("1 reference is already saved").waitFor();
     await page.getByText("Updates saved").first().waitFor();
     await shot(page, "import-city-names");

@@ -61,8 +61,8 @@ Fuel-based asks only for the fuel used: here, litres of diesel from a fuel card.
 For rail, search stations by name or code. TEMT measures the shortest route on the Indian Railways network, station to station: on average within about three percent of published route distances.
 
 16
-00:01:57.829 --> 00:02:06.111
-Air uses great-circle distances between airports, and sea legs are routed port to port through a sea-lane network, by trade lane or vessel type.
+00:01:57.829 --> 00:02:07.142
+Air searches only airports and sea only ports: flights use great-circle distances, and sea legs follow shipping lanes, by trade lane or vessel type.
 
 17
 00:02:10.902 --> 00:02:19.893
@@ -77,85 +77,89 @@ Many shipments make several stops. Start from the origin and destination, or an 
 Press plus on any leg to add another stop, up to twelve legs, each with its own mode, and terminal handling counted at every stop.
 
 20
-00:02:41.278 --> 00:02:54.276
-Bulk import reads the TEMT template, six formats from earlier TEMT versions and GST e-way bills. It checks every row before saving, and updates any shipment whose LR number is already saved.
+00:02:41.278 --> 00:02:50.783
+Bulk import has a template for each way you ship, from road and courier to rail, air, sea and inland waterways, with only the columns that mode needs.
 
 21
+00:02:50.853 --> 00:02:57.242
+Every row is checked before saving, and a shipment whose LR number is already saved is updated, not duplicated.
+
+22
 00:02:54.477 --> 00:03:01.330
 Every shipment lands in the ledger. Search, filter, and open any one to see its legs and calculation basis.
 
-22
-00:03:02.694 --> 00:03:08.526
+23
+00:03:02.694 --> 00:03:08.529
 Accounts are optional. Sign in on its own page, and your workspace syncs securely across devices.
 
-23
-00:03:08.596 --> 00:03:13.635
+24
+00:03:08.599 --> 00:03:13.638
 The server recalculates it independently, and your sessions and report history live here.
 
-24
+25
 00:03:17.535 --> 00:03:22.846
 Reports are read in the tool first, down to the SEBI BRSR Principle 6 mapping.
 
-25
+26
 00:03:22.916 --> 00:03:29.912
 Then export them in six formats: PDF, Excel, Word, CSV, JSON and Power BI.
 
-26
+27
 00:03:32.290 --> 00:03:38.077
 A board-ready PDF, with charts, the BRSR table, methodology and factors.
 
-27
+28
 00:03:38.418 --> 00:03:42.357
 An Excel workbook with a sheet for every view, down to each leg.
 
-28
-00:03:43.560 --> 00:03:45.134
+29
+00:03:43.560 --> 00:03:45.135
 An editable Word report.
 
-29
+30
 00:03:46.135 --> 00:03:49.647
 A Power BI pack with a star schema and DAX measures.
 
-30
+31
 00:03:49.848 --> 00:03:52.810
 Plus CSV and JSON for any other system.
 
-31
+32
 00:03:53.010 --> 00:04:01.860
 The reduction planner tests rail shift, air to road, consolidation, electric trucks and load factors, and measures each lever against your target.
 
-32
+33
 00:04:02.061 --> 00:04:13.383
 The factor library lists every value TEMT applies, with its source: TEMT's own India-specific factors first, and the GLEC defaults alongside for comparison.
 
-33
+34
 00:04:13.453 --> 00:04:19.595
 Settings hold your NIFTY 500 company, targets, backups, and an optional local AI model.
 
-34
+35
 00:04:19.796 --> 00:04:21.570
 The Copilot runs in your browser.
 
-35
+36
 00:04:21.640 --> 00:04:24.873
 Twenty tonnes from Mumbai to Delhi by thirty-two foot truck.
 
-36
+37
 00:04:24.943 --> 00:04:26.238
 Compare that with rail.
 
-37
+38
 00:04:26.308 --> 00:04:33.868
 Summarise FY 2025–26. It calculates, compares, analyses and exports, on request.
 
-38
+39
 00:04:34.070 --> 00:04:37.210
 And a fourteen-step guided tour explains every screen.
 
-39
+40
 00:04:39.385 --> 00:04:47.900
 TEMT: India-specific factors, ISO 14083 certification, and reports that stand up to scrutiny.
 
-40
+41
 00:04:47.970 --> 00:04:49.561
 Measure your next shipment today.

@@ -1,6 +1,6 @@
 import { calculateShipment, seaRoute, suggestTradeLane, IWW_VESSELS, TRADE_LANES, VESSELS, type DistanceMethod, type FactorSetId, type FuelId, type HubInput, type LegInput, type RoadClassId, type TransportMode } from "@temt/calculator";
 import { buildRecord, refSequence, vehicleForTonnes } from "./builders";
-import { MODE_PLACE_KINDS, TERMINAL_KINDS, compactLabel, estimateDistance, hasCoords, measureDistance, nearestAirport, nearestIndianPort, nearestTerminal, resolvePlace, type Place, type PlaceKind } from "./places";
+import { MODE_PLACE_KINDS, TERMINAL_KINDS, compactLabel, stationPlace, estimateDistance, hasCoords, measureDistance, nearestAirport, nearestIndianPort, nearestTerminal, resolvePlace, type Place, type PlaceKind } from "./places";
 import { loadStations, nearestStation } from "./rail";
 import type { Direction, LegMeta, PaidBy, RecordSource, ShipmentRecord } from "./records";
 
@@ -260,7 +260,7 @@ async function nearestFor(kind: PlaceKind, city: Place & { lat: number; lon: num
   if (kind === "terminal") return nearestTerminal(city);
   if (kind === "station") {
     const station = nearestStation(await loadStations(), city);
-    return { label: `${station.name} (${station.code})`, kind: "station", code: station.code, lat: station.lat, lon: station.lon, state: station.state, country: "IN" };
+    return stationPlace(station);
   }
   return undefined;
 }

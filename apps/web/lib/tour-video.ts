@@ -1,11 +1,11 @@
 /** Chapters of the product walkthrough video (seconds), generated from video/src/demo-data.json. */
 // The file names carry the recording date so browsers and the CDN never serve an earlier cut.
 export const TOUR_VIDEO = {
-  src: "/video/temt-tour-2026-10-24.mp4",
-  poster: "/video/temt-tour-2026-10-24-poster.jpg",
-  captions: "/video/temt-tour-2026-10-24.vtt",
+  src: "/video/temt-tour-2026-11-03.mp4",
+  poster: "/video/temt-tour-2026-11-03-poster.jpg",
+  captions: "/video/temt-tour-2026-11-03.vtt",
   durationSeconds: 292,
-  published: "2026-10-24",
+  published: "2026-11-03",
   chapters: [
     { at: 0, title: "TEMT from IIM Bangalore" },
     { at: 13, title: "The website" },

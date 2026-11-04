@@ -1,5 +1,5 @@
 import { AIR_DISTANCE_ADJUSTMENT_KM, CIRCUITY, PORTS, greatCircleKm, landPathKm, nearestPort, seaRoute, type DistanceMethod, type LatLon, type TransportMode } from "@temt/calculator";
-import { loadStations, railRoute } from "./rail";
+import { loadStations, railRoute, type Station, type StationKind } from "./rail";
 import { TERMINALS, waterwayKm, waterwayName } from "./waterways";
 
 export type PlaceKind = "city" | "pin" | "station" | "airport" | "port" | "terminal" | "custom";
@@ -52,6 +52,8 @@ export interface Place {
   code?: string;
   /** The city an airport or port serves, or the National Waterway a terminal is on, for display. */
   city?: string;
+  /** For rail: what FOIS lists it as and where it is served from, for display ("Container terminal · served by Dadri (DER)"). */
+  detail?: string;
   state?: string;
   country?: string;
   /** District-level PIN coordinates are less precise than city coordinates. */
@@ -107,6 +109,16 @@ export const portPlace = (id: string): Place | undefined => {
   const [city, state] = PORT_INFO[id] ?? [];
   return port && { label: port.name, kind: "port", code: port.id, city, state, lat: port.lat, lon: port.lon, country: port.country };
 };
+const RAIL_KIND: Record<StationKind, string> = { station: "Railway station", siding: "Freight siding", container: "Container terminal", goods: "Goods shed", port: "Port railhead" };
+const ZONES: Record<string, string> = { CR: "Central", ER: "Eastern", EC: "East Central", ECO: "East Coast", KR: "Konkan", NR: "Northern", NC: "North Central", NE: "North Eastern",
+  NF: "Northeast Frontier", NW: "North Western", SR: "Southern", SC: "South Central", SE: "South Eastern", SEC: "South East Central", SW: "South Western", WR: "Western", WC: "West Central", DFCR: "Dedicated Freight Corridor" };
+/** A station or FOIS freight point as a place, described the way FOIS lists it. */
+export function stationPlace(station: Station, byCode?: Map<string, Station>): Place {
+  const host = station.servedBy ? byCode?.get(station.servedBy) : undefined;
+  const zone = station.zone && ZONES[station.zone] ? `${ZONES[station.zone]}${station.zone === "DFCR" ? "" : " Railway"}` : undefined;
+  const detail = [RAIL_KIND[station.kind], host ? `served by ${host.name} (${host.code})` : undefined, zone].filter(Boolean).join(" · ");
+  return { label: `${station.name} (${station.code})`, kind: "station", code: station.code, detail, lat: station.lat, lon: station.lon, state: station.state, country: "IN" };
+}
 const terminalPlace = (terminal: (typeof TERMINALS)[number]): Place => ({ label: `${terminal.name} terminal`, kind: "terminal", code: terminal.id, city: waterwayName(terminal.waterway), lat: terminal.lat, lon: terminal.lon, state: terminal.state, country: "IN" });
 
 /** A short label for diagrams and lists: airports by city and code, terminals without the word "terminal". */
@@ -161,11 +173,13 @@ export async function rankPlaces(query: string, kinds: PlaceKind[] = ["city", "p
     }
   }
   if (kinds.includes("station")) {
-    for (const station of await loadStations()) {
+    const stations = await loadStations();
+    const byCode = new Map(stations.map((station) => [station.code, station]));
+    for (const station of stations) {
       const code = station.code.toLowerCase();
       const codeRank = code === q || station.aliases.some((alias) => alias.toLowerCase() === q) ? -0.5 : 99;
       const rank = Math.min(codeRank, best([station.name, ...station.aliases], queries));
-      if (rank < 99) results.push({ place: { label: `${station.name} (${station.code})`, kind: "station", code: station.code, lat: station.lat, lon: station.lon, state: station.state, country: "IN" }, rank: rank + 0.1, weight: station.trains });
+      if (rank < 99) results.push({ place: stationPlace(station, byCode), rank: rank + 0.1, weight: station.trains + (station.kind === "station" ? 0 : 0.5) });
     }
   }
   if (kinds.includes("city")) {

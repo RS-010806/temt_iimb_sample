@@ -1,9 +1,9 @@
 {
  "fps": 30,
- "total": 291.91057394409177,
+ "total": 291.9106149440918,
  "intro": 13.045957999999999,
  "capture": 265.5390739440918,
- "outro": 13.325542,
+ "outro": 13.325583,
  "chapters": [
   {
    "id": "landing",
@@ -210,8 +210,8 @@
   },
   {
    "start": 117.82857805252075,
-   "end": 125.86112005252076,
-   "text": "Air uses great-circle distances between airports, and sea legs are routed port to port through a sea-lane network, by trade lane or vessel type."
+   "end": 126.89207805252076,
+   "text": "Air searches only airports and sea only ports: flights use great-circle distances, and sea legs follow shipping lanes, by trade lane or vessel type."
   },
   {
    "start": 130.9019108827667,
@@ -230,8 +230,13 @@
   },
   {
    "start": 161.27791104870604,
-   "end": 174.02616104870606,
-   "text": "Bulk import reads the TEMT template, six formats from earlier TEMT versions and GST e-way bills. It checks every row before saving, and updates any shipment whose LR number is already saved."
+   "end": 170.53336904870605,
+   "text": "Bulk import has a template for each way you ship, from road and courier to rail, air, sea and inland waterways, with only the columns that mode needs."
+  },
+  {
+   "start": 170.85336904870604,
+   "end": 176.99203604870604,
+   "text": "Every row is checked before saving, and a shipment whose LR number is already saved is updated, not duplicated."
   },
   {
    "start": 174.47691093045043,
@@ -240,12 +245,12 @@
   },
   {
    "start": 182.69391093807982,
-   "end": 188.27624393807983,
+   "end": 188.27916093807983,
    "text": "Accounts are optional. Sign in on its own page, and your workspace syncs securely across devices."
   },
   {
-   "start": 188.59624393807982,
-   "end": 193.38528593807982,
+   "start": 188.59916093807982,
+   "end": 193.38820293807981,
    "text": "The server recalculates it independently, and your sessions and report history live here."
   },
   {
@@ -270,7 +275,7 @@
   },
   {
    "start": 223.5599111135559,
-   "end": 224.8839531135559,
+   "end": 224.8848281135559,
    "text": "An editable Word report."
   },
   {
@@ -330,7 +335,7 @@
   },
   {
    "start": 287.9695739440918,
-   "end": 289.3105739440918,
+   "end": 289.3106159440918,
    "text": "Measure your next shipment today."
   }
  ],

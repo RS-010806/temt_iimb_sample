@@ -31,7 +31,8 @@ describe("place search", () => {
     expect(howrah[0]!.kind).toBe("station");
     expect(howrah[0]!.code).toBe("HWH");
     expect((await rankPlaces("NDLS", ["station"]))[0]!.place.label).toBe("New Delhi (NDLS)");
-    expect((await searchPlaces("CSMT", ["station"]))[0]!.code).toBe("CSTM");
+    expect((await searchPlaces("CSMT", ["station"]))[0]!.code).toBe("CSMT");
+    expect((await searchPlaces("CSTM", ["station"]))[0]!.code).toBe("CSMT");
     expect((await resolvePlace("Bangalore City", ["station", "city"]))?.code).toBe("SBC");
   });
 });
@@ -131,5 +132,29 @@ describe("per-mode import templates", () => {
     expect(courier[0]!.record!.input.legs[0]!.distanceKm).toBe(20);
     const rail = await read("rail");
     expect(rail[0]!.record!.origin.kind).toBe("station");
+  });
+});
+
+describe("FOIS station master", () => {
+  it("uses FOIS codes and names, so similar codes are not confused", async () => {
+    expect((await resolvePlace("FZD", ["station"]))?.label).toBe("Firozabad (FZD)");
+    expect((await resolvePlace("KSR", ["station"]))?.label).toBe("Kasturi (KSR)");
+    expect((await resolvePlace("Ayodhya Cantt", ["station"]))?.code).toBe("FD");
+    expect((await resolvePlace("Prayagraj", ["station"]))?.code).toBe("PRYJ");
+  });
+
+  it("includes FOIS freight terminals, placed at their serving station", async () => {
+    const icd = await resolvePlace("ICD Dadri", ["station"]);
+    expect(icd).toMatchObject({ code: "ICDD", detail: expect.stringMatching(/^Container terminal · served by Dadri \(DER\)/) });
+    const concor = (await searchPlaces("CTCS", ["station"]))[0]!;
+    expect(concor.detail).toMatch(/Container terminal · served by Shalimar/);
+  });
+
+  it("matches FOIS freight-calculator distances", async () => {
+    const station = async (code: string) => (await searchPlaces(code, ["station"]))[0]!;
+    for (const [a, b, fois] of [["TKD", "KLMG", 1412], ["ICDD", "CTCS", 1416], ["PRDP", "TLHR", 192]] as const) {
+      const km = (await measureDistance("rail", await station(a), await station(b)))!.km;
+      expect(Math.abs(km / fois - 1), `${a}-${b} ${km} km vs FOIS ${fois} km`).toBeLessThan(0.05);
+    }
   });
 });
