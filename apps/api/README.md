@@ -19,7 +19,7 @@ Errors use `{ error: { code, message } }` and never include stack traces or inpu
 
 ## Security
 
-Passwords are hashed with scrypt; sessions are random 256-bit tokens in `HttpOnly`, `SameSite=Lax` cookies (`__Host-` prefixed in production) and only their SHA-256 is stored. State-changing requests need the `X-TEMT-Client` header and an allowed origin. Every SQL statement uses bound parameters. Sign-in is rate limited and locks after 8 failures per email in 15 minutes. `/api` allows 600 requests per minute per IP.
+Passwords are hashed with scrypt; sessions are random 256-bit tokens in `HttpOnly`, `SameSite=Lax` cookies (`__Host-` prefixed in production) and only their SHA-256 is stored. State-changing requests need the `X-TEMT-Client` header and an allowed origin. Every SQL statement uses bound parameters. Sign-in is rate limited and locks after 8 failures per email in 15 minutes. `/api` allows 600 requests per minute per IP. The API calls no outside service: calculations use the factors in `packages/calculator`, and distances come from the web app.
 
 ## Configuration
 
