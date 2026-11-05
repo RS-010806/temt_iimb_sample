@@ -58,7 +58,7 @@ const newStop = (patch: Partial<Stop> = {}): Stop => ({ id: uid(), handling: "tr
 const transfer = () => newStop({ suggest: true });
 
 const EXAMPLES: { id: string; label: string; description: string; modes: TransportMode[]; build: () => { stops: Stop[]; legs: ChainLeg[] } }[] = [
-  { id: "blank", label: "Origin to destination", description: "Start with one leg and add stops", modes: ["road"],
+  { id: "blank", label: "Origin to destination", description: "Build your own: any mode on each leg, and stops wherever you need them", modes: ["road"],
     build: () => ({ stops: [newStop(), newStop()], legs: [newLeg("road")] }) },
   { id: "rail", label: "Rail intermodal", description: "Truck to the station, rail, truck to the destination", modes: ["road", "rail", "road"],
     build: () => ({ stops: [newStop(), transfer(), transfer(), newStop()], legs: [newLeg("road"), newLeg("rail"), newLeg("road")] }) },
@@ -132,8 +132,8 @@ function useLegEstimates(stops: Stop[], legs: ChainLeg[]): Estimate[] {
   });
 }
 
-/** Route ribbon: every stop and leg, with a button on each leg to add a stop there. */
-function RouteDiagram({ stops, legs, kms, kgs, handling, canAdd, onAdd }: { stops: Stop[]; legs: ChainLeg[]; kms: (number | undefined)[]; kgs: (number | undefined)[]; handling: Handling[]; canAdd: boolean; onAdd: (leg: number) => void }) {
+/** Route ribbon: every stop and leg, with a button on each leg to add a stop there (not on a fixed route). */
+function RouteDiagram({ stops, legs, kms, kgs, handling, canAdd, fixed, onAdd }: { stops: Stop[]; legs: ChainLeg[]; kms: (number | undefined)[]; kgs: (number | undefined)[]; handling: Handling[]; canAdd: boolean; fixed: boolean; onAdd: (leg: number) => void }) {
   const count = stops.length;
   return (
     <div className="overflow-x-auto rounded-2xl bg-gradient-to-br from-maroon-950 via-maroon-900 to-maroon-800 px-5 pb-5 pt-6" data-tour="chain-canvas">
@@ -154,11 +154,11 @@ function RouteDiagram({ stops, legs, kms, kgs, handling, canAdd, onAdd }: { stop
               {leg && (
                 <li className="relative flex min-w-[120px] flex-1 flex-col items-center pt-[23px]">
                   <span className="chain-flow h-0.5 w-full" style={{ ["--flow" as string]: `var(--mode-${leg.mode})` }} aria-hidden="true" />
-                  <button type="button" onClick={() => onAdd(i)} disabled={!canAdd} title={canAdd ? "Add a stop on this leg" : `A chain can have up to ${MAX_LEGS} legs`}
+                  {!fixed && <button type="button" onClick={() => onAdd(i)} disabled={!canAdd} title={canAdd ? "Add a stop on this leg" : `A chain can have up to ${MAX_LEGS} legs`}
                     className="absolute left-1/2 top-[13px] grid h-[22px] w-[22px] -translate-x-1/2 place-items-center rounded-full border border-white/40 bg-maroon-900 text-white transition hover:scale-110 hover:border-white hover:bg-maroon-700 disabled:opacity-30"
                     aria-label={`Add a stop between ${shortLabel(stops[i]?.place) || stopName(i, count)} and ${shortLabel(stops[i + 1]?.place) || stopName(i + 1, count)}`}>
                     <Plus size={13} aria-hidden="true" />
-                  </button>
+                  </button>}
                   <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white"><LegIcon size={12} aria-hidden="true" />{MODE_SHORT[leg.mode]}{kms[i] ? ` · ${fmt(kms[i]!, 0)} km` : ""}</span>
                   {kgs[i] !== undefined && <span className="num mt-1 text-[11px] text-maroon-200">{emissionsText(kgs[i]!)}</span>}
                 </li>
@@ -261,12 +261,18 @@ export function ChainView() {
   const kms = legs.map((item, i) => { const estimate = estimates[i]; return item.source === "manual" ? item.manualKm : typeof estimate === "object" ? Math.max(1, Math.round(estimate.km)) : undefined; });
   const tonnes = weight === undefined ? undefined : weightUnit === "kg" ? weight / 1000 : weight;
   const canAdd = legs.length < MAX_LEGS;
+  // A template ("Rail intermodal", "Export via port"…) is a fixed route: its modes and stops stay as set, and only
+  // the places, vehicles and distances are chosen. "Origin to destination" (and a saved chain opened for editing) is
+  // built freely.
+  const template = EXAMPLES.find((item) => item.id === example && item.id !== "blank");
+  const fixed = !!template;
 
   const setLeg = (index: number, patch: Partial<ChainLeg>) => setLegs((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   const setStop = (index: number, patch: Partial<Stop>) => setStops((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   const applyExample = (id: string) => {
     const found = EXAMPLES.find((item) => item.id === id);
-    if (!found || id === example) return;
+    // A chain built from a fixed route is already your own: keep it.
+    if (!found || id === example || (id === "blank" && example === "custom")) return;
     const next = found.build();
     next.stops[0]!.place = origin;
     next.stops[next.stops.length - 1]!.place = destination;
@@ -277,9 +283,14 @@ export function ChainView() {
     setLegs(next.legs);
     setExample(id);
   };
+  /** Keep the stops and legs of a fixed route, and build freely from there. */
+  const buildOwn = () => {
+    setExample("custom");
+    toast({ tone: "info", message: `You can now change the modes and add or remove stops. The ${template?.label ?? "template"} stops you chose are kept.` });
+  };
   /** Split a leg with a new stop: both halves keep the leg's mode and vehicle, and distances are recalculated. */
   const addStop = (legIndex: number) => {
-    if (!canAdd) return;
+    if (!canAdd || fixed) return;
     const split = legs[legIndex]!;
     const stop = newStop();
     setStops((current) => [...current.slice(0, legIndex + 1), stop, ...current.slice(legIndex + 1)]);
@@ -289,7 +300,7 @@ export function ChainView() {
   };
   /** Remove a stop and join its two legs, keeping the main-haul mode. */
   const removeStop = (index: number) => {
-    if (index === 0 || index === stops.length - 1) return;
+    if (fixed || index === 0 || index === stops.length - 1) return;
     const before = legs[index - 1]!, after = legs[index]!;
     const keep = before.mode === "road" && after.mode !== "road" ? after : before;
     setStops((current) => current.filter((_, i) => i !== index));
@@ -372,12 +383,12 @@ export function ChainView() {
         <section className="card card-pad mb-5" aria-labelledby="start-from">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <h2 id="start-from" className="text-[15px] font-bold">Start from</h2>
-            <p className="text-[13px] text-grey-600">Examples fill in typical stops. Add, remove or change any stop afterwards.</p>
+            <p className="text-[13px] text-grey-600">A fixed route, or <strong className="font-semibold text-ink">Origin to destination</strong> to build your own.</p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" role="radiogroup" aria-label="Start from">
             {EXAMPLES.map((item) => (
-              <button key={item.id} type="button" role="radio" aria-checked={example === item.id} onClick={() => applyExample(item.id)}
-                className={cx("flex flex-col gap-1.5 rounded-xl border px-3.5 py-3 text-left transition", example === item.id ? "border-maroon-600 bg-maroon-50 shadow-[inset_0_0_0_1px_var(--color-maroon-600)]" : "border-stone-200 bg-white hover:border-maroon-300")}>
+              <button key={item.id} type="button" role="radio" aria-checked={example === item.id || (item.id === "blank" && example === "custom")} onClick={() => applyExample(item.id)}
+                className={cx("flex flex-col gap-1.5 rounded-xl border px-3.5 py-3 text-left transition", example === item.id || (item.id === "blank" && example === "custom") ? "border-maroon-600 bg-maroon-50 shadow-[inset_0_0_0_1px_var(--color-maroon-600)]" : "border-stone-200 bg-white hover:border-maroon-300")}>
                 <span className="flex items-center justify-between gap-2">
                   <span className="text-[13.5px] font-bold text-ink">{item.label}</span>
                   <span className="flex items-center gap-0.5 text-grey-500" aria-hidden="true">
@@ -388,11 +399,19 @@ export function ChainView() {
               </button>
             ))}
           </div>
+          <p className="mt-3 text-[12.5px] leading-relaxed text-grey-600">Each fixed route keeps its modes and stops: you choose the places, vehicles and distances. For any other chain, choose <strong className="font-semibold text-ink">Origin to destination</strong> and set the mode of every leg and add stops wherever the cargo changes vehicle or mode, up to {MAX_LEGS} legs.</p>
         </section>
       )}
 
-      <RouteDiagram stops={stops} legs={legs} kms={kms} kgs={legs.map((_, i) => result?.legs[i]?.wtwKg)} handling={handling} canAdd={canAdd} onAdd={addStop} />
-      <p className="mt-2 text-[12.5px] text-grey-600">{stops.length} stops: origin, {between === 0 ? "no stops" : between === 1 ? "1 stop" : `${between} stops`} in between and destination · {legs.length} {legs.length === 1 ? "leg" : "legs"} (up to {MAX_LEGS}). Use <Plus size={12} className="inline align-[-1px]" aria-label="the plus button" /> on any leg to add a stop there.</p>
+      <RouteDiagram stops={stops} legs={legs} kms={kms} kgs={legs.map((_, i) => result?.legs[i]?.wtwKg)} handling={handling} canAdd={canAdd} fixed={fixed} onAdd={addStop} />
+      {template ? (
+        <div className="callout callout-info mt-3 flex-wrap items-center justify-between gap-x-4 gap-y-2" role="note">
+          <p className="min-w-0 flex-1 text-[13px] leading-relaxed"><span className="font-semibold">{template.label} is a fixed route:</span> {template.modes.map((mode) => MODE_SHORT[mode]).join(" → ")}, with its stops set. Choose the places, vehicles and distances.</p>
+          <button type="button" className="btn btn-secondary btn-sm shrink-0" onClick={buildOwn}><PencilLine size={14} aria-hidden="true" /> Change modes or stops</button>
+        </div>
+      ) : (
+        <p className="mt-2 text-[12.5px] text-grey-600">{stops.length} stops: origin, {between === 0 ? "no stops" : between === 1 ? "1 stop" : `${between} stops`} in between and destination · {legs.length} {legs.length === 1 ? "leg" : "legs"} (up to {MAX_LEGS}). Your own route: choose each leg's mode, and use <Plus size={12} className="inline align-[-1px]" aria-label="the plus button" /> on any leg to add a stop there.</p>
+      )}
 
       <div className="mt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="grid gap-3">
@@ -421,7 +440,7 @@ export function ChainView() {
                       {stopName(index, stops.length)}
                       {!edge && <span className="hidden text-[12.5px] font-normal text-grey-500 sm:inline">where the cargo changes vehicle or mode</span>}
                     </h2>
-                    {!edge && <button type="button" className="btn btn-ghost btn-sm text-grey-600" onClick={() => removeStop(index)} aria-label={`Remove stop ${index}`}><Trash2 size={15} aria-hidden="true" /> Remove</button>}
+                    {!edge && !fixed && <button type="button" className="btn btn-ghost btn-sm text-grey-600" onClick={() => removeStop(index)} aria-label={`Remove stop ${index}`}><Trash2 size={15} aria-hidden="true" /> Remove</button>}
                   </div>
                   <div className={cx("grid items-start gap-3", !edge && "md:grid-cols-[minmax(0,1fr)_minmax(0,17.5rem)]")}>
                     <Field label="Place" htmlFor={`stop-${stop.id}`} hint={stop.auto ? `Suggested: the nearest ${modes.includes("sea") ? "port" : modes.includes("air") ? "major airport" : modes.includes("rail") ? "well-connected station" : "hub"} to the ${index <= (stops.length - 1) / 2 ? "origin" : "destination"}. Change it if the cargo uses another.` : undefined}>
@@ -436,7 +455,7 @@ export function ChainView() {
                 </section>
                 {item && (
                   <LegEditor index={index} leg={item} from={stops[index]?.place} to={stops[index + 1]?.place} fromName={stopName(index, stops.length)} toName={stopName(index + 1, stops.length)} misfit={misfits[index]} estimate={estimates[index]} kg={result?.legs[index]?.wtwKg}
-                    onChange={(patch) => setLeg(index, patch)} onAdd={() => addStop(index)} canAdd={canAdd} />
+                    onChange={(patch) => setLeg(index, patch)} onAdd={() => addStop(index)} canAdd={canAdd} fixed={fixed} />
                 )}
               </Fragment>
             );
@@ -512,7 +531,7 @@ export function ChainView() {
 }
 
 /** One leg: its mode, its distance (calculated from the stops or entered), and only the options that mode needs. */
-function LegEditor({ index, leg, from, to, fromName, toName, misfit, estimate, kg, onChange, onAdd, canAdd }: { index: number; leg: ChainLeg; from?: Place; to?: Place; fromName: string; toName: string; misfit?: string; estimate: Estimate; kg?: number; onChange: (patch: Partial<ChainLeg>) => void; onAdd: () => void; canAdd: boolean }) {
+function LegEditor({ index, leg, from, to, fromName, toName, misfit, estimate, kg, onChange, onAdd, canAdd, fixed }: { index: number; leg: ChainLeg; from?: Place; to?: Place; fromName: string; toName: string; misfit?: string; estimate: Estimate; kg?: number; onChange: (patch: Partial<ChainLeg>) => void; onAdd: () => void; canAdd: boolean; fixed: boolean }) {
   const Icon = MODE_ICON[leg.mode];
   const lane = leg.tradeLane ?? suggestTradeLane(from?.country, to?.country);
   return (
@@ -528,8 +547,12 @@ function LegEditor({ index, leg, from, to, fromName, toName, misfit, estimate, k
           {kg !== undefined && <p className="num text-[13px] font-semibold">{emissionsText(kg)}</p>}
         </div>
 
-        <Segmented ariaLabel={`Leg ${index + 1} mode`} value={leg.mode} onChange={(mode) => onChange({ mode, courierLeg: undefined })}
-          options={(Object.keys(MODE_ICON) as TransportMode[]).map((mode) => { const ModeIcon = MODE_ICON[mode]; return { value: mode, label: MODE_SHORT[mode], icon: <ModeIcon size={13} aria-hidden="true" /> }; })} />
+        {fixed ? (
+          <p className="flex items-center gap-2 text-[13px] text-grey-600"><span className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-2.5 py-1 font-semibold text-ink"><Icon size={13} aria-hidden="true" style={{ color: `var(--mode-${leg.mode})` }} />{MODE_LABELS[leg.mode]}</span>Set by the route</p>
+        ) : (
+          <Segmented ariaLabel={`Leg ${index + 1} mode`} value={leg.mode} onChange={(mode) => onChange({ mode, courierLeg: undefined })}
+            options={(Object.keys(MODE_ICON) as TransportMode[]).map((mode) => { const ModeIcon = MODE_ICON[mode]; return { value: mode, label: MODE_SHORT[mode], icon: <ModeIcon size={13} aria-hidden="true" /> }; })} />
+        )}
         {misfit && <p className="callout callout-warn !py-2 text-[13px]" role="alert"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />{misfit}</p>}
 
         <div className="grid gap-2">
@@ -573,7 +596,7 @@ function LegEditor({ index, leg, from, to, fromName, toName, misfit, estimate, k
           <Field label="Inland vessel"><Select ariaLabel={`Leg ${index + 1} vessel`} value={leg.iwwVesselId} onChange={(iwwVesselId) => onChange({ iwwVesselId })} options={IWW_VESSELS.map((vessel) => ({ value: vessel.id, label: vessel.label }))} /></Field>
         )}
       </section>
-      <div className="py-2.5"><AddStopButton onClick={onAdd} disabled={!canAdd}>Add a stop on this leg</AddStopButton></div>
+      {fixed ? <div className="py-2" /> : <div className="py-2.5"><AddStopButton onClick={onAdd} disabled={!canAdd}>Add a stop on this leg</AddStopButton></div>}
     </div>
   );
 }

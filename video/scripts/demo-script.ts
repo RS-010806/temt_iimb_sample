@@ -43,8 +43,8 @@ export const CHAPTERS: ChapterScript[] = [
     "Compare modes ranks road, rail, air and coastal options for the same cargo, flags impractical ones, and saves your choice to the ledger.",
   ] },
   { id: "chain", title: "Shipments with several stops", lines: [
-    "Many shipments make several stops. Start from the origin and destination, or an example such as rail intermodal: here, Hosur to Guwahati, and TEMT picks the nearest stations.",
-    "Press plus on any leg to add another stop, up to twelve legs, each with its own mode, and terminal handling counted at every stop.",
+    "Many shipments make several stops. Pick a fixed route such as rail intermodal, with its modes set: here, Hosur to Guwahati, and TEMT picks the nearest stations.",
+    "Or build your own: change the modes, and press plus on any leg to add a stop, up to twelve legs, with terminal handling counted at every stop.",
   ] },
   { id: "import", title: "Bulk import", lines: [
     "Bulk import has a template for each way you ship, from road and courier to rail, air, sea and inland waterways, with only the columns that mode needs.",

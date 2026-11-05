@@ -311,7 +311,7 @@ async function workspace(browser: Browser) {
     return (await page.getByText(/lowest-emission practical option/).innerText()).slice(0, 140);
   });
 
-  await step(page, "Transport chain: starts at origin to destination, and stops can be added on any leg", async () => {
+  await step(page, "Transport chain: a fixed route keeps its modes and stops", async () => {
     await page.goto(`${BASE}/app/chain/`, { waitUntil: "networkidle" });
     const result = page.locator('[data-tour="chain-result"]');
     const legCount = async () => page.locator('section[aria-label^="Leg "]').count();
@@ -325,12 +325,26 @@ async function workspace(browser: Browser) {
     const station = await page.getByLabel("Stop 1", { exact: true }).inputValue();
     if (!/\([A-Z]{2,5}\)$/.test(station)) throw new Error(`Stop 1 is not a station: ${station}`);
     await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
-    // A third stop on the rail leg, from the route diagram.
+    await page.getByText(/Rail intermodal is a fixed route:/).waitFor();
+    const locked = { modes: await page.getByRole("group", { name: /^Leg \d mode$/ }).count(), add: await page.getByRole("button", { name: /^Add a stop/ }).count(), remove: await page.getByRole("button", { name: /^Remove stop/ }).count() };
+    if (locked.modes || locked.add || locked.remove) throw new Error(`A fixed route can still be changed: ${JSON.stringify(locked)}`);
+    if ((await page.getByText("Set by the route").count()) !== 3) throw new Error("Each leg should show its fixed mode");
+    return `${station}; no mode choice, no add or remove on the 3 legs`;
+  });
+  await step(page, "Transport chain: build your own from a fixed route, add and remove stops anywhere", async () => {
+    const result = page.locator('[data-tour="chain-result"]');
+    const legCount = async () => page.locator('section[aria-label^="Leg "]').count();
+    await page.getByRole("button", { name: "Change modes or stops" }).click();
+    if (!(await page.getByRole("radio", { name: /Origin to destination/ }).getAttribute("aria-checked"))?.includes("true")) throw new Error("Origin to destination should now be selected");
+    // A third stop on the rail leg, from the route diagram; the stops already chosen are kept.
     await page.getByRole("button", { name: /^Add a stop between/ }).nth(1).click();
     await choosePlace(page, page.getByLabel("Stop 2", { exact: true }), "Kolkata");
     await result.getByText("Leg 4 · Road").waitFor({ timeout: 15000 });
     await shot(page, "chain");
     if ((await legCount()) !== 4) throw new Error(`Expected 4 legs, found ${await legCount()}`);
+    // Any leg's mode can change now.
+    await page.getByRole("group", { name: "Leg 3 mode" }).getByRole("button", { name: "Road" }).click();
+    await result.getByText("Leg 3 · Road").waitFor();
     await page.getByRole("button", { name: "Remove stop 2" }).click();
     if ((await legCount()) !== 3) throw new Error("Removing a stop should join its two legs");
     // Up to 12 legs: then the add buttons are disabled.
@@ -338,7 +352,7 @@ async function workspace(browser: Browser) {
     if (!(await page.getByRole("button", { name: "Add a stop on this leg" }).first().isDisabled())) throw new Error("Adding beyond 12 legs should be disabled");
     await page.getByRole("radio", { name: /Rail intermodal/ }).click();
     await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
-    return `${station}; 4 legs with an added stop, back to 3, capped at 12`;
+    return "4 legs with an added stop, a leg's mode changed, back to 3, capped at 12";
   });
   await step(page, "Transport chain: manual distance, required reference, saved", async () => {
     const leg = page.locator('section[aria-label="Leg 1"]');

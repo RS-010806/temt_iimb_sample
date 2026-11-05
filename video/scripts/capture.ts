@@ -366,6 +366,7 @@ async function main() {
     await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
     await smoothScrollTo(page, 0, 600);
     await at(1, -0.4);
+    await click(page, page.getByRole("button", { name: "Change modes or stops" }), 400);
     await click(page, page.getByRole("button", { name: /^Add a stop between/ }).nth(1), 400);
     await choose(page, page.getByLabel("Stop 2", { exact: true }), "Kolkata");
     await page.locator('[data-tour="chain-result"]').getByText("Leg 4 · Road").waitFor({ timeout: 15000 });
