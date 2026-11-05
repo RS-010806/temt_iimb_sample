@@ -390,7 +390,7 @@ async function main() {
   await chapter("ledger", async () => {
     await click(page, nav("nav-shipments"), 400);
     await select(page, page.getByLabel("Financial year"), "all");
-    await type(page, page.getByLabel("Search shipments"), "LR-2026");
+    await type(page, page.getByLabel("Search shipments"), "LR-304");
     await click(page, page.locator("tbody tr").first().locator("td").nth(2), 700);
     const drawer = page.getByRole("dialog");
     await hover(page, drawer.getByText("Factor source").first(), 1300);

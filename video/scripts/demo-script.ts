@@ -54,12 +54,12 @@ export const CHAPTERS: ChapterScript[] = [
     "Every shipment lands in the ledger. Search, filter, and open any one to see its legs and calculation basis.",
   ] },
   { id: "account", title: "Account and sync", lines: [
-    "Accounts are optional. Sign in on its own page, and your workspace syncs securely across devices.",
+    "Accounts are optional. Create one on its own page, with a strong password, and your workspace syncs securely across devices and colleagues.",
     "The server recalculates it independently, and your sessions and report history live here.",
   ] },
   { id: "reports", title: "Reports", lines: [
-    "Reports are read in the tool first, down to the SEBI BRSR Principle 6 mapping.",
-    "Then export them in six formats: PDF, Excel, Word, CSV, JSON and Power BI.",
+    "Reports are read in the tool first: totals, trends by month, every business unit, mode and lane, down to the SEBI BRSR Principle 6 mapping.",
+    "Then export them in six formats: PDF, Excel, Word, CSV, JSON and Power BI, each with the methodology and every factor used.",
   ] },
   { id: "export-pdf", title: "Exports", lines: [
     "A board-ready PDF, with charts, the BRSR table, methodology and factors.",
