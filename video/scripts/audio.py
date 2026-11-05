@@ -7,6 +7,8 @@ uses (video/src/demo-data.json) and WebVTT captions.
     python3 scripts/audio.py
 """
 import json
+import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -16,10 +18,14 @@ from scipy.signal import butter, sosfilt
 
 SR = 48_000
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "out" / "demo"
+# Another video can use the same pipeline (see voice.ts): its work folder, narration script and output paths.
+OUT = Path(os.environ["TEMT_VIDEO_OUT"]).resolve() if os.environ.get("TEMT_VIDEO_OUT") else ROOT / "out" / "demo"
+SCRIPT = Path(os.environ["TEMT_VIDEO_SCRIPT"]).resolve().as_posix() if os.environ.get("TEMT_VIDEO_SCRIPT") else "./scripts/demo-script"
+MIX = Path(os.environ["TEMT_VIDEO_MIX"]).resolve() if os.environ.get("TEMT_VIDEO_MIX") else ROOT / "public" / "mix.wav"
+LAYOUT = Path(os.environ["TEMT_VIDEO_DATA"]).resolve() if os.environ.get("TEMT_VIDEO_DATA") else ROOT / "src" / "demo-data.json"
 voice = {item["id"]: item for item in json.loads((OUT / "voice" / "voice.json").read_text())}
 timeline = json.loads((OUT / "timeline.json").read_text())
-script = json.loads(subprocess.run(["npx", "tsx", "-e", "import { CHAPTERS } from './scripts/demo-script'; console.log(JSON.stringify(CHAPTERS.map((c) => ({ id: c.id, title: c.title ?? null }))))"], cwd=ROOT, capture_output=True, text=True, check=True).stdout)
+script = json.loads(subprocess.run(["npx", "tsx", "-e", f"import {{ CHAPTERS }} from '{SCRIPT}'; console.log(JSON.stringify(CHAPTERS.map((c) => ({{ id: c.id, title: c.title ?? null }}))))"], cwd=ROOT, capture_output=True, text=True, check=True).stdout)
 titles = {item["id"]: item["title"] for item in script}
 
 INTRO_LEAD = 1.2          # silence before the first word
@@ -60,6 +66,35 @@ def lowpass(signal, cutoff, order=2):
 # ─── Narration ────────────────────────────────────────────────────────────
 narration = np.zeros(N, dtype=np.float32)
 captions = []
+CAPTION_CHARS = 200  # about two lines on screen; longer lines are shown in parts
+
+
+def caption_parts(text, start, end):
+    """A long line becomes several captions, split at sentence breaks (then at colons or commas), timed by length."""
+    if len(text) <= CAPTION_CHARS:
+        return [(start, end, text)]
+    def pack(pieces):
+        chunks, current = [], ""
+        for piece in pieces:
+            if current and len(current) + 1 + len(piece) > CAPTION_CHARS:
+                chunks.append(current)
+                current = piece
+            else:
+                current = f"{current} {piece}".strip()
+        return chunks + ([current] if current else [])
+    chunks = []
+    for chunk in pack(re.split(r"(?<=[.;?!])\s+", text)):
+        chunks += pack(re.split(r"(?<=[:,])\s+", chunk)) if len(chunk) > CAPTION_CHARS else [chunk]
+    # A part that ends at a semicolon reads as its own sentence on screen.
+    chunks = [chunk[:-1] + "." if chunk.endswith(";") else chunk for chunk in chunks]
+    chunks = [chunk[0].upper() + chunk[1:] if i and chunks[i - 1].endswith(".") else chunk for i, chunk in enumerate(chunks)]
+    total = sum(len(chunk) for chunk in chunks)
+    parts, t = [], start
+    for chunk in chunks:
+        span = (end - start) * len(chunk) / total
+        parts.append((t, t + span, chunk))
+        t += span
+    return parts
 
 
 def add_voice(chapter_id, at):
@@ -68,7 +103,8 @@ def add_voice(chapter_id, at):
     clip = clip / (np.sqrt(np.mean(clip**2)) + 1e-9) * 0.1  # roughly equal level per chapter
     place(narration, clip, at)
     for line in item["lines"]:
-        captions.append({"start": at + line["start"], "end": at + line["end"], "text": line["text"]})
+        for start, end, text in caption_parts(line["text"], at + line["start"], at + line["end"]):
+            captions.append({"start": start, "end": end, "text": text})
 
 
 add_voice("intro", INTRO_LEAD)
@@ -147,7 +183,7 @@ probe = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(raw), "-af", "loudno
 measured = json.loads(probe[probe.rindex("{"):probe.rindex("}") + 1])
 subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(raw), "-af",
     f"loudnorm=I=-16:TP=-1.5:LRA=11:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true",
-    "-ar", str(SR), str(ROOT / "public" / "mix.wav")], check=True)
+    "-ar", str(SR), str(MIX)], check=True)
 
 
 def stamp(seconds):
@@ -166,5 +202,5 @@ data = {
     "chapters": chapter_layout, "captions": captions,
     "events": [{"kind": e["kind"], "t": INTRO + e["t"]} for e in timeline["events"] if e["kind"] in ("click",)],
 }
-(ROOT / "src" / "demo-data.json").write_text(json.dumps(data, indent=1))
+LAYOUT.write_text(json.dumps(data, indent=1))
 print(f"Soundtrack {TOTAL:.1f} s (intro {INTRO:.1f}, capture {CAPTURE:.1f}, outro {OUTRO:.1f}); {len(captions)} captions")

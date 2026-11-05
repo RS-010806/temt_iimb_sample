@@ -4,16 +4,22 @@
  *
  *   npx tsx scripts/voice.ts
  *
+ * TEMT_VIDEO_SCRIPT and TEMT_VIDEO_OUT point it at another narration script and work folder.
+ *
  * Needs a Python environment with edge-tts (see video/README.md). VERIFY=1 also transcribes every line with
  * Whisper and lists any line whose words do not come back as written.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
-import { CHAPTERS, INTRO, OUTRO, spoken, type ChapterScript } from "./demo-script";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import type { ChapterScript } from "./demo-script";
 
-const OUT = join(import.meta.dirname, "../out/demo/voice");
+// Another video can use the same pipeline: TEMT_VIDEO_SCRIPT is its narration module, TEMT_VIDEO_OUT its work folder.
+let spoken: (line: string) => string;
+let all: ChapterScript[];
+const OUT = join(process.env.TEMT_VIDEO_OUT ? resolve(process.env.TEMT_VIDEO_OUT) : join(import.meta.dirname, "../out/demo"), "voice");
 const RAW = join(OUT, "raw");
 const TTS_DIR = process.env.TEMT_TTS_DIR ?? join(homedir(), ".cache/temt-tts");
 const PYTHON = process.env.TEMT_TTS_PYTHON ?? join(TTS_DIR, "venv/bin/python");
@@ -25,7 +31,6 @@ const duration = (file: string) => Number(execFileSync("ffprobe", ["-v", "error"
 
 export interface VoiceChapter { id: string; file: string; duration: number; lines: { text: string; start: number; end: number }[] }
 
-const all = [INTRO, ...CHAPTERS, OUTRO];
 
 function synthesiseAll() {
   mkdirSync(RAW, { recursive: true });
@@ -74,9 +79,16 @@ function verify() {
   console.log(issues ? `${issues} line(s) to review` : "Every line transcribes as written");
 }
 
-mkdirSync(OUT, { recursive: true });
-synthesiseAll();
-const voices = all.map((chapter) => { const voice = assemble(chapter); console.log(`${voice.id.padEnd(16)} ${voice.duration.toFixed(1)} s`); return voice; });
-writeFileSync(join(OUT, "voice.json"), JSON.stringify(voices, null, 2));
-console.log(`Total narration ${voices.reduce((sum, item) => sum + item.duration, 0).toFixed(0)} s (${VOICE}, rate ${RATE})`);
-if (process.env.VERIFY === "1") verify();
+async function main() {
+  const script = (await import(process.env.TEMT_VIDEO_SCRIPT ? pathToFileURL(resolve(process.env.TEMT_VIDEO_SCRIPT)).href : "./demo-script")) as typeof import("./demo-script");
+  spoken = script.spoken;
+  all = [script.INTRO, ...script.CHAPTERS, script.OUTRO];
+  mkdirSync(OUT, { recursive: true });
+  synthesiseAll();
+  const voices = all.map((chapter) => { const voice = assemble(chapter); console.log(`${voice.id.padEnd(16)} ${voice.duration.toFixed(1)} s`); return voice; });
+  writeFileSync(join(OUT, "voice.json"), JSON.stringify(voices, null, 2));
+  console.log(`Total narration ${voices.reduce((sum, item) => sum + item.duration, 0).toFixed(0)} s (${VOICE}, rate ${RATE})`);
+  if (process.env.VERIFY === "1") verify();
+}
+
+main().catch((error) => { console.error(error); process.exit(1); });

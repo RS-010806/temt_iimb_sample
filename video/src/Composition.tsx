@@ -1,7 +1,12 @@
 import { Audio, Video } from "@remotion/media";
 import { loadFont } from "@remotion/fonts";
-import { AbsoluteFill, Easing, interpolate, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import data from "./demo-data.json";
+import { AbsoluteFill, Easing, getInputProps, interpolate, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import demo from "./demo-data.json";
+
+/** Optional words for the opening and closing cards, so another video can reuse this composition with its own data (--props). */
+type CardText = { introSubtitle?: string; chips?: string[]; outroTitle?: string; outroSubtitle?: string };
+export const data = ((getInputProps() as { data?: typeof demo }).data ?? demo) as typeof demo & { text?: CardText };
+const text = data.text ?? {};
 
 loadFont({ family: "Playfair", url: staticFile("fonts/playfair-display-latin.woff2") });
 loadFont({ family: "Playfair", url: staticFile("fonts/playfair-display-italic-latin.woff2"), style: "italic" });
@@ -67,10 +72,10 @@ function Intro({ duration }: { duration: number }) {
           Transportation Emission <span style={{ fontStyle: "italic", color: SAND }}>Measurement</span> Tool
         </div>
         <div style={{ fontSize: 26, marginTop: 22, color: "#f0dcd9", opacity: interpolate(frame, [2 * fps, 3 * fps], [0, 1], clamp) }}>
-          TCI–IIMB Supply Chain Sustainability Lab · Product walkthrough
+          {text.introSubtitle ?? "TCI–IIMB Supply Chain Sustainability Lab · Product walkthrough"}
         </div>
         <div style={{ display: "flex", gap: 14, marginTop: 44, opacity: interpolate(frame, [2.8 * fps, 3.8 * fps], [0, 1], clamp) }}>
-          {["ISO 14083 certified", "India-specific factors", "BRSR-ready reports", "Secure accounts"].map((chip) => (
+          {(text.chips ?? ["ISO 14083 certified", "India-specific factors", "BRSR-ready reports", "Secure accounts"]).map((chip) => (
             <span key={chip} style={{ border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", borderRadius: 999, padding: "10px 22px", fontSize: 21, fontWeight: 600 }}>{chip}</span>
           ))}
         </div>
@@ -88,8 +93,8 @@ function Outro({ duration }: { duration: number }) {
     <AbsoluteFill style={{ opacity: Math.min(fadeIn, fadeOut), justifyContent: "center", alignItems: "center", color: "white", fontFamily: "Open Sans", textAlign: "center" }}>
       <Route progress={interpolate(frame, [0, 2.4 * fps], [0, 1], { ...clamp, easing: ease })} />
       <div style={{ scale: interpolate(frame, [0, 1 * fps], [0.94, 1], { ...clamp, easing: ease }) }}><Logo size={110} /></div>
-      <div style={{ fontFamily: "Playfair", fontSize: 76, marginTop: 30 }}>Measure your next shipment.</div>
-      <div style={{ fontSize: 28, marginTop: 20, color: "#f0dcd9" }}>India-specific factors · ISO 14083 certified · reports that stand up to scrutiny</div>
+      <div style={{ fontFamily: "Playfair", fontSize: 76, marginTop: 30 }}>{text.outroTitle ?? "Measure your next shipment."}</div>
+      <div style={{ fontSize: 28, marginTop: 20, color: "#f0dcd9", maxWidth: 1500 }}>{text.outroSubtitle ?? "India-specific factors · ISO 14083 certified · reports that stand up to scrutiny"}</div>
       <div style={{ marginTop: 46, fontSize: 30, fontWeight: 700, background: "white", color: MAROON, padding: "16px 34px", borderRadius: 14, opacity: interpolate(frame, [1 * fps, 1.8 * fps], [0, 1], clamp) }}>temt-iimb-sample.onrender.com</div>
       <div style={{ marginTop: 40, fontSize: 20, color: "#e3bdb9" }}>TEMT · TCI–IIMB Supply Chain Sustainability Lab · IIM Bangalore</div>
     </AbsoluteFill>
