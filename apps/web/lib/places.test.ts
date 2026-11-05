@@ -141,6 +141,8 @@ describe("FOIS station master", () => {
     expect((await resolvePlace("KSR", ["station"]))?.label).toBe("Kasturi (KSR)");
     expect((await resolvePlace("Ayodhya Cantt", ["station"]))?.code).toBe("FD");
     expect((await resolvePlace("Prayagraj", ["station"]))?.code).toBe("PRYJ");
+    // Shuklaganj's station is listed by FOIS as Kanpur Bridge Left Bank.
+    expect((await resolvePlace("Shuklaganj", ["station"]))?.code).toBe("CPB");
   });
 
   it("includes FOIS freight terminals, placed at their serving station", async () => {

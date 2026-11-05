@@ -52,6 +52,8 @@ SEARCH_NAMES = {
     "MMCT": ["Bombay Central"], "LTT": ["Kurla Terminus", "Lokmanya Tilak Terminus"], "MAS": ["Madras Central", "Puratchi Thalaivar Dr. M.G. Ramachandran"],
     "PRYJ": ["Allahabad Jn"], "DDU": ["Mughal Sarai Jn"], "JHS": ["Virangana Lakshmibai Jhansi"], "HBJ": ["Rani Kamlapati", "Bhopal Habibganj"],
     "FD": ["Ayodhya Cantt"], "HWH": ["Kolkata Howrah"], "NDLS": ["Delhi New Delhi"],
+    # The station in Shuklaganj (Unnao), across the Ganga from Kanpur, is listed by FOIS as Kanpur Bridge Left Bank.
+    "CPB": ["Shuklaganj"],
 }
 
 # Published route distances (km) used to check the network: Indian Railways timetable distances.
@@ -141,7 +143,7 @@ class ServingStation:
         if len(codes) > 1:
             codes = {code for code in codes if self.zone_of(code) == zone} or codes
         if len(codes) > 1:
-            busiest = max(codes, key=self.trains_of)
+            busiest = max(sorted(codes), key=self.trains_of)
             codes = {busiest} if self.trains_of(busiest) > 0 and sum(self.trains_of(code) > 0 for code in codes) == 1 else codes
         return next(iter(codes)) if len(codes) == 1 else None
 
@@ -218,7 +220,7 @@ def main():
         stops = [CODE_CHANGES.get(row["station_code"], row["station_code"]) for row in rows]
         stops = [code for code in stops if code in coords]
         stops = [code for i, code in enumerate(stops) if i == 0 or code != stops[i - 1]]
-        for code in set(stops):
+        for code in sorted(set(stops)):
             served[code] += 1
         for a, b in zip(stops, stops[1:]):
             hop = great_circle(coords[a], coords[b])
@@ -230,7 +232,7 @@ def main():
 
     # Stations no passenger train stops at (freight-only stations, goods sheds with their own location) join the
     # network through the nearest served stations.
-    served_codes = list(served)
+    served_codes = sorted(served)  # sorted, so ties break the same way on every run
     connected = 0
     for code, (name, _) in fois.items():
         if code in served or code not in coords or kind_of(name) == "exclude":

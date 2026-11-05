@@ -86,10 +86,12 @@ const COURIER_LEG = { first: "Courier first mile", mid: "Courier line haul", las
 
 /** Handling TEMT suggests from the modes either side of a stop: a container terminal where rail or sea meets, otherwise a transfer hub. */
 const suggestedHandling = (before?: TransportMode, after?: TransportMode): Handling => ([before, after].some((mode) => mode === "rail" || mode === "sea") ? "container-terminal" : "transshipment");
-/** A stop must be the place its legs need: an airport next to an air leg, a port next to sea, a station next to rail, a terminal next to a waterway; road-only stops are cities or PIN codes. */
-const kindsFor = (modes: TransportMode[]): PlaceKind[] => { const kinds = [...new Set(modes.filter((mode) => mode !== "road").flatMap((mode) => MODE_PLACE_KINDS[mode]))]; return kinds.length ? kinds : MODE_PLACE_KINDS.road; };
+/** Trucks also start and end at airports, stations, ports and waterway terminals: a road-only stop can be any place, cities first. */
+const ROAD_STOP_KINDS: PlaceKind[] = [...MODE_PLACE_KINDS.road, "airport", "station", "port", "terminal"];
+/** A stop must be the place its legs need: an airport next to an air leg, a port next to sea, a station next to rail, a terminal next to a waterway; road-only stops can be any place. */
+const kindsFor = (modes: TransportMode[]): PlaceKind[] => { const kinds = [...new Set(modes.filter((mode) => mode !== "road").flatMap((mode) => MODE_PLACE_KINDS[mode]))]; return kinds.length ? kinds : ROAD_STOP_KINDS; };
 const PLACE_WORD: Partial<Record<PlaceKind, string>> = { airport: "an airport", port: "a port", station: "a railway station", terminal: "a waterway terminal" };
-const placeholderFor = (modes: TransportMode[]) => { const kinds = kindsFor(modes); return kinds.includes("city") ? "City or PIN code" : kinds.map((kind) => ({ airport: "Airport or code", port: "Port or city", station: "Station or code", terminal: "Waterway terminal" } as Partial<Record<PlaceKind, string>>)[kind]).join(", or "); };
+const placeholderFor = (modes: TransportMode[]) => { const kinds = kindsFor(modes); return kinds.includes("city") ? "City, PIN code, airport or station" : kinds.map((kind) => ({ airport: "Airport or code", port: "Port or city", station: "Station or code", terminal: "Waterway terminal" } as Partial<Record<PlaceKind, string>>)[kind]).join(", or "); };
 const stopName = (index: number, count: number) => (index === 0 ? "Origin" : index === count - 1 ? "Destination" : `Stop ${index}`);
 const placeKey = (place?: Place) => (hasCoords(place) ? `${place.kind}:${place.code ?? ""}:${place.lat.toFixed(4)},${place.lon.toFixed(4)}` : "");
 const shortLabel = (place?: Place) => compactLabel(place);
