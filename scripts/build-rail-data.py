@@ -235,8 +235,10 @@ def main():
     for code, (name, _) in fois.items():
         if code in served or code not in coords or kind_of(name) == "exclude":
             continue
+        # A point located only by FOIS joins its nearest served station alone: as a dead end it cannot bridge two lines
+        # into a shortcut that no track follows.
         reach = FOIS_CONNECT_KM if code in fois_located else CONNECT_KM
-        near = sorted(((great_circle(coords[code], coords[other]), other) for other in served_codes if abs(coords[other][0] - coords[code][0]) < reach / 75), key=lambda item: item[0])[:2]
+        near = sorted(((great_circle(coords[code], coords[other]), other) for other in served_codes if abs(coords[other][0] - coords[code][0]) < reach / 75), key=lambda item: item[0])[:1 if code in fois_located else 2]
         near = [item for item in near if item[0] <= reach]
         for km, other in near:
             edges[tuple(sorted((code, other)))] = km * FACTORS[1]

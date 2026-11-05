@@ -228,7 +228,7 @@ async function workspace(browser: Browser) {
     await choosePlace(page, page.locator("#origin"), origin);
     await choosePlace(page, page.locator("#destination"), destination);
     await page.locator("#tonnes").fill("10");
-    if (expect) await page.getByText(expect).first().waitFor({ timeout: 30000 });
+    if (expect) await page.getByText(expect).first().waitFor({ timeout: 15000 });
     await page.waitForTimeout(500);
     const text = await page.locator('[data-tour="result"]').innerText();
     if (!/CO₂e/.test(text.split("\n").slice(0, 4).join(" "))) throw new Error(`No result: ${text.slice(0, 140)}`);
@@ -252,8 +252,8 @@ async function workspace(browser: Browser) {
     const results = [await onlyKind("Air", "Mumbai", /Airport/), await onlyKind("Sea", "Chennai", /Port/), await onlyKind("Rail", "Pune", /Railway station/), await onlyKind("Inland waterway", "Patna", /Waterway terminal/)];
     return results.join("; ");
   });
-  await step(page, "Calculator: rail between stations uses Indian Railways' FOIS distance", () => modeCheck("Rail", "NDLS", "Howrah", "rail", /Indian Railways' freight route distance from FOIS/));
-  await step(page, "Calculator: rail finds FOIS freight terminals, with FOIS's own distance", async () => {
+  await step(page, "Calculator: rail between stations on the Indian Railways network", () => modeCheck("Rail", "NDLS", "Howrah", "rail", /Shortest route on the Indian Railways network/));
+  await step(page, "Calculator: rail finds FOIS freight terminals, measured from their serving station", async () => {
     await page.getByRole("radio", { name: "Rail", exact: true }).click();
     await page.locator("#origin").fill("ICD Dadri");
     const option = page.locator('[role="listbox"] [role="option"]').first();
@@ -263,11 +263,11 @@ async function workspace(browser: Browser) {
     await page.waitForTimeout(250);
     await page.locator("#origin").press("Enter");
     await choosePlace(page, page.locator("#destination"), "CTCS");
-    await page.getByText("Indian Railways' freight route distance from FOIS, station to station").first().waitFor({ timeout: 30000 });
+    await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
     const km = await page.locator('[data-tour="route"] p.num').first().innerText();
     const value = Number(km.replace(/[^\d]/g, ""));
-    if (value !== 1416) throw new Error(`ICDD to CTCS ${km}, FOIS gives 1,416 km`);
-    return `${text}; ICDD → CTCS ${km}, as FOIS gives`;
+    if (Math.abs(value / 1416 - 1) > 0.05) throw new Error(`ICDD to CTCS ${km}, FOIS gives 1,416 km`);
+    return `${text}; ICDD → CTCS ${km} (FOIS 1,416 km)`;
   });
   await step(page, "Calculator: air via airport codes", () => modeCheck("Air", "DEL", "BLR", "air"));
   await step(page, "Calculator: sea via ports", () => modeCheck("Sea", "Jawaharlal", "Rotterdam", "sea"));
@@ -320,11 +320,11 @@ async function workspace(browser: Browser) {
     await choosePlace(page, page.getByLabel("Destination", { exact: true }), "Guwahati");
     await result.getByText("Chain total, well-to-wheel").waitFor();
     await page.getByRole("radio", { name: /Rail intermodal/ }).click();
-    // The example's transfer stops snap to the nearest container terminal, else a well-connected station.
-    await page.getByText(/Suggested: the nearest container terminal or well-connected station/).first().waitFor({ timeout: 15000 });
+    // The example's transfer stops snap to the nearest well-connected stations.
+    await page.getByText(/Suggested: the nearest well-connected station/).first().waitFor({ timeout: 15000 });
     const station = await page.getByLabel("Stop 1", { exact: true }).inputValue();
     if (!/\([A-Z]{2,5}\)$/.test(station)) throw new Error(`Stop 1 is not a station: ${station}`);
-    await page.getByText(/(Indian Railways' freight route distance from FOIS|Shortest route on the Indian Railways network), station to station/).first().waitFor({ timeout: 30000 });
+    await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
     // A third stop on the rail leg, from the route diagram.
     await page.getByRole("button", { name: /^Add a stop between/ }).nth(1).click();
     await choosePlace(page, page.getByLabel("Stop 2", { exact: true }), "Kolkata");
@@ -337,7 +337,7 @@ async function workspace(browser: Browser) {
     while ((await legCount()) < 12) await page.getByRole("button", { name: "Add a stop on this leg" }).last().click();
     if (!(await page.getByRole("button", { name: "Add a stop on this leg" }).first().isDisabled())) throw new Error("Adding beyond 12 legs should be disabled");
     await page.getByRole("radio", { name: /Rail intermodal/ }).click();
-    await page.getByText(/(Indian Railways' freight route distance from FOIS|Shortest route on the Indian Railways network), station to station/).first().waitFor({ timeout: 30000 });
+    await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
     return `${station}; 4 legs with an added stop, back to 3, capped at 12`;
   });
   await step(page, "Transport chain: manual distance, required reference, saved", async () => {

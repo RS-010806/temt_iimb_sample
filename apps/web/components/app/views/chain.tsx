@@ -7,7 +7,7 @@ import { calculateShipment, nearestPort, suggestTradeLane, HUB_TYPES, IWW_VESSEL
 import { buildRecord } from "@/lib/builders";
 import { emissions, emissionsText, fmt, formatDate, todayIso } from "@/lib/format";
 import { MODE_PLACE_KINDS, compactLabel, stationPlace, estimateDistance, hasCoords, measureDistance, nearestAirport, nearestTerminal, placeFitsMode, portPlace, type DistanceEstimate, type Place, type PlaceKind } from "@/lib/places";
-import { loadStations, nearestRailhead } from "@/lib/rail";
+import { loadStations, nearestStation } from "@/lib/rail";
 import { type LegMeta, type PaidBy, type ShipmentRecord } from "@/lib/records";
 import { actions, getState, useSettings, useStore } from "@/lib/store";
 import { PlaceInput } from "../place-input";
@@ -94,14 +94,14 @@ const stopName = (index: number, count: number) => (index === 0 ? "Origin" : ind
 const placeKey = (place?: Place) => (hasCoords(place) ? `${place.kind}:${place.code ?? ""}:${place.lat.toFixed(4)},${place.lon.toFixed(4)}` : "");
 const shortLabel = (place?: Place) => compactLabel(place);
 
-/** Where a transfer stop most likely is: the nearest port, major airport, rail freight terminal or well-connected station to the anchor, else the anchor city. */
+/** Where a transfer stop most likely is: the nearest port, major airport or well-connected station to the anchor, else the anchor city. */
 async function suggestPlace(anchor: Place & { lat: number; lon: number }, modes: TransportMode[]): Promise<Place> {
   const abroad = !!anchor.country && anchor.country !== "IN";
   if (modes.includes("sea")) return portPlace(nearestPort(anchor, abroad ? undefined : "IN").id) ?? anchor;
   if (modes.includes("air")) return nearestAirport(anchor, !abroad);
   if (modes.includes("iww") && !abroad) return nearestTerminal(anchor);
   if (modes.includes("rail") && !abroad) {
-    const station = nearestRailhead(await loadStations(), anchor);
+    const station = nearestStation(await loadStations(), anchor);
     return stationPlace(station);
   }
   return { ...anchor, label: shortLabel(anchor).replace(/ \([A-Z0-9]{3,5}\)$/, "") };
@@ -310,7 +310,7 @@ export function ChainView() {
   const gap = legs.findIndex((_, i) => !kms[i]);
   if (!tonnes) error = "Enter the cargo weight.";
   else if (misfit >= 0) error = `Leg ${misfit + 1}: ${misfits[misfit]}`;
-  else if (waiting >= 0) error = `Getting the Indian Railways distance for leg ${waiting + 1}…`;
+  else if (waiting >= 0) error = `Finding the rail route for leg ${waiting + 1}…`;
   else if (gap >= 0) error = `Leg ${gap + 1} needs a distance: choose both of its stops, or enter the distance manually.`;
   else {
     const inputs: LegInput[] = legs.map((item, i) => {
@@ -424,7 +424,7 @@ export function ChainView() {
                     {!edge && <button type="button" className="btn btn-ghost btn-sm text-grey-600" onClick={() => removeStop(index)} aria-label={`Remove stop ${index}`}><Trash2 size={15} aria-hidden="true" /> Remove</button>}
                   </div>
                   <div className={cx("grid items-start gap-3", !edge && "md:grid-cols-[minmax(0,1fr)_minmax(0,17.5rem)]")}>
-                    <Field label="Place" htmlFor={`stop-${stop.id}`} hint={stop.auto ? `Suggested: the nearest ${modes.includes("sea") ? "port" : modes.includes("air") ? "major airport" : modes.includes("rail") ? "container terminal or well-connected station" : "hub"} to the ${index <= (stops.length - 1) / 2 ? "origin" : "destination"}. Change it if the cargo uses another.` : undefined}>
+                    <Field label="Place" htmlFor={`stop-${stop.id}`} hint={stop.auto ? `Suggested: the nearest ${modes.includes("sea") ? "port" : modes.includes("air") ? "major airport" : modes.includes("rail") ? "well-connected station" : "hub"} to the ${index <= (stops.length - 1) / 2 ? "origin" : "destination"}. Change it if the cargo uses another.` : undefined}>
                       <PlaceInput id={`stop-${stop.id}`} ariaLabel={stopName(index, stops.length)} value={stop.place} onChange={(place) => setStop(index, { place, auto: false, suggest: false })} kinds={kindsFor(modes)} placeholder={placeholderFor(modes)} />
                     </Field>
                     {!edge && (
@@ -541,7 +541,7 @@ function LegEditor({ index, leg, from, to, fromName, toName, misfit, estimate, k
           {leg.source === "manual" ? (
             <div className="max-w-[260px]"><NumberInput ariaLabel={`Leg ${index + 1} distance in km`} value={leg.manualKm} onChange={(manualKm) => onChange({ manualKm })} suffix="km" placeholder="From a trip sheet or invoice" /></div>
           ) : estimate === "loading" ? (
-            <p className="flex items-center gap-2 text-[13px] text-grey-600"><LoaderCircle size={14} className="animate-spin" aria-hidden="true" /> Getting the Indian Railways distance from FOIS…</p>
+            <p className="flex items-center gap-2 text-[13px] text-grey-600"><LoaderCircle size={14} className="animate-spin" aria-hidden="true" /> Finding the rail route…</p>
           ) : estimate ? (
             <p className="text-[13px] leading-relaxed text-grey-700"><span className="num font-bold text-ink">{fmt(Math.max(1, estimate.km), 0)} km</span> · {DISTANCE_LABELS[estimate.method]}</p>
           ) : (

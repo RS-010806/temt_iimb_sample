@@ -6,7 +6,6 @@ import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { dbOptionsFromEnv, openDb, type Db, type DbOptions } from "./db.js";
 import { createPortal } from "./portal.js";
-import { createFois, STATION_CODE, type FoisOptions } from "./fois.js";
 import {
   analyze, AnalysisInputError, calculateShipment, ENGINE_V2_VERSION, ENGINE_VERSION, FACTOR_SETS, FACTORS, FUELS, GLEC_AIR, HUB_TYPES, IWW_VESSELS, MAX_LEGS,
   RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, shipmentInputSchema, SOURCES, TEMT_AIR, TRADE_LANES, VESSELS,
@@ -23,8 +22,6 @@ export interface AppOptions {
   db?: DbOptions;
   /** An already-open database, for example in tests. */
   database?: Db;
-  /** Official rail distances from FOIS. Tests pass a stub fetch; FOIS_LOOKUPS=off switches the lookups off. */
-  fois?: FoisOptions & { perIpLimit?: number };
 }
 
 export function parseAllowedOrigins(value: string | undefined): string[] {
@@ -143,31 +140,6 @@ export function createApp(options: AppOptions = {}) {
       }
     });
     res.json({ engineVersion: ENGINE_V2_VERSION, factorSet, totals, results, calculatedAt: new Date().toISOString() });
-  });
-
-  // Official Indian Railways freight distance between two FOIS station codes, read from FOIS (see fois.ts).
-  const fois = createFois(getDb, { enabled: process.env.FOIS_LOOKUPS !== "off", ...options.fois });
-  // FOIS is a shared public service: one visitor may ask for at most 100 new rail distances in 10 minutes.
-  const railLimit = rateLimit({ windowMs: 10 * 60_000, limit: options.fois?.perIpLimit ?? 100, standardHeaders: "draft-8", legacyHeaders: false,
-    message: { error: { code: "rate_limit_exceeded", message: "Too many rail distance lookups. Please try again shortly." } } });
-  app.get("/api/rail/distance", railLimit, async (req, res) => {
-    const from = typeof req.query.from === "string" ? req.query.from.trim().toUpperCase() : "";
-    const to = typeof req.query.to === "string" ? req.query.to.trim().toUpperCase() : "";
-    if (!STATION_CODE.test(from) || !STATION_CODE.test(to) || from === to) {
-      res.status(400).json({ error: { code: "invalid_request", message: "Give two different FOIS station codes as from and to." } });
-      return;
-    }
-    const answer = await fois.distance(from, to);
-    if (answer.ok) {
-      res.json({ ...answer.distance, source: "FOIS, Indian Railways (RailSAHAY freight calculator)" });
-      return;
-    }
-    const messages = {
-      no_route: "FOIS has no freight route between these two points.",
-      unavailable: "FOIS did not answer. Use TEMT's network estimate for now.",
-      busy: "Many rail distances are being looked up. Use TEMT's network estimate for now.",
-    } as const;
-    res.status(answer.reason === "no_route" ? 404 : 503).json({ error: { code: answer.reason === "no_route" ? "no_route" : "fois_unavailable", message: messages[answer.reason], ...(answer.cause ? { cause: answer.cause } : {}) } });
   });
 
   app.use("/api", createPortal(getDb));

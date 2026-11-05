@@ -155,7 +155,7 @@ async function buildFromSlots(slots: Slots): Promise<{ record?: ShipmentRecord; 
       if (!slots.vehicleClass) notes.push(`Truck class chosen for ${fmt(tonnes, 1)} t: ${ROAD_CLASSES.find((item) => item.id === vehicleClass)!.label} (${ROAD_CLASSES.find((item) => item.id === vehicleClass)!.gvw} GVW). Say “by 32 ft truck” or similar to change it.`);
     } else {
       legs.push({ mode: m, tonnes, distanceKm: Math.round(km!) });
-      if (m === "rail" && estimate?.method !== "rail-network" && estimate?.method !== "rail-fois") notes.push("Station to station only. Use Compare modes to include road drayage at each end.");
+      if (m === "rail" && estimate?.method !== "rail-network") notes.push("Station to station only. Use Compare modes to include road drayage at each end.");
     }
     legMeta.push({ from, to, distanceMethod: slots.distanceKm ? "user" : estimate?.method ?? "user" });
     if (!slots.distanceKm && estimate) notes.push(estimate.note);

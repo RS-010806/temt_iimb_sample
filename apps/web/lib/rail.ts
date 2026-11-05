@@ -3,11 +3,10 @@ import { greatCircleKm, type LatLon } from "@temt/calculator";
 /**
  * Indian Railways stations, freight terminals and network, built by scripts/build-rail-data.py. Codes, names and
  * zones follow the FOIS station master (Indian Railways' Freight Operations Information System); coordinates and
- * the track graph come from the datameet railways dataset (CC0). Sidings, goods sheds and container depots without
- * coordinates of their own sit at the station that serves them, as FOIS charges their traffic.
- *
- * Rail distances come from FOIS itself where it answers (Indian Railways' freight route, read by TEMT's server, see
- * apps/api/src/fois.ts), and otherwise from shortest paths over the network, on average within about 3% of FOIS.
+ * the track graph come from the datameet railways dataset (CC0), with FOIS's own coordinates for points opened since
+ * (scripts/data/fois-stations.json). Sidings, goods sheds and container depots without
+ * coordinates of their own sit at the station that serves them, as FOIS charges their traffic. Rail distances are
+ * shortest paths over the network, on average within about 3% of published and FOIS freight-calculator distances.
  */
 export type StationKind = "station" | "siding" | "container" | "goods" | "port";
 type StationRow = [code: string, name: string, state: string, lat: number, lon: number, trains: number, aliases?: string[], kind?: StationKind | "", zone?: string, servedBy?: string];
@@ -123,116 +122,20 @@ export function nearestStation(stations: Station[], place: LatLon): Station & { 
   return { ...chosen.station, distanceKm: chosen.km };
 }
 
-/** How far a container terminal may be from a place and still be its railhead. */
-export const RAILHEAD_KM = 40;
-
-/**
- * Where rail freight from a place is most likely loaded: the nearest container terminal (ICD or CONCOR terminal)
- * within 40 km, as intermodal freight is, and FOIS quotes freight distances between these; else the station above.
- */
-export function nearestRailhead(stations: Station[], place: LatLon): Station & { distanceKm: number } {
-  const terminal = stations.filter((station) => station.kind === "container").map((station) => ({ station, km: greatCircleKm(place, station) }))
-    .filter((item) => item.km <= RAILHEAD_KM).sort((a, b) => a.km - b.km)[0];
-  return terminal ? { ...terminal.station, distanceKm: terminal.km } : nearestStation(stations, place);
-}
-
 export interface RailRoute {
   km: number;
   from: Station & { distanceKm: number };
   to: Station & { distanceKm: number };
 }
 
-/** The stations a rail leg between two places runs between: station codes are used directly, other places use their railhead. */
-export async function railEnds(from: LatLon & { code?: string; kind?: string }, to: LatLon & { code?: string; kind?: string }) {
+/** Rail distance between two places: station codes are used directly, other places use their nearest station. */
+export async function railRoute(from: LatLon & { code?: string; kind?: string }, to: LatLon & { code?: string; kind?: string }): Promise<RailRoute | undefined> {
   const network = await loadRailNetwork();
   const resolve = (place: LatLon & { code?: string; kind?: string }) => {
     const exact = place.kind === "station" && place.code ? network.index.get(place.code) : undefined;
-    return exact !== undefined ? { ...network.stations[exact]!, distanceKm: 0 } : nearestRailhead(network.stations, place);
+    return exact !== undefined ? { ...network.stations[exact]!, distanceKm: 0 } : nearestStation(network.stations, place);
   };
-  return { network, from: resolve(from), to: resolve(to) };
-}
-
-/** Rail distance between two places over TEMT's network. */
-export async function railRoute(from: LatLon & { code?: string; kind?: string }, to: LatLon & { code?: string; kind?: string }): Promise<RailRoute | undefined> {
-  const { network, from: a, to: b } = await railEnds(from, to);
+  const a = resolve(from), b = resolve(to);
   const km = shortestKm(network, network.index.get(a.code)!, network.index.get(b.code)!);
   return km === undefined ? undefined : { km, from: a, to: b };
-}
-
-/** Indian Railways' own freight distance between two FOIS station codes. */
-export interface FoisDistance {
-  from: string;
-  to: string;
-  km: number;
-  /** "rationalised": the route Indian Railways charges freight over; "shortest" where none is fixed. */
-  route: "rationalised" | "shortest";
-  /** Junctions along the route, as FOIS lists them. */
-  via: string[];
-}
-
-// Only `next dev` reaches the API on another port; the deployed site serves it at /api on the same origin.
-const API = process.env.NODE_ENV === "development" ? (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "") : "";
-const STORE = "temt.fois-distances.v1";
-const fois: { seed?: Promise<Record<string, FoisDistance>>; asked: Map<string, { at: number; answer: Promise<FoisDistance | "no_route" | undefined> }> } = { asked: new Map() };
-
-const pairKey = (from: string, to: string) => `${from}-${to}`;
-const lookupBoth = (table: Record<string, FoisDistance>, from: string, to: string) => {
-  const direct = table[pairKey(from, to)];
-  if (direct) return direct;
-  // Indian Railways charges the same route in both directions.
-  const back = table[pairKey(to, from)];
-  return back ? { ...back, from, to, via: [...back.via].reverse() } : undefined;
-};
-const loadSeed = () => getJson<{ distances: FoisDistance[] }>("/data/geo/fois-distances.json")
-  .then((file) => Object.fromEntries(file.distances.map((item) => [pairKey(item.from, item.to), item])))
-  .catch(() => ({} as Record<string, FoisDistance>));
-function saved(): Record<string, FoisDistance> {
-  try { return JSON.parse(globalThis.localStorage?.getItem(STORE) ?? "{}") as Record<string, FoisDistance>; } catch { return {}; }
-}
-function keep(distance: FoisDistance) {
-  try {
-    const all = saved();
-    all[pairKey(distance.from, distance.to)] = distance;
-    const keys = Object.keys(all);
-    for (const key of keys.slice(0, Math.max(0, keys.length - 500))) delete all[key];
-    globalThis.localStorage?.setItem(STORE, JSON.stringify(all));
-  } catch { /* storage full or blocked: the distance is still used for this visit */ }
-}
-
-/**
- * FOIS's distance between two station codes: from distances shipped with TEMT, then this browser's earlier answers,
- * then TEMT's server, which asks FOIS. "no_route" when FOIS quotes no freight route between the two (for example a
- * passenger terminal that does not handle goods); undefined when FOIS does not answer in time.
- */
-export async function foisDistance(fromCode: string, toCode: string, options: { live?: boolean; timeoutMs?: number } = {}): Promise<FoisDistance | "no_route" | undefined> {
-  if (!fromCode || !toCode || fromCode === toCode) return undefined;
-  const { live = true, timeoutMs = 40_000 } = options;
-  const key = pairKey(fromCode, toCode);
-  if (!live) {
-    // Only what is already known: shipped with TEMT, kept in this browser, or answered earlier in this visit.
-    const seed = await (fois.seed ??= loadSeed());
-    return lookupBoth(seed, fromCode, toCode) ?? lookupBoth(saved(), fromCode, toCode) ?? (await fois.asked.get(key)?.answer);
-  }
-  const earlier = fois.asked.get(key);
-  // A failed lookup is retried after two minutes; an answer is kept for the visit.
-  if (earlier && (Date.now() - earlier.at < 120_000 || (await earlier.answer))) return earlier.answer;
-  const answer = (async () => {
-    const seed = await (fois.seed ??= loadSeed());
-    const known = lookupBoth(seed, fromCode, toCode) ?? lookupBoth(saved(), fromCode, toCode);
-    if (known) return known;
-    try {
-      const response = await fetch(`${API}/api/rail/distance?from=${encodeURIComponent(fromCode)}&to=${encodeURIComponent(toCode)}`, { signal: AbortSignal.timeout(timeoutMs) });
-      if (response.status === 404) return "no_route" as const;
-      if (!response.ok) return undefined;
-      const body = (await response.json()) as Partial<FoisDistance>;
-      if (typeof body.km !== "number" || !(body.km > 0)) return undefined;
-      const distance: FoisDistance = { from: fromCode, to: toCode, km: body.km, route: body.route === "shortest" ? "shortest" : "rationalised", via: Array.isArray(body.via) ? body.via.filter((code) => typeof code === "string") : [] };
-      keep(distance);
-      return distance;
-    } catch {
-      return undefined;
-    }
-  })();
-  fois.asked.set(key, { at: Date.now(), answer });
-  return answer;
 }

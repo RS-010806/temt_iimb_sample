@@ -1,5 +1,5 @@
 import { AIR_DISTANCE_ADJUSTMENT_KM, CIRCUITY, PORTS, greatCircleKm, landPathKm, nearestPort, seaRoute, type DistanceMethod, type LatLon, type TransportMode } from "@temt/calculator";
-import { foisDistance, loadStations, railEnds, railRoute, type FoisDistance, type Station, type StationKind } from "./rail";
+import { loadStations, railRoute, type Station, type StationKind } from "./rail";
 import { TERMINALS, waterwayKm, waterwayName } from "./waterways";
 
 export type PlaceKind = "city" | "pin" | "station" | "airport" | "port" | "terminal" | "custom";
@@ -283,45 +283,20 @@ export function estimateDistance(mode: TransportMode, from?: Place, to?: Place):
   return { km: Math.max(1, path * circuity), method, note: `${basis}${approx}` };
 }
 
-/** Up to three of the best-known junctions on a FOIS route, in route order, by name. */
-export async function foisVia(distance: FoisDistance): Promise<string[]> {
-  const stations = await loadStations().catch(() => []);
-  const byCode = new Map(stations.map((station) => [station.code, station]));
-  const along = distance.via.map((code) => byCode.get(code)).filter((station): station is Station => !!station && station.code !== distance.from && station.code !== distance.to);
-  const notable = new Set([...along].sort((a, b) => b.trains - a.trains).slice(0, 3));
-  return along.filter((station) => notable.has(station)).map((station) => station.name);
-}
-
-const joinNames = (names: string[]) => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`);
-
 /**
- * Distance for a leg. Rail uses Indian Railways' own freight distance from FOIS for the two stations, else the
- * shortest route on TEMT's network; other modes use the estimates above.
+ * Distance for a leg, using the Indian Railways network for rail (station to station) and the estimates above
+ * for other modes. Falls back to the estimate when the network cannot be loaded or has no route.
  */
-export async function measureDistance(mode: TransportMode, from?: Place, to?: Place, options: { askFois?: boolean } = {}): Promise<DistanceEstimate | undefined> {
+export async function measureDistance(mode: TransportMode, from?: Place, to?: Place): Promise<DistanceEstimate | undefined> {
   const estimate = estimateDistance(mode, from, to);
   if (mode !== "rail" || !hasCoords(from) || !hasCoords(to)) return estimate;
-  const ends = await railEnds(from, to).catch(() => undefined);
-  const via = (station: { name: string; code: string; distanceKm: number }, place: Place) => (station.distanceKm > 0.5 ? `${station.name} (${station.code}), ${Math.round(station.distanceKm)} km from ${place.label}` : `${station.name} (${station.code})`);
-  let official: Awaited<ReturnType<typeof foisDistance>>;
-  const roadNote = (a: { distanceKm: number }, b: { distanceKm: number }) => (a.distanceKm > 0.5 || b.distanceKm > 0.5 ? " Road transport to and from the stations is not included; use a transport chain to add it." : "");
-  if (ends && ends.from.code !== ends.to.code) {
-    official = await foisDistance(ends.from.code, ends.to.code, { live: options.askFois ?? true });
-    if (official && official !== "no_route") {
-      const junctions = await foisVia(official);
-      const route = official.route === "rationalised" ? "over the rationalised route it charges freight on" : "over the shortest route";
-      return {
-        km: official.km, method: "rail-fois",
-        note: `Indian Railways' freight distance from FOIS, ${route}: ${via(ends.from, from)} to ${via(ends.to, to)}${junctions.length ? `, via ${joinNames(junctions)}` : ""}.${roadNote(ends.from, ends.to)}`,
-        via: [ends.from.code, ends.to.code],
-      };
-    }
-  }
   const route = await railRoute(from, to).catch(() => undefined);
   if (!route) return estimate;
+  const via = (station: { name: string; code: string; distanceKm: number }, place: Place) => (station.distanceKm > 0.5 ? `${station.name} (${station.code}), ${Math.round(station.distanceKm)} km from ${place.label}` : `${station.name} (${station.code})`);
+  const snapped = route.from.distanceKm > 0.5 || route.to.distanceKm > 0.5;
   return {
     km: Math.max(1, route.km), method: "rail-network",
-    note: `From ${via(route.from, from)} to ${via(route.to, to)}, along the track that scheduled trains run on. ${official === "no_route" ? "FOIS (Indian Railways) quotes no freight route between these two stations (one may not handle goods traffic: choose its goods shed or freight terminal for FOIS's distance)" : options.askFois === false ? "FOIS (Indian Railways) was not asked for this one" : "FOIS (Indian Railways) did not give a distance just now"}, so this is TEMT's network estimate, on average within about 3% of FOIS.${roadNote(route.from, route.to)}`,
+    note: `From ${via(route.from, from)} to ${via(route.to, to)}, along the track that scheduled trains run on. On average within about 3% of Indian Railways' published route distances.${snapped ? " Road transport to and from the stations is not included; use a transport chain to add it." : ""}`,
     via: [route.from.code, route.to.code],
   };
 }

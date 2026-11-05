@@ -19,7 +19,6 @@ export function distanceType(method: DistanceMethod | undefined, mode: Transport
   if (method === "user") return "Actual (supplied)";
   if (method === "great-circle" || method === "air-gcd-95" || (!method && mode === "air")) return "GCD";
   if (method === "rail-network") return "SFD (rail network)";
-  if (method === "rail-fois") return "Operator route (FOIS)";
   if (method === "iww-network") return "SFD (waterway)";
   if (method === "sea-route") return "SFD (sea lanes)";
   return "SFD (estimated)";

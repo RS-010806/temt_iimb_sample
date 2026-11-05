@@ -1,20 +1,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { measureDistance, rankPlaces, resolvePlace, searchPlaces } from "./places";
-import { railRoute } from "./rail";
 
-// Serve the location data from public/ as the browser would. TEMT's server (and so FOIS) answers what `api` says.
-const api: { answer: (path: string) => Response } = { answer: () => new Response("{}", { status: 503 }) };
-const asked: string[] = [];
+// Serve the location data from public/ as the browser would.
 beforeAll(() => {
   vi.stubGlobal("fetch", async (path: string) => {
-    if (path.startsWith("/api/")) { asked.push(path); return api.answer(path); }
     const body = readFileSync(join(import.meta.dirname, "..", "public", path), "utf8");
     return new Response(body, { status: 200, headers: { "Content-Type": "application/json" } });
   });
 });
-afterEach(() => { api.answer = () => new Response("{}", { status: 503 }); });
 
 describe("place search", () => {
   it("recognises earlier city names, as bulk uploads use them", async () => {
@@ -45,33 +40,18 @@ describe("place search", () => {
 describe("rail distances on the Indian Railways network", () => {
   const station = async (code: string) => (await searchPlaces(code, ["station"]))[0]!;
   it.each([["NDLS", "HWH", 1447], ["MAS", "NDLS", 2182], ["PUNE", "CSMT", 192], ["JP", "NDLS", 308]])("%s to %s is close to the published %i km", async (a, b, published) => {
-    const route = await railRoute((await station(a)) as never, (await station(b)) as never);
-    expect(Math.abs(route!.km / published - 1)).toBeLessThan(0.09);
+    const estimate = await measureDistance("rail", await station(a), await station(b));
+    expect(estimate?.method).toBe("rail-network");
+    expect(Math.abs(estimate!.km / published - 1)).toBeLessThan(0.09);
   });
 
   it("uses the best-connected station near a city", async () => {
     const [delhi] = await searchPlaces("Delhi", ["city"]);
     const [kolkata] = await searchPlaces("Kolkata", ["city"]);
     const estimate = await measureDistance("rail", delhi, kolkata);
-    expect(["rail-fois", "rail-network"]).toContain(estimate?.method);
+    expect(estimate?.method).toBe("rail-network");
     expect(estimate!.km).toBeGreaterThan(1350);
     expect(estimate!.km).toBeLessThan(1600);
-  });
-
-  it("uses Indian Railways' FOIS distance from TEMT's server, and the network when FOIS does not answer", async () => {
-    const [a, b] = [await station("BPL"), await station("NGP")];
-    const fallback = await measureDistance("rail", a, b);
-    expect(fallback?.method).toBe("rail-network");
-    expect(fallback?.note).toMatch(/FOIS \(Indian Railways\) did not give a distance/);
-    // A failed lookup is retried later, not at once.
-    asked.length = 0;
-    await measureDistance("rail", a, b);
-    expect(asked).toHaveLength(0);
-    api.answer = (path) => new Response(JSON.stringify({ from: "NGP", to: "BPL", km: 390, route: "rationalised", via: ["NGP", "ET", "BPL"] }), { status: 200 });
-    const [c, d] = [await station("NGP"), await station("BPL")];
-    const official = await measureDistance("rail", c, d);
-    expect(official).toMatchObject({ km: 390, method: "rail-fois", via: ["NGP", "BPL"] });
-    expect(official!.note).toMatch(/^Indian Railways' freight distance from FOIS, over the rationalised route it charges freight on: Nagpur.* \(NGP\) to Bhopal Jn \(BPL\), via Itarsi Jn\.$/);
   });
 });
 
@@ -170,10 +150,10 @@ describe("FOIS station master", () => {
     expect(concor.detail).toMatch(/Container terminal · served by Shalimar/);
   });
 
-  it("has a network close to FOIS freight-calculator distances, for when FOIS does not answer", async () => {
+  it("matches FOIS freight-calculator distances", async () => {
     const station = async (code: string) => (await searchPlaces(code, ["station"]))[0]!;
     for (const [a, b, fois] of [["TKD", "KLMG", 1412], ["ICDD", "CTCS", 1416], ["PRDP", "TLHR", 192]] as const) {
-      const km = (await railRoute((await station(a)) as never, (await station(b)) as never))!.km;
+      const km = (await measureDistance("rail", await station(a), await station(b)))!.km;
       expect(Math.abs(km / fois - 1), `${a}-${b} ${km} km vs FOIS ${fois} km`).toBeLessThan(0.05);
     }
   });

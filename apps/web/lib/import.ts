@@ -1,7 +1,7 @@
 import { calculateShipment, seaRoute, suggestTradeLane, IWW_VESSELS, TRADE_LANES, VESSELS, type DistanceMethod, type FactorSetId, type FuelId, type HubInput, type LegInput, type RoadClassId, type TransportMode } from "@temt/calculator";
 import { buildRecord, refSequence, vehicleForTonnes } from "./builders";
 import { MODE_PLACE_KINDS, TERMINAL_KINDS, compactLabel, stationPlace, estimateDistance, hasCoords, measureDistance, nearestAirport, nearestIndianPort, nearestTerminal, resolvePlace, type Place, type PlaceKind } from "./places";
-import { loadStations, nearestRailhead } from "./rail";
+import { loadStations, nearestStation } from "./rail";
 import type { Direction, LegMeta, PaidBy, RecordSource, ShipmentRecord } from "./records";
 
 /** One template per way of shipping, each with only the columns that mode needs, plus the leg-by-leg multi-stop template. */
@@ -259,7 +259,7 @@ async function nearestFor(kind: PlaceKind, city: Place & { lat: number; lon: num
   if (kind === "port") return nearestIndianPort(city);
   if (kind === "terminal") return nearestTerminal(city);
   if (kind === "station") {
-    const station = nearestRailhead(await loadStations(), city);
+    const station = nearestStation(await loadStations(), city);
     return stationPlace(station);
   }
   return undefined;
@@ -289,24 +289,11 @@ function roadKinds(text: string): PlaceKind[] {
   return first ? [first, ...all.filter((kind) => kind !== first)] : all;
 }
 
-/** Station pairs one file may look up live from FOIS; further rail rows use what FOIS has already answered, else TEMT's network. */
-export const FOIS_LOOKUPS_PER_FILE = 25;
-let foisBudget = FOIS_LOOKUPS_PER_FILE;
-
-/** The distance given in the file, else one calculated from the places (rail from FOIS, else the Indian Railways network). */
+/** The distance given in the file, else one calculated from the places (rail over the Indian Railways network). */
 async function distanceFor(mode: TransportMode, from: Place, to: Place, given: number | undefined, messages: string[]): Promise<{ km: number; method: DistanceMethod } | undefined> {
   if (given !== undefined && !Number.isNaN(given) && given > 0) return { km: given, method: "user" };
-  let estimate, asked = false;
-  if (mode === "rail") {
-    estimate = await measureDistance(mode, from, to, { askFois: false });
-    if (estimate?.method !== "rail-fois" && foisBudget > 0) { foisBudget -= 1; asked = true; estimate = await measureDistance(mode, from, to); }
-  } else estimate = estimateDistance(mode, from, to);
-  if (estimate) {
-    const network = asked ? ", as FOIS did not answer" : ` (FOIS is asked for up to ${FOIS_LOOKUPS_PER_FILE} station pairs per file; enter the distance to use your own)`;
-    const how = estimate.method === "rail-fois" ? " from FOIS (Indian Railways)" : estimate.method === "rail-network" ? ` on TEMT's rail network${network}` : estimate.method === "iww-network" ? " along the waterway" : estimate.method === "sea-route" ? " over sea lanes" : "";
-    messages.push(`Distance calculated: ${Math.round(estimate.km).toLocaleString("en-IN")} km${how}.`);
-    return { km: Math.round(estimate.km), method: estimate.method };
-  }
+  const estimate = mode === "rail" ? await measureDistance(mode, from, to) : estimateDistance(mode, from, to);
+  if (estimate) { messages.push(`Distance calculated: ${Math.round(estimate.km).toLocaleString("en-IN")} km${estimate.method === "rail-network" ? " on the rail network" : estimate.method === "iww-network" ? " along the waterway" : estimate.method === "sea-route" ? " over sea lanes" : ""}.`); return { km: Math.round(estimate.km), method: estimate.method }; }
   return undefined;
 }
 
@@ -624,7 +611,6 @@ async function readTable(file: File): Promise<Raw[]> {
 export const MAX_IMPORT_ROWS = 5000;
 
 export async function parseImport(file: File, options: ImportOptions): Promise<{ format: ImportFormat; rows: ImportRow[] }> {
-  foisBudget = FOIS_LOOKUPS_PER_FILE;
   if (/\.json$/i.test(file.name)) return { format: "ewaybill", rows: await ewayRows(JSON.parse(await file.text()), options) };
   if (/\.xls$/i.test(file.name)) throw new Error("Save the file as .xlsx or .csv; the older .xls format is not supported.");
   const table = await readTable(file);
