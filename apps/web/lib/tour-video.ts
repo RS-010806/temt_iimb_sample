@@ -1,4 +1,7 @@
-/** Chapters of the product walkthrough video (seconds), generated from video/src/demo-data.json. */
+/**
+ * Chapters of the product walkthrough video (seconds), generated from video/src/demo-data.json after each render
+ * (see video/README.md). Publishing a new cut also adds redirects from the previous file names in render.yaml.
+ */
 // The file names carry the recording date so browsers and the CDN never serve an earlier cut.
 export const TOUR_VIDEO = {
   src: "/video/temt-tour-2026-11-05.mp4",

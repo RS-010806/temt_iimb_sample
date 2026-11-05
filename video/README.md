@@ -29,6 +29,10 @@ Narration lives in `scripts/demo-script.ts`. `spoken()` holds the spoken form of
 
 After rendering, transcribe the first seconds of the finished video and compare them with the first caption: this catches a stale soundtrack.
 
+To publish a cut, encode a web copy (`-crf 24 -preset slow -tune stillimage -movflags +faststart`), take the poster at 4.2 s, copy `out/demo/captions.vtt`, name all three `temt-tour-<date>` in `apps/web/public/video/`, update `apps/web/lib/tour-video.ts` and add redirects from the previous names in `render.yaml`.
+
+The same pipeline can make another video: set `TEMT_VIDEO_SCRIPT` (a narration module like `scripts/demo-script.ts`) and `TEMT_VIDEO_OUT` (its work folder) for `voice.ts`, and also `TEMT_VIDEO_MIX` and `TEMT_VIDEO_DATA` for `audio.py`. Render it with `--props` (`{ "data": <layout>, plus optional "text" for the opening and closing cards }`) and `--public-dir` pointing at its own `capture.mp4`, `mix.wav` and fonts. Captions longer than about two lines are shown in parts.
+
 ## End-to-end check
 
 ```sh
