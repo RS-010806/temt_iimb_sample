@@ -68,7 +68,7 @@ export const IMPORT_TEMPLATES: ImportTemplate[] = [
     { key: "from_airport", required: true, help: "Airport code (BOM), airport name or the city it serves." },
     { key: "to_airport", required: true, help: "Airport code, airport name or city." }, WEIGHT, weightUnit("kg"),
     { key: "aircraft", options: ["unknown", "belly", "freighter"], help: "belly (passenger aircraft hold), freighter, or unknown for the average mix." },
-    { key: "distance_km", help: "Optional. Blank: great-circle distance between the airports plus GLEC's 95 km routing allowance." },
+    { key: "distance_km", help: "Optional. Blank: great-circle distance between the airports (international flights add GLEC's 95 km routing allowance)." },
     { key: "fuel_used", help: "Optional primary data: jet fuel attributable to this shipment." },
     { key: "fuel_unit", options: ["litres", "kg", "tonnes"], help: "litres, kg or tonnes of jet fuel." }, ...OPTIONAL],
     examples: [

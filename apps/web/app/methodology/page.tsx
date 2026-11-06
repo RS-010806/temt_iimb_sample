@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Building2, Gauge, Landmark, Lock, Route, Truck, Zap } from "lucide-react";
-import { ENGINE_V2_VERSION, INDIA_GRID_KG_PER_KWH, SOURCES } from "@temt/calculator";
+import { CEA_GRID_KG_PER_KWH, ENGINE_V2_VERSION, INDIA_GRID_KG_PER_KWH, SOURCES } from "@temt/calculator";
 import { Footer, Header } from "@/components/site-chrome";
 import { JsonLd, ORGANIZATION, SITE_URL, breadcrumbs, pageMetadata } from "@/components/seo";
 
@@ -62,11 +62,11 @@ export default function MethodologyPage() {
 
         <article className="container-page prose-temt max-w-4xl pb-6">
           <h2>Emission factors</h2>
-          <p>TEMT uses its own India-specific emission factors, developed from research at the TCI–IIMB Supply Chain Sustainability Lab and validated through TEMT's ISO 14083 certification. They cover seven Indian truck classes on diesel, petrol, CNG and electricity, Indian Railways' mixed diesel and electric traction, domestic and international air cargo, and coastal and international shipping. Electric vehicles use the Central Electricity Authority's all-India grid factor ({INDIA_GRID_KG_PER_KWH} kg CO₂ per kWh, CO₂ Baseline Database V21.0) unless you enter your supplier's factor.</p>
-          <p>Where TEMT does not publish its own value, for example container trade lanes, inland waterways and most hub operations, it uses the ISO 14083-aligned international defaults of the GLEC Framework v3.2. Every value, with its source and version, is listed in the factor library inside TEMT.</p>
+          <p>TEMT uses its own India-specific emission factors, developed from research at the TCI–IIMB Supply Chain Sustainability Lab and validated through TEMT's ISO 14083 certification. They cover seven Indian truck classes on diesel, petrol, CNG and electricity, Indian Railways' mixed diesel and electric traction, domestic and international air cargo, and coastal and international shipping. Since GLEC Framework v3.3, the Lab's India values for Indian Railways, domestic air cargo and electric trucks are published in the Framework itself, built by SFC India and the Lab from Indian Railways and DGCA data for FY 2022–23 to 2024–25, and TEMT uses them. Electricity uses the Central Electricity Authority's all-India average for FY 2025–26 (CO₂ Baseline Database V22.0: {CEA_GRID_KG_PER_KWH} kg CO₂ per kWh at generation), applied at the point of use with transmission and distribution losses and upstream fuel production as in GLEC v3.3 ({INDIA_GRID_KG_PER_KWH} kg CO₂e per kWh), unless you enter your supplier's factor.</p>
+          <p>Where TEMT does not publish its own value, for example container trade lanes, inland waterways and hub operations, it uses the ISO 14083-aligned international defaults of the GLEC Framework v3.3. Hubs use Fraunhofer IML's global defaults, which include Indian hubs. Tables whose v3.3 values are not yet in TEMT (Indian diesel, petrol and CNG trucks for the GLEC comparison set, and sea vessels and container lanes) still cite GLEC v3.2. Every value, with its source and version, is listed in the factor library inside TEMT.</p>
 
           <h2>Distances</h2>
-          <p>ISO 14083 asks for the distance type to be stated. Road, rail, waterway and sea legs use the <strong>shortest feasible distance (SFD)</strong>; air legs use the <strong>great-circle distance (GCD)</strong> between airports, with GLEC's 95 km allowance for routing and holding. For each shipment the user chooses either to calculate the distance from the route or to enter the actual distance from a trip sheet, GPS record, e-way bill or invoice, and every leg records which was used.</p>
+          <p>ISO 14083 asks for the distance type to be stated. Road, rail, waterway and sea legs use the <strong>shortest feasible distance (SFD)</strong>; air legs use the <strong>great-circle distance (GCD)</strong> between airports. International flights add GLEC's 95 km allowance for routing and holding; GLEC v3.3's Indian domestic air value is built from actual fuel use, so routing is already included. For each shipment the user chooses either to calculate the distance from the route or to enter the actual distance from a trip sheet, GPS record, e-way bill or invoice, and every leg records which was used.</p>
           <p>Rail stations and freight terminals follow the FOIS station master of Indian Railways (Freight Operations Information System): FOIS codes, names, zones and locations, including goods sheds, private sidings, container depots and port railheads. A siding or depot is measured from the station that serves it, as FOIS charges its traffic. Rail distances are the shortest route on the Indian Railways network, built from the stops of every scheduled train (datameet railways data, released under CC0), and match FOIS freight-calculator and published route distances to within about 3% on average. Road distances between cities or 6-digit PIN codes use a model calibrated on Indian corridors, typically within 10–15%. Sea legs follow shipping lanes from port to port.</p>
 
           <h2>Data quality</h2>
@@ -99,7 +99,7 @@ export default function MethodologyPage() {
           <h2>Limitations</h2>
           <ul>
             <li>Default factors describe typical operations; fuel records or carrier-specific data are more accurate and raise the primary-data share.</li>
-            <li>Indian energy-use data for electric trucks is not yet published. TEMT uses GLEC v3.2's European values adjusted to Indian truck loading, and recommends entering measured charging energy.</li>
+            <li>GLEC v3.3's Indian electric-truck values come from manufacturer specifications and limited industry pilots, and will be revised as measured data grows. Heavy rigid trucks of 20–50 t are not covered; TEMT estimates them from GLEC v3.2's European values adjusted to Indian truck loading. Enter measured charging energy where you can.</li>
             <li>Mode comparisons cover emissions only; check capacity, transit time and cost before switching modes.</li>
           </ul>
 

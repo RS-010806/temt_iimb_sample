@@ -26,7 +26,7 @@ export const DISTANCE_LABELS: Record<DistanceMethod, string> = {
 };
 const METHOD = { distance: "Distance-based: cargo weight × distance × emission factor", fuel: "Fuel-based: fuel used × fuel emission factor", energy: "Energy-based: electricity used × electricity emission factor" } as const;
 const QUALITY = { primary: "Primary data (measured)", modelled: "Modelled data", default: "Default emission factors" } as const;
-const GLEC = SOURCES["glec-3.2"];
+const GLEC = SOURCES["glec-3.3"];
 
 function distanceBasis(leg: LegResult, meta?: LegMeta) {
   if (meta?.distanceMethod) return DISTANCE_LABELS[meta.distanceMethod];
@@ -37,7 +37,7 @@ function distanceBasis(leg: LegResult, meta?: LegMeta) {
 export function factorSource(leg: LegResult) {
   const source = SOURCES[leg.factor.source];
   const own = `${source.title} (${source.publisher}, ${source.year}) · ${leg.factor.ref}`;
-  return leg.factor.source === "glec-3.2" ? own : `${own}. Reference framework: GLEC Framework v3.2 (${GLEC.publisher}, ${GLEC.year})`;
+  return leg.factor.source === "glec-3.3" || leg.factor.source === "glec-3.2" ? own : `${own}. Reference framework: GLEC Framework v3.3 (${GLEC.publisher}, ${GLEC.year})`;
 }
 
 /** Plain steps from the inputs to the result. */
@@ -122,7 +122,7 @@ export function BasisBody({ result, legMeta, size = "md" }: { result: ShipmentRe
       )}
       <p className="flex gap-2 border-t border-stone-200 pt-3 text-grey-600">
         <ShieldCheck size={14} className="mt-0.5 shrink-0 text-maroon-700" aria-hidden="true" />
-        <span>Quantified to ISO 14083:2023 following the GLEC Framework v3.2, with TEMT's India-specific emission factors. See the <Link href="/methodology/" className="font-semibold text-maroon-700 underline">methodology</Link>.</span>
+        <span>Quantified to ISO 14083:2023 following the GLEC Framework v3.3, with TEMT's India-specific emission factors. See the <Link href="/methodology/" className="font-semibold text-maroon-700 underline">methodology</Link>.</span>
       </p>
     </div>
   );

@@ -136,9 +136,9 @@ export function buildReportModel(all: ComputedShipment[], settings: Settings, fi
     sources: [...usedSources].map((id) => SOURCES[id]).map(({ title, publisher, year, url }) => ({ title, publisher, year, url })),
     notes: [
       ...(sampleShipments ? [`This selection includes ${sampleShipments} synthetic sample shipments generated for demonstration. They are not the organisation's actual freight.`] : []),
-      "Emissions are reported well-to-wheel (WTW) in kg or tonnes CO₂e, split into tank-to-wheel (vehicle operation), well-to-tank (energy provision) and hub operations, following ISO 14083:2023 with TEMT's India-specific emission factors.",
+      "Emissions are reported well-to-wheel (WTW) in kg or tonnes CO₂e, split into tank-to-wheel (vehicle operation), well-to-tank (energy provision) and hub operations, following ISO 14083:2023 and the GLEC Framework v3.3 with TEMT's India-specific emission factors.",
       "Default factors are estimates for typical operations. Replace them with primary fuel or energy data from carriers where available.",
-      "Distance type follows ISO 14083: road, rail, waterway and sea legs use the shortest feasible distance (SFD), estimated unless an actual distance was supplied; air legs use the great-circle distance (GCD) with the standard routing allowance.",
+      "Distance type follows ISO 14083: road, rail, waterway and sea legs use the shortest feasible distance (SFD), estimated unless an actual distance was supplied; air legs use the great-circle distance (GCD), with GLEC's 95 km routing allowance for international flights (GLEC v3.3's Indian domestic air value already includes routing).",
       "Scope classification follows the GHG Protocol: own fleet → Scope 1/2; purchased transport → Scope 3 Category 4; customer-paid downstream transport → Scope 3 Category 9.",
       "TEMT is certified to ISO 14083 (December 2024) and its information security to ISO/IEC 27001:2022.",
     ],

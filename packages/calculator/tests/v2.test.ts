@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateHub, calculateLeg, calculateShipment, CalculationError, estimateLandDistanceKm, FACTORS, getPort, greatCircleKm, landPathKm, legInputSchema, PORTS,
-  EV_ENERGY_PROXY_KWH_PER_TKM, FUELS, INDIA_GRID_KG_PER_KWH, ROAD_CLASSES, ROAD_FACTORS, seaRoute, shipmentInputSchema, suggestTradeLane, VESSELS,
+  EV_ENERGY_PROXY_KWH_PER_TKM, FUELS, INDIA_ELECTRIC_TRUCKS, INDIA_GRID_KG_PER_KWH, RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, seaRoute, shipmentInputSchema, suggestTradeLane, VESSELS,
 } from "../src/index.js";
 
 describe("parity with production TEMT", () => {
@@ -13,16 +13,23 @@ describe("parity with production TEMT", () => {
     expect(leg.wtwKg).toBeCloseTo(246.71402, 5);
   });
 
-  it("reproduces the live rail comparison", () => {
+  it("uses GLEC v3.3's Indian rail value (11.0 g CO2e/t-km) in both sets", () => {
     const leg = calculateLeg({ mode: "rail", tonnes: 1, distanceKm: 1994.288 }, "temt");
-    expect(leg.wttKg).toBeCloseTo(12.3645856, 6);
-    expect(leg.ttwKg).toBeCloseTo(8.1765808, 6);
+    expect(leg.wttKg).toBeCloseTo(1994.288 * 0.0094, 6);
+    expect(leg.ttwKg).toBeCloseTo(1994.288 * 0.00154, 6);
+    expect(RAIL_FACTORS["glec-india"]).toBe(RAIL_FACTORS.temt);
+    expect(leg.factor.source).toBe("glec-3.3");
   });
 
-  it("adds the 95 km air routing adjustment in the production set", () => {
-    const leg = calculateLeg({ mode: "air", tonnes: 2, distanceKm: 1000, airScope: "domestic" }, "temt");
-    expect(leg.distanceKm).toBe(1095);
-    expect(leg.wtwKg).toBeCloseTo(2 * 1095 * (1.508 + 0.2444), 6);
+  it("uses GLEC v3.3's Indian domestic air value without the 95 km allowance, and adds it for international flights", () => {
+    for (const set of ["temt", "glec-india"] as const) {
+      const leg = calculateLeg({ mode: "air", tonnes: 2, distanceKm: 1000, airScope: "domestic", airService: "freighter" }, set);
+      expect(leg.distanceKm).toBe(1000);
+      expect(leg.wtwKg).toBeCloseTo(2 * 1000 * (0.216 + 1.043), 6);
+    }
+    const abroad = calculateLeg({ mode: "air", tonnes: 2, distanceKm: 1000, airScope: "international" }, "temt");
+    expect(abroad.distanceKm).toBe(1095);
+    expect(abroad.wtwKg).toBeCloseTo(2 * 1095 * (0.646 + 0.171), 6);
   });
 
   it("applies the production refrigeration uplift and courier constants", () => {
@@ -31,7 +38,8 @@ describe("parity with production TEMT", () => {
     expect(reefer.wtwKg / plain.wtwKg).toBeCloseTo(1.21, 10);
     const mid = calculateLeg({ mode: "road", tonnes: 1, distanceKm: 100, courierLeg: "mid" }, "temt");
     expect(mid.wtwKg).toBeCloseTo(100 * (0.063 + 0.019), 10);
-    expect(calculateHub({ type: "transshipment", tonnes: 2 }, "temt").wtwKg).toBeCloseTo(1.2, 10);
+    // Hubs use the global GLEC v3.3 defaults in both sets.
+    expect(calculateHub({ type: "transshipment", tonnes: 2 }, "temt").wtwKg).toBeCloseTo(2.4, 10);
   });
 });
 
@@ -52,7 +60,7 @@ describe("worked examples from the TCI–IIMB carbon accounting course", () => {
   });
 });
 
-describe("GLEC v3.2 India defaults", () => {
+describe("GLEC comparison set", () => {
   it("matches the v1 published road and container factors", () => {
     const hcv = ROAD_FACTORS["glec-india"]["gvw-30-50"]!.diesel!;
     expect(hcv.wtt + hcv.ttw).toBeCloseTo(FACTORS["road-hcv"].kgCO2ePerTonneKm, 6);
@@ -61,8 +69,8 @@ describe("GLEC v3.2 India defaults", () => {
   });
 
   it("switches air haul at 1,500 km and uses the aircraft service type", () => {
-    const short = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1500 }, "glec-india");
-    const long = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1501, airService: "freighter" }, "glec-india");
+    const short = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1500, airScope: "international" }, "glec-india");
+    const long = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1501, airService: "freighter", airScope: "international" }, "glec-india");
     expect(short.factor.label).toContain("short-haul");
     expect(short.wtwKg).toBeCloseTo(1500 * 1.363, 6);
     expect(long.wtwKg).toBeCloseTo(1501 * 0.608, 6);
@@ -98,16 +106,23 @@ describe("electric vehicles, fuel allocation and hubs", () => {
     const leg = calculateLeg({ mode: "road", fuel: "electric", tonnes: 1, distanceKm: 80, vehicleClass: "gvw-3.5", energyKwh: 24 });
     expect(leg.method).toBe("energy");
     expect(leg.ttwKg).toBe(0);
-    expect(leg.wtwKg).toBeCloseTo(24 * 0.71, 10);
+    expect(leg.wtwKg).toBeCloseTo(24 * 0.903, 10);
     expect(leg.dataQuality).toBe("primary");
   });
 
-  it("requires measured energy for light EVs and marks proxies as default data", () => {
-    expect(() => calculateLeg({ mode: "road", fuel: "electric", tonnes: 1, distanceKm: 80, vehicleClass: "gvw-3.5" })).toThrow(/kWh from charging records/);
-    const proxy = calculateLeg({ mode: "road", fuel: "electric", tonnes: 10, distanceKm: 100, vehicleClass: "gvw-12-20" });
-    expect(proxy.wtwKg).toBeCloseTo(10 * 100 * EV_ENERGY_PROXY_KWH_PER_TKM["gvw-12-20"]! * 0.71, 8);
-    expect(proxy.dataQuality).toBe("default");
-    expect(proxy.warnings[0]).toMatch(/Indian truck loading/);
+  it("estimates electric trucks with GLEC v3.3's Indian values and marks them as default data", () => {
+    // Published WTW intensities: <3.5 t 137.7, 18.5 t 76.8, articulated 55 t 38.6 g CO2e/t-km.
+    const light = calculateLeg({ mode: "road", fuel: "electric", tonnes: 1, distanceKm: 80, vehicleClass: "gvw-3.5" });
+    expect(light.wtwKg).toBeCloseTo(80 * 0.1377, 2);
+    const medium = calculateLeg({ mode: "road", fuel: "electric", tonnes: 10, distanceKm: 100, vehicleClass: "gvw-12-20" });
+    expect(medium.wtwKg).toBeCloseTo(1000 * 0.0768, 1);
+    expect(medium.dataQuality).toBe("default");
+    expect(medium.warnings[0]).toMatch(/GLEC v3\.3's Indian default/);
+    const trailer = calculateLeg({ mode: "road", fuel: "electric", tonnes: 30, distanceKm: 500, vehicleClass: "trailer-30-60" });
+    expect(trailer.wtwKg / trailer.tonneKm * 1000).toBeCloseTo(38.6, 1);
+    // A renewable supply contract scales the same energy.
+    const green = calculateLeg({ mode: "road", fuel: "electric", tonnes: 10, distanceKm: 100, vehicleClass: "gvw-12-20", gridKgPerKwh: 0 });
+    expect(green.wtwKg).toBe(0);
   });
 
   it("allocates shared fuel and rejects out-of-range shares", () => {
@@ -219,13 +234,17 @@ describe("container trade lane from the route", () => {
   });
 });
 
-describe("electric trucks on Indian loading", () => {
+describe("electric trucks without a GLEC v3.3 Indian value", () => {
   it("keeps GLEC's electricity-to-diesel ratio and applies it to TEMT's Indian diesel use", () => {
     const heavy = ROAD_FACTORS.temt["gvw-30-50"]!.diesel!;
     const expected = (0.16 / 0.037) * ((heavy.wtt + heavy.ttw) / FUELS.diesel.wtw);
     expect(EV_ENERGY_PROXY_KWH_PER_TKM["gvw-30-50"]).toBeCloseTo(expected, 3);
     // On the Indian grid a heavy electric truck should not be far above diesel per tonne-km.
     expect(EV_ENERGY_PROXY_KWH_PER_TKM["gvw-30-50"]! * INDIA_GRID_KG_PER_KWH).toBeLessThan(heavy.wtt + heavy.ttw);
-    expect(EV_ENERGY_PROXY_KWH_PER_TKM["gvw-3.5"]).toBeUndefined();
+    expect(INDIA_ELECTRIC_TRUCKS["gvw-30-50"]).toBeUndefined();
+    const heavyEv = calculateLeg({ mode: "road", fuel: "electric", tonnes: 30, distanceKm: 100, vehicleClass: "gvw-30-50" });
+    expect(heavyEv.warnings[0]).toMatch(/no Indian electric value/);
+    // Every GLEC v3.3 class reproduces its published intensity at the Indian grid factor.
+    for (const [id, truck] of Object.entries(INDIA_ELECTRIC_TRUCKS)) expect(EV_ENERGY_PROXY_KWH_PER_TKM[id as keyof typeof INDIA_ELECTRIC_TRUCKS]! * INDIA_GRID_KG_PER_KWH * 1000).toBeCloseTo(truck!.wtwG, 0);
   });
 });

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, ArrowLeftRight, ArrowRightLeft, BadgeCheck, Calculator, ChevronDown, Fuel, GitBranch, LoaderCircle, MapPinned, Package, PencilLine, Plane, Plus, Route, RotateCcw, Save, Ship, Snowflake, TrainFront, Truck, Waves, Zap } from "lucide-react";
-import { calculateShipment, suggestTradeLane, FUELS, HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, ROAD_CLASSES, ROAD_FACTORS, TEU_LOADS, TRADE_LANES, VESSELS, type FuelId, type HubInput, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult } from "@temt/calculator";
+import { calculateShipment, suggestTradeLane, FUELS, HUB_TYPES, INDIA_DOMESTIC_AIR, INDIA_ELECTRIC_TRUCKS, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, SOURCES, ROAD_CLASSES, ROAD_FACTORS, TEU_LOADS, TRADE_LANES, VESSELS, type FuelId, type HubInput, type LegInput, type RoadClassId, type RoadFuel, type ShipmentResult } from "@temt/calculator";
 import { buildRecord, vehicleForTonnes } from "@/lib/builders";
 import { emissions, emissionsText, fmt, formatDate, todayIso } from "@/lib/format";
 import { MODE_PLACE_KINDS, estimateDistance, hasCoords, measureDistance, type DistanceEstimate, type Place, type PlaceKind } from "@/lib/places";
@@ -394,13 +394,13 @@ export function CalculateView() {
                   <NumberInput id="share" value={form.sharePercent} suffix="%" onChange={(sharePercent) => set({ sharePercent })} placeholder="100" />
                 </Field>
                 {form.fuelId === "electricity" ? (
-                  <Field label="Electricity emission factor" htmlFor="grid" hint={`Blank uses the CEA all-India grid average, ${INDIA_GRID_KG_PER_KWH} kg CO₂ per kWh. Enter your supplier's factor for renewable power.`}>
+                  <Field label="Electricity emission factor" htmlFor="grid" hint={`Blank uses Indian grid electricity at the point of use, ${INDIA_GRID_KG_PER_KWH} kg CO₂e per kWh (CEA V22.0, FY 2025–26, as in GLEC v3.3). Enter your supplier's factor for renewable power.`}>
                     <NumberInput id="grid" value={form.gridFactor} suffix="kg/kWh" onChange={(gridFactor) => set({ gridFactor })} placeholder={String(INDIA_GRID_KG_PER_KWH)} />
                   </Field>
                 ) : (
                   <div className="rounded-xl bg-stone-50 p-3.5 text-[13px] leading-relaxed text-grey-700">
                     <p className="font-semibold text-ink">{FUELS[form.fuelId].label}</p>
-                    <p className="mt-0.5">{fmt(FUELS[form.fuelId].wtw, 2)} kg CO₂e per kg, well-to-wheel{FUELS[form.fuelId].density ? ` (${fmt(FUELS[form.fuelId].wtw * FUELS[form.fuelId].density!, 2)} per litre)` : ""}. Source: GLEC Framework v3.2, {FUELS[form.fuelId].ref}.</p>
+                    <p className="mt-0.5">{fmt(FUELS[form.fuelId].wtw, 2)} kg CO₂e per kg, well-to-wheel{FUELS[form.fuelId].density ? ` (${fmt(FUELS[form.fuelId].wtw * FUELS[form.fuelId].density!, 2)} per litre)` : ""}. Source: {FUELS[form.fuelId].source === "glec-3.3" ? "GLEC Framework v3.3" : FUELS[form.fuelId].source === "glec-3.2" ? "GLEC Framework v3.2" : SOURCES[FUELS[form.fuelId].source].title}, {FUELS[form.fuelId].ref}.</p>
                   </div>
                 )}
               </div>
@@ -511,14 +511,16 @@ export function CalculateView() {
                         options={[...roadFuels.map((fuel) => ({ value: fuel as RoadFuel, label: fuel === "cng" ? "CNG" : fuel[0]!.toUpperCase() + fuel.slice(1), icon: <Fuel size={13} aria-hidden="true" /> })), { value: "electric" as RoadFuel, label: "Electric", icon: <Zap size={13} aria-hidden="true" /> }]} />
                     </Field>
                     {form.roadFuel === "electric" && (
-                      <Field label="Electricity emission factor" htmlFor="grid" hint={`Blank uses the CEA all-India grid average, ${INDIA_GRID_KG_PER_KWH} kg CO₂ per kWh.`}>
+                      <Field label="Electricity emission factor" htmlFor="grid" hint={`Blank uses Indian grid electricity at the point of use, ${INDIA_GRID_KG_PER_KWH} kg CO₂e per kWh (CEA V22.0, as in GLEC v3.3).`}>
                         <NumberInput id="grid" value={form.gridFactor} suffix="kg/kWh" onChange={(gridFactor) => set({ gridFactor })} placeholder={String(INDIA_GRID_KG_PER_KWH)} />
                       </Field>
                     )}
                   </div>
-                  {form.roadFuel === "electric" && (form.vehicleClass === "gvw-3.5"
-                    ? <p className="callout callout-warn"><AlertTriangle size={16} aria-hidden="true" /> Light electric vehicles have no default energy use. <button type="button" className="font-semibold underline" onClick={() => set({ method: "fuel", fuelId: "electricity", fuelUnit: "kWh" })}>Use the fuel-based method with kWh from charging records</button>.</p>
-                    : <p className="text-[13px] leading-relaxed text-grey-600">Energy use is estimated for this truck class on Indian loading. For primary data, switch to the fuel-based method and enter kWh from charging records.</p>)}
+                  {form.roadFuel === "electric" && (
+                    <p className="text-[13px] leading-relaxed text-grey-600">{INDIA_ELECTRIC_TRUCKS[form.vehicleClass]
+                      ? `Energy use is GLEC v3.3's Indian default for this class (${INDIA_ELECTRIC_TRUCKS[form.vehicleClass]!.row}, ${INDIA_ELECTRIC_TRUCKS[form.vehicleClass]!.kwhPerTkm} kWh per tonne-km), with charging losses.`
+                      : "GLEC v3.3 has no Indian electric value for this class, so energy use is estimated on Indian loading."} For primary data, switch to the fuel-based method and enter kWh from charging records.</p>
+                  )}
                 </div>
               )}
               {form.mode === "courier" && (
@@ -526,15 +528,17 @@ export function CalculateView() {
                   {([["firstVehicle", "First-mile vehicle"], ["midVehicle", "Line-haul vehicle"], ["lastVehicle", "Last-mile vehicle"]] as const).map(([key, label]) => (
                     <Field key={key} label={label}><Select value={form[key]} onChange={(value) => set({ [key]: value } as Partial<Form>)} options={ROAD_CLASSES.map((item) => ({ value: item.id, label: `${item.label} (${item.gvw})` }))} /></Field>
                   ))}
-                  <p className="text-[13px] text-grey-600">Includes two hub transshipments ({settings.factorSet === "temt" ? "TEMT courier hub default" : `${HUB_TYPES.transshipment.ambient} kg CO₂e per tonne each, GLEC Table 3`}).{settings.factorSet === "temt" && " Each leg uses TEMT's courier defaults."}</p>
+                  <p className="text-[13px] text-grey-600">Includes two hub transshipments ({HUB_TYPES.transshipment.ambient} kg CO₂e per tonne each, GLEC v3.3 Table 3).{settings.factorSet === "temt" && " Each leg uses TEMT's courier defaults."}</p>
                 </div>
               )}
               {form.mode === "rail" && <p className="text-[14px] leading-relaxed text-grey-700">Indian Railways average for mixed diesel and electric traction. The distance is measured station to station; to add road transport to and from the stations, use <Link href="/app/compare/" className="font-semibold text-maroon-700 underline">Compare modes</Link> or the <Link href="/app/chain/" className="font-semibold text-maroon-700 underline">chain builder</Link>.</p>}
-              {form.mode === "air" && (
+              {form.mode === "air" && (!form.origin?.country || !form.destination?.country || (form.origin.country === "IN" && form.destination.country === "IN")
+                ? <p className="text-[14px] leading-relaxed text-grey-700">Indian domestic air uses GLEC v3.3's Indian value for all aircraft: {fmt((INDIA_DOMESTIC_AIR.wtt + INDIA_DOMESTIC_AIR.ttw) * 1000, 0)} g CO₂e per tonne-km, from DGCA traffic and fuel data. It comes from actual fuel use, so routing is already included.</p>
+                : (
                 <Field label="Aircraft type" info="Belly cargo travels in passenger aircraft; freighters carry only cargo. If you don't know, use unknown: a weighted mix.">
                   <Segmented ariaLabel="Aircraft type" value={form.airService} onChange={(airService) => set({ airService })} options={[{ value: "unknown", label: "Unknown mix" }, { value: "belly", label: "Belly hold" }, { value: "freighter", label: "Freighter" }]} />
                 </Field>
-              )}
+              ))}
               {form.mode === "sea" && (
                 <div className="grid gap-4">
                   <Segmented ariaLabel="Sea calculation basis" value={form.seaBasis} onChange={(seaBasis) => set({ seaBasis })} options={[{ value: "lane", label: "Container by trade lane" }, { value: "vessel", label: "Vessel type and size" }]} />

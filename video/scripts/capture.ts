@@ -315,7 +315,7 @@ async function main() {
     await hover(page, result.getByText("Emission factor", { exact: true }).first(), 700);
     await hover(page, result.getByText("Intensity per ton", { exact: true }).first(), 700);
     await click(page, result.getByRole("button", { name: "See how this was calculated" }), 700);
-    await hover(page, result.getByText(/Reference framework: GLEC Framework v3\.2/).last(), 800);
+    await hover(page, result.getByText(/Reference framework: GLEC Framework v3\.3/).last(), 800);
     await at(3, -0.2);
     await type(page, page.locator("#reference"), "LR-58213");
     await hover(page, page.locator("#dispatch-date"), 400);
@@ -486,9 +486,9 @@ async function main() {
   await chapter("factors", async (at) => {
     await click(page, nav("nav-factors"), 500);
     await hover(page, page.getByText("Calculations use TEMT's emission factors"), 1400);
-    await click(page, page.getByText("Show GLEC v3.2 for comparison"), 500);
-    await reveal(page, page.getByRole("columnheader", { name: "GLEC v3.2 WTW" }));
-    await hover(page, page.getByRole("columnheader", { name: "GLEC v3.2 WTW" }), 1200);
+    await click(page, page.getByText("Show GLEC v3.3 for comparison"), 500);
+    await reveal(page, page.getByRole("columnheader", { name: "GLEC v3.3 WTW" }));
+    await hover(page, page.getByRole("columnheader", { name: "GLEC v3.3 WTW" }), 1200);
     await at(1, -0.3);
     await click(page, nav("nav-settings"), 500);
     await hover(page, page.getByLabel("Search NIFTY 500 companies"), 600);

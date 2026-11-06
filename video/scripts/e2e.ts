@@ -188,7 +188,7 @@ async function workspace(browser: Browser) {
     await page.locator("#tonnes").fill("18");
     await page.getByText("Well-to-wheel emissions").waitFor();
     await page.getByRole("button", { name: "How this was calculated", exact: true }).waitFor();
-    for (const label of ["Transport activity", "Emission factor", "Intensity per ton", "Reference framework: GLEC Framework v3.2"]) await page.getByText(label).first().waitFor();
+    for (const label of ["Transport activity", "Emission factor", "Intensity per ton", "Reference framework: GLEC Framework v3.3"]) await page.getByText(label).first().waitFor();
     const basis = await page.locator('[data-tour="result"]').innerText();
     if (/straight line|circuity/i.test(basis)) throw new Error("Calculation basis exposes internal modelling parameters");
     await shot(page, "calculator-road");
@@ -476,8 +476,8 @@ async function workspace(browser: Browser) {
   await step(page, "Factor library: TEMT factors first, GLEC comparison and every tab", async () => {
     await page.goto(`${BASE}/app/factors/`, { waitUntil: "networkidle" });
     await page.getByText("Calculations use TEMT's emission factors").waitFor();
-    await page.getByText("Show GLEC v3.2 for comparison").click();
-    await page.getByRole("columnheader", { name: "GLEC v3.2 WTW" }).waitFor();
+    await page.getByText("Show GLEC v3.3 for comparison").click();
+    await page.getByRole("columnheader", { name: "GLEC v3.3 WTW" }).waitFor();
     for (const tab of ["Rail and air", "Sea", "Waterways and hubs", "Fuels and electricity", "Sources", "Road"]) { await page.getByRole("button", { name: tab, exact: true }).click(); await page.waitForTimeout(150); }
     await shot(page, "factors");
   });
@@ -485,8 +485,8 @@ async function workspace(browser: Browser) {
   await step(page, "Settings: switch to the GLEC comparison set and back", async () => {
     await page.goto(`${BASE}/app/settings/#factors`, { waitUntil: "networkidle" });
     const factors = page.getByRole("group", { name: "Factor set" });
-    await factors.getByRole("button", { name: "GLEC v3.2" }).click();
-    await toast(/Now using GLEC v3\.2/);
+    await factors.getByRole("button", { name: "GLEC v3.3" }).click();
+    await toast(/Now using GLEC v3\.3/);
     await factors.getByRole("button", { name: "TEMT factors" }).click();
     await toast(/Now using TEMT factors/);
   });

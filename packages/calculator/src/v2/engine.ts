@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
   AIR_DISTANCE_ADJUSTMENT_KM, AIR_SHORT_HAUL_LIMIT_KM, ENGINE_V2_VERSION, EV_ENERGY_PROXY_KWH_PER_TKM, FACTOR_SETS, FUELS, GLEC_AIR,
-  HUB_TYPES, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, MODE_LABELS, RAIL_FACTORS, REEFER_UPLIFT, ROAD_CLASSES, ROAD_FACTORS,
+  HUB_TYPES, INDIA_DOMESTIC_AIR, INDIA_ELECTRIC_TRUCKS, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, MODE_LABELS, RAIL_FACTORS, REEFER_UPLIFT, ROAD_CLASSES, ROAD_FACTORS,
   SEA_DISTANCE_ADJUSTMENT, TEMT_AIR, TEMT_COURIER, TRADE_LANES, VESSELS,
 } from "./library.js";
 import type { AirScope, AirService, ContainerType, FactorSetId, FuelId, HubCondition, HubTypeId, Intensity, RoadClassId, RoadFuel, TransportMode } from "./library.js";
@@ -199,16 +199,22 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): 
       if (input.mode !== "road") throw new CalculationError("Enter measured electricity use for this mode.", "energyKwh");
       const vehicleClass = input.vehicleClass ?? "gvw-12-20";
       const proxy = EV_ENERGY_PROXY_KWH_PER_TKM[vehicleClass];
-      if (proxy === undefined) throw new CalculationError("There is no default energy use for light electric vehicles. Use the fuel-based method with the kWh from charging records.", "energyKwh");
+      if (proxy === undefined) throw new CalculationError("There is no default energy use for this electric vehicle. Use the fuel-based method with the kWh from charging records.", "energyKwh");
       positive(distanceKm, "distanceKm", "Distance");
       kwh = proxy * tonnes * distanceKm;
-      trace.push(`Estimated electricity: ${num(tonnes)} t × ${num(distanceKm)} km × ${proxy} kWh/t-km = ${num(kwh)} kWh`);
-      warnings.push("Electric-truck energy is estimated from GLEC v3.2 Table 11, adjusted to Indian truck loading. Replace it with measured kWh from charging records when available.");
+      const indian = INDIA_ELECTRIC_TRUCKS[vehicleClass];
+      if (indian) {
+        trace.push(`Estimated electricity: ${num(tonnes)} t × ${num(distanceKm)} km × ${proxy} kWh/t-km = ${num(kwh)} kWh (GLEC v3.3 Indian electric truck, ${indian.row}: ${indian.kwhPerTkm} kWh/t-km at the vehicle, plus 10% charging loss and 5% out-of-route distance)`);
+        warnings.push("Electric-truck energy is GLEC v3.3's Indian default for this class, from manufacturer specifications and industry pilots. Replace it with measured kWh from charging records when available.");
+      } else {
+        trace.push(`Estimated electricity: ${num(tonnes)} t × ${num(distanceKm)} km × ${proxy} kWh/t-km = ${num(kwh)} kWh`);
+        warnings.push("GLEC v3.3 publishes no Indian electric value for this class, so energy is estimated from GLEC v3.2 Table 11 adjusted to Indian truck loading. Replace it with measured kWh from charging records when available.");
+      }
     }
     wttKg = kwh * grid;
     const custom = input.gridKgPerKwh !== undefined;
-    factor = { label: custom ? "Electricity (user-supplied factor)" : "Grid electricity, India", wtt: grid, ttw: 0, unit: "kg CO₂e/kWh", source: "cea-21", sourceTitle: SOURCES["cea-21"].title, ref: custom ? "User-supplied" : "Weighted average, FY 2024–25" };
-    trace.push(`Electricity factor: ${grid} kg CO₂e/kWh (${custom ? "user-supplied, for example a renewable supply contract" : "CEA V21.0 all-India average"}). Tank-to-wheel emissions are zero.`);
+    factor = { label: custom ? "Electricity (user-supplied factor)" : "Grid electricity, India", wtt: grid, ttw: 0, unit: "kg CO₂e/kWh", source: "cea-22", sourceTitle: SOURCES["cea-22"].title, ref: custom ? "User-supplied" : "FY 2025–26 at the point of use (GLEC v3.3 Indian method)" };
+    trace.push(`Electricity factor: ${grid} kg CO₂e/kWh (${custom ? "user-supplied, for example a renewable supply contract" : "CEA V22.0 all-India average for FY 2025–26, 0.675 at generation, with transmission and distribution losses and upstream fuel production, as in GLEC v3.3"}). Tank-to-wheel emissions are zero.`);
     if (input.mode === "road" && input.vehicleClass) trace.unshift(`Vehicle: ${describeRoadClass(input.vehicleClass)}, battery-electric`);
   } else {
     positive(distanceKm, "distanceKm", "Distance");
@@ -236,8 +242,14 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): 
       label = "Indian Railways average, mixed diesel/electric traction";
     } else if (input.mode === "air") {
       const gcd = distanceKm;
-      if (factorSet === "temt") {
-        const scope = input.airScope ?? "domestic";
+      const scope = input.airScope ?? "domestic";
+      if (scope === "domestic") {
+        // Both sets: GLEC v3.3's Indian domestic value, built from actual fuel use, so routing is already included.
+        intensity = INDIA_DOMESTIC_AIR;
+        label = "Air freight, Indian domestic (aircraft type unknown)";
+        trace.push(`Distance: ${num(gcd)} km great-circle. GLEC v3.3's Indian domestic air value comes from actual fuel use, so route deviations are already included and no distance allowance is added.`);
+        if (input.airService && input.airService !== "unknown") warnings.push("GLEC v3.3 publishes Indian domestic air for all aircraft together, so the belly-hold or freighter choice does not change the result.");
+      } else if (factorSet === "temt") {
         intensity = TEMT_AIR[scope];
         label = `Air freight, ${scope}`;
         distanceKm = gcd + AIR_DISTANCE_ADJUSTMENT_KM;
@@ -303,22 +315,17 @@ function t(wtt: number, ttw: number): Intensity {
   return { wtt, ttw, source: "temt", ref: "Vessel table (WTT = TTW ÷ 5)" };
 }
 
-export function calculateHub(input: HubInput, factorSet: FactorSetId = "temt"): HubResult {
+export function calculateHub(input: HubInput, _factorSet: FactorSetId = "temt"): HubResult {
   const hub = HUB_TYPES[input.type];
   if (!hub) throw new CalculationError("Choose a supported hub type.", "type");
-  if (factorSet === "temt" && input.type === "transshipment") {
-    const tonnes = positive(input.tonnes, "tonnes", "Tonnes handled");
-    const kg = tonnes * TEMT_COURIER.transshipmentKgPerTonne;
-    return { type: input.type, label: input.label || hub.label, wtwKg: kg, ttwKg: kg, wttKg: 0, splitKnown: true, source: "temt",
-      trace: [`Transshipment: ${num(tonnes)} t × ${TEMT_COURIER.transshipmentKgPerTonne} kg CO₂e/t = ${num(kg)} kg CO₂e (TEMT)`] };
-  }
+  // Both factor sets use the global GLEC v3.3 hub defaults (Fraunhofer IML), which include Indian hubs.
   const condition = input.condition ?? "ambient";
   const perUnit = hub[condition];
   const quantity = hub.unit === "container" ? positive(input.containers, "containers", "Containers handled") : positive(input.tonnes, "tonnes", "Tonnes handled");
   const kg = quantity * perUnit;
   const conditionLabel = hub.unit === "container" ? (condition === "ambient" ? "ambient" : "temperature-controlled") : condition;
-  return { type: input.type, label: input.label || hub.label, wtwKg: kg, ttwKg: 0, wttKg: 0, splitKnown: false, source: "glec-3.2",
-    trace: [`${hub.label} (${conditionLabel}): ${num(quantity)} ${hub.unit === "container" ? "containers" : "t"} × ${perUnit} kg CO₂e/${hub.unit} = ${num(kg)} kg CO₂e WTW (GLEC v3.2 Table 3)`] };
+  return { type: input.type, label: input.label || hub.label, wtwKg: kg, ttwKg: 0, wttKg: 0, splitKnown: false, source: "glec-3.3",
+    trace: [`${hub.label} (${conditionLabel}): ${num(quantity)} ${hub.unit === "container" ? "containers" : "t"} × ${perUnit} kg CO₂e/${hub.unit} = ${num(kg)} kg CO₂e WTW (GLEC v3.3 Table 3)`] };
 }
 
 const QUALITY_RANK: Record<DataQuality, number> = { primary: 0, modelled: 1, default: 2 };

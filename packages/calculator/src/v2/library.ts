@@ -33,17 +33,17 @@ export const FACTOR_SETS: Readonly<Record<FactorSetId, FactorSet>> = Object.free
     id: "temt",
     label: "TEMT emission factors",
     short: "TEMT factors",
-    description: "TEMT's India-specific emission factors, validated through its ISO 14083 certification. Where TEMT does not publish its own value, such as container trade lanes, inland waterways and most hub operations, the ISO 14083-aligned GLEC Framework v3.2 default is used.",
+    description: "TEMT's India-specific emission factors from the TCI–IIMB Supply Chain Sustainability Lab: its own road and courier values, validated through TEMT's ISO 14083 certification, and the Lab's GLEC Framework v3.3 India values for rail, domestic air and electric trucks. Where neither has a value, such as container trade lanes, inland waterways and hub operations, the ISO 14083-aligned GLEC default is used.",
   },
   "glec-india": {
     id: "glec-india",
-    label: "GLEC Framework v3.2 (for comparison)",
-    short: "GLEC v3.2",
-    description: "Smart Freight Centre's GLEC Framework v3.2 defaults, whose Indian road values come from TCI–IIMB research. Use this set to compare with partners who report on GLEC defaults.",
+    label: "GLEC Framework v3.3 (for comparison)",
+    short: "GLEC v3.3",
+    description: "Smart Freight Centre's GLEC Framework v3.3 defaults, including the India values for rail, domestic air and electric trucks developed with the TCI–IIMB Supply Chain Sustainability Lab. Indian diesel, petrol and CNG truck values are GLEC v3.2 Table 13 until the v3.3 table is added. Use this set to compare with partners who report on GLEC defaults.",
   },
 });
 
-export const ENGINE_V2_VERSION = "temt-engine-2.0.0";
+export const ENGINE_V2_VERSION = "temt-engine-2.1.0";
 /** Road refrigeration uplift applied by TEMT to temperature-controlled road freight. */
 export const REEFER_UPLIFT = 1.21;
 /** Air distance is great-circle distance plus 95 km (GLEC / ISO 14083 distance adjustment). */
@@ -51,7 +51,10 @@ export const AIR_DISTANCE_ADJUSTMENT_KM = 95;
 /** GLEC non-container sea values are quoted without the 15% distance adjustment factor. */
 export const SEA_DISTANCE_ADJUSTMENT = 1.15;
 
-const g = (wtt: number, ttw: number, ref: string): Intensity => ({ wtt: wtt / 1000, ttw: ttw / 1000, source: "glec-3.2", ref });
+/** GLEC Framework v3.3 values, quoted in g CO2e per t-km. */
+const g = (wtt: number, ttw: number, ref: string): Intensity => ({ wtt: wtt / 1000, ttw: ttw / 1000, source: "glec-3.3", ref });
+/** GLEC v3.2 values kept where the v3.3 table is not yet in TEMT (Indian road Table 13). */
+const g32 = (wtt: number, ttw: number, ref: string): Intensity => ({ wtt: wtt / 1000, ttw: ttw / 1000, source: "glec-3.2", ref });
 const t = (wtt: number, ttw: number, ref: string): Intensity => ({ wtt, ttw, source: "temt", ref });
 
 // ─── Road ──────────────────────────────────────────────────────────────────
@@ -82,13 +85,13 @@ type RoadTable = Partial<Record<RoadClassId, Partial<Record<Exclude<RoadFuel, "e
 
 export const ROAD_FACTORS: Readonly<Record<FactorSetId, RoadTable>> = Object.freeze({
   "glec-india": {
-    "gvw-3.5": { diesel: g(87.9, 291.6, "Table 13"), petrol: g(99.9, 312.4, "Table 13"), cng: g(133.7, 358.3, "Table 13") },
-    "gvw-3-5": { diesel: g(51.4, 170.7, "Table 13") },
-    "gvw-5-12": { diesel: g(32.4, 107.5, "Table 13"), cng: g(45.9, 122.9, "Table 13") },
-    "gvw-12-20": { diesel: g(20.9, 69.2, "Table 13") },
-    "gvw-20-30": { diesel: g(19.1, 63.2, "Table 13") },
-    "gvw-30-50": { diesel: g(15.4, 50.9, "Table 13") },
-    "trailer-30-60": { diesel: g(12.8, 42.3, "Table 13") },
+    "gvw-3.5": { diesel: g32(87.9, 291.6, "Table 13"), petrol: g32(99.9, 312.4, "Table 13"), cng: g32(133.7, 358.3, "Table 13") },
+    "gvw-3-5": { diesel: g32(51.4, 170.7, "Table 13") },
+    "gvw-5-12": { diesel: g32(32.4, 107.5, "Table 13"), cng: g32(45.9, 122.9, "Table 13") },
+    "gvw-12-20": { diesel: g32(20.9, 69.2, "Table 13") },
+    "gvw-20-30": { diesel: g32(19.1, 63.2, "Table 13") },
+    "gvw-30-50": { diesel: g32(15.4, 50.9, "Table 13") },
+    "trailer-30-60": { diesel: g32(12.8, 42.3, "Table 13") },
   },
   "temt": {
     "gvw-3.5": { diesel: t(0.053, 0.179, "Road vehicle table"), petrol: t(0.051, 0.156, "Road vehicle table"), cng: t(0.075, 0.181, "Road vehicle table") },
@@ -101,8 +104,15 @@ export const ROAD_FACTORS: Readonly<Record<FactorSetId, RoadTable>> = Object.fre
   },
 });
 
-/** CEA V21.0 all-India weighted average, FY 2024–25. Electricity has no tank-to-wheel emissions. */
-export const INDIA_GRID_KG_PER_KWH = 0.71;
+/** CEA CO2 Baseline Database V22.0 (August 2026), Table S: all-India weighted average for FY 2025–26, at generation. */
+export const CEA_GRID_KG_PER_KWH = 0.675;
+/**
+ * Indian grid electricity at the point of use, well-to-wheel, as GLEC v3.3 applies it to Indian rail and electric
+ * trucks: CEA V22.0 adjusted for transmission and distribution losses (NITI Aayog India Climate & Energy Dashboard)
+ * and upstream fuel production (EcoTransIT 2023, India). It is the value implied by GLEC v3.3's Indian electric-truck
+ * table (WTT g/t-km ÷ (kWh/t-km × 1.10 charging loss × 1.05 distance)). Electricity has no tank-to-wheel emissions.
+ */
+export const INDIA_GRID_KG_PER_KWH = 0.903;
 
 // ─── Courier / part-truckload (TEMT three-leg model) ────────────
 
@@ -110,15 +120,15 @@ export const TEMT_COURIER = Object.freeze({
   firstMile: t(0.067, 0.224, "Courier first-mile default"),
   midMile: t(0.019, 0.063, "Courier mid-mile default"),
   lastMile: t(0.067, 0.224, "Courier last-mile default"),
-  /** kg CO2e per tonne per transshipment; two hub handlings per courier consignment. */
-  transshipmentKgPerTonne: 0.6,
 });
 
 // ─── Rail ──────────────────────────────────────────────────────────────────
 
+/** GLEC v3.3, Region: India: Indian Railways goods services, FY 2022–23 to 2024–25, with CEA V22.0 electricity. */
+const INDIA_RAIL = g(9.4, 1.54, "Rail, Region: India (mixed diesel and electric traction, FY 2022–23 to 2024–25)");
 export const RAIL_FACTORS: Readonly<Record<FactorSetId, Intensity>> = Object.freeze({
-  "glec-india": g(6.4, 4.1, "Module 2, rail, Region: India (mixed diesel/electric traction)"),
-  "temt": t(0.0062, 0.0041, "Rail default"),
+  "glec-india": INDIA_RAIL,
+  "temt": INDIA_RAIL,
 });
 
 // ─── Air ───────────────────────────────────────────────────────────────────
@@ -129,8 +139,14 @@ export const GLEC_AIR: Readonly<Record<AirService, { short: Intensity; long: Int
   freighter: { short: g(261, 1255, "Air Table 1"), long: g(105, 503, "Air Table 1") },
   belly: { short: g(213, 1026, "Air Table 1"), long: g(161, 775, "Air Table 1") },
 });
+/**
+ * GLEC v3.3 Indian domestic air (DGCA traffic and jet fuel, FY 2022–23 to 2024–25), aircraft type unknown. Built from
+ * actual fuel use, so route deviations are already included: it applies to the great-circle distance without the
+ * 95 km allowance.
+ */
+export const INDIA_DOMESTIC_AIR = g(216, 1043, "Air, Indian domestic (aircraft type unknown, FY 2022–23 to 2024–25)");
 export const TEMT_AIR: Readonly<Record<AirScope, Intensity>> = Object.freeze({
-  domestic: t(0.2444, 1.508, "Air domestic default"),
+  domestic: INDIA_DOMESTIC_AIR,
   international: t(0.171, 0.646, "Air international default"),
 });
 
@@ -241,7 +257,7 @@ export const VESSELS: readonly Vessel[] = Object.freeze([
   v("Container ship", "20,000+ TEU", undefined, 0.00432),
 ]);
 
-// ─── Inland waterways (GLEC v3.2 Module 2, Table 2; primarily European operating data) ───
+// ─── Inland waterways (GLEC v3.3 Module 2, Table 2; primarily European operating data) ───
 
 export const IWW_VESSELS = Object.freeze([
   { id: "mv-lt-50", label: "Motor vessel < 50 m (< 650 t)", f: g(17.8, 59.2, "IWW Table 2") },
@@ -251,12 +267,16 @@ export const IWW_VESSELS = Object.freeze([
   { id: "coupled-convoy", label: "Coupled convoy (163–185 m)", f: g(4.6, 15.1, "IWW Table 2") },
   { id: "push-2", label: "Pushed convoy, push boat + 2 barges", f: g(4.7, 15.5, "IWW Table 2") },
   { id: "push-4", label: "Pushed convoy, push boat + 4/5 barges", f: g(2.6, 8.7, "IWW Table 2") },
+  { id: "push-6", label: "Pushed convoy, push boat + 6 barges (US operations)", f: g(1.9, 6.4, "IWW Table 2") },
   { id: "tanker", label: "Tanker vessel", f: g(5.7, 19.0, "IWW Table 2") },
   { id: "container-110", label: "Container vessel 110 m", f: g(6.8, 22.5, "IWW Table 2") },
   { id: "container-135", label: "Container vessel 135 m", f: g(5.2, 17.4, "IWW Table 2") },
+  { id: "container-coupled", label: "Container vessels, coupled convoy", f: g(5.2, 17.4, "IWW Table 2") },
 ] as const);
 
-// ─── Logistics hubs (GLEC v3.2 Module 2, Table 3; WTW, split not published) ───
+// ─── Logistics hubs (GLEC v3.3 Module 2, Table 3, Fraunhofer IML; WTW, split not published) ───
+// TEMT uses these global defaults in both factor sets: Fraunhofer IML and RELEVÉ already include Indian hubs, and their
+// method is more complete than one based on electricity, fuel and throughput alone (TCI–IIMB Lab, GLEC v3.3).
 
 export type HubTypeId = "transshipment" | "storage-transshipment" | "warehouse" | "liquid-bulk" | "container-terminal";
 export const HUB_TYPES: Readonly<Record<HubTypeId, { label: string; unit: "tonne" | "container"; ambient: number; mixed: number; description: string }>> = Object.freeze({
@@ -284,41 +304,51 @@ export interface Fuel {
 }
 
 export const FUELS: Readonly<Record<FuelId, Fuel>> = Object.freeze({
-  diesel: { id: "diesel", label: "Diesel (HSD)", ttw: 3.24, wtw: 4.21, unit: "kg", density: 0.83, source: "glec-3.2", ref: "Module 1, Indian sources" },
-  petrol: { id: "petrol", label: "Petrol", ttw: 3.15, wtw: 4.16, unit: "kg", density: 0.71, source: "glec-3.2", ref: "Module 1, Indian sources" },
-  cng: { id: "cng", label: "Compressed natural gas", ttw: 2.86, wtw: 3.2, unit: "kg", source: "glec-3.2", ref: "Module 1, Indian sources" },
+  diesel: { id: "diesel", label: "Diesel (HSD)", ttw: 3.24, wtw: 4.21, unit: "kg", density: 0.83, source: "glec-3.3", ref: "Module 1, Indian sources" },
+  petrol: { id: "petrol", label: "Petrol", ttw: 3.15, wtw: 4.16, unit: "kg", density: 0.71, source: "glec-3.3", ref: "Module 1, Indian sources" },
+  cng: { id: "cng", label: "Compressed natural gas", ttw: 2.86, wtw: 3.2, unit: "kg", source: "glec-3.3", ref: "Module 1, Indian sources" },
   jet: { id: "jet", label: "Jet kerosene (Jet A-1)", ttw: 3.18, wtw: 3.84, unit: "kg", density: 0.802, source: "glec-3.2", ref: "Module 1, air fuel" },
   vlsfo: { id: "vlsfo", label: "Heavy fuel oil (VLSFO)", ttw: 3.16, wtw: 3.84, unit: "kg", source: "glec-3.2", ref: "Module 1, marine fuel" },
   mgo: { id: "mgo", label: "Marine diesel / gas oil", ttw: 3.26, wtw: 4.01, unit: "kg", source: "glec-3.2", ref: "Module 1, marine fuel" },
   "lng-marine": { id: "lng-marine", label: "LNG (marine, default engine)", ttw: 3.73, wtw: 4.61, unit: "kg", source: "glec-3.2", ref: "Module 1, marine fuel" },
-  electricity: { id: "electricity", label: "Grid electricity (India)", ttw: 0, wtw: INDIA_GRID_KG_PER_KWH, unit: "kWh", source: "cea-21", ref: "Weighted average, FY 2024–25" },
+  electricity: { id: "electricity", label: "Grid electricity (India)", ttw: 0, wtw: INDIA_GRID_KG_PER_KWH, unit: "kWh", source: "cea-22", ref: "FY 2025–26 at the point of use (GLEC v3.3 Indian method)" },
 });
 
 /**
- * Battery-electric truck energy intensity (kWh per tonne-km) on Indian loading.
- *
- * GLEC v3.2 Table 11 publishes electric rigid-truck energy for Europe only, at European loading (60% load factor,
- * 17% empty running). Indian trucks run far more heavily loaded, so TEMT's Indian diesel factors are much lower per
- * tonne-km than the European ones, and comparing them with an unadjusted European electric value overstates
- * electric emissions. Each class therefore keeps GLEC's European ratio of electricity to diesel for the matching
- * rigid class (Table 11 kWh/t-km over Table 8 diesel kg/t-km) and applies it to the diesel use implied by TEMT's
- * Indian factor. Light commercial vehicles have no matching European value and need measured energy.
+ * GLEC v3.3 Indian electric-truck values (Table 13 continued): manufacturer specifications and industry pilots, with
+ * TCI–IIMB load factors and empty running. The WTW intensity includes a 10% charging loss, +5% distance and grid
+ * electricity at the point of use (CEA V22.0). Each TEMT class takes the row with its own operating assumptions.
  */
-export const GLEC_ELECTRIC_REFERENCE: Readonly<Partial<Record<RoadClassId, { kwhPerTkm: number; dieselKgPerTkm: number; europeanClass: string }>>> = Object.freeze({
-  "gvw-3-5": { kwhPerTkm: 0.44, dieselKgPerTkm: 0.080, europeanClass: "Rigid truck 3.5–7.5 t" },
-  "gvw-5-12": { kwhPerTkm: 0.34, dieselKgPerTkm: 0.053, europeanClass: "Rigid truck 7.5–12 t" },
-  "gvw-12-20": { kwhPerTkm: 0.22, dieselKgPerTkm: 0.046, europeanClass: "Rigid truck 12–20 t" },
-  "gvw-20-30": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },
-  "gvw-30-50": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },
-  "trailer-30-60": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },
+export interface ElectricTruck { row: string; kwhPerTkm: number; wtwG: number; loadFactor: number; emptyRunning: number }
+export const INDIA_ELECTRIC_TRUCKS: Readonly<Partial<Record<RoadClassId, ElectricTruck>>> = Object.freeze({
+  "gvw-3.5": { row: "Rigid truck <3.5 t GVW", kwhPerTkm: 0.132, wtwG: 137.7, loadFactor: 0.83, emptyRunning: 0.109 },
+  "gvw-3-5": { row: "Rigid truck 3.5–12 t GVW", kwhPerTkm: 0.128, wtwG: 133.4, loadFactor: 0.7958, emptyRunning: 0.1082 },
+  "gvw-5-12": { row: "Rigid truck 14 t GVW", kwhPerTkm: 0.123, wtwG: 128.4, loadFactor: 0.788, emptyRunning: 0.108 },
+  "gvw-12-20": { row: "Rigid truck 18.5 t GVW", kwhPerTkm: 0.072, wtwG: 76.8, loadFactor: 0.768, emptyRunning: 0.124 },
+  "trailer-30-60": { row: "Articulated truck 55 t GVW", kwhPerTkm: 0.036, wtwG: 38.6, loadFactor: 0.6721, emptyRunning: 0.133 },
 });
 
-export const EV_ENERGY_PROXY_KWH_PER_TKM: Readonly<Partial<Record<RoadClassId, number>>> = Object.freeze(Object.fromEntries(
-  Object.entries(GLEC_ELECTRIC_REFERENCE).map(([id, reference]) => {
+/**
+ * GLEC v3.3 publishes no Indian electric value for heavy rigid trucks of 20–50 t. For those two classes TEMT keeps its
+ * earlier estimate: GLEC v3.2 Table 11's European ratio of electricity to diesel for the matching rigid class (kWh/t-km
+ * over Table 8 diesel kg/t-km), applied to the diesel use implied by TEMT's Indian factor.
+ */
+export const GLEC_ELECTRIC_REFERENCE: Readonly<Partial<Record<RoadClassId, { kwhPerTkm: number; dieselKgPerTkm: number; europeanClass: string }>>> = Object.freeze({
+  "gvw-20-30": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },
+  "gvw-30-50": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },
+});
+
+/**
+ * Electricity drawn from the grid per tonne-km for a default electric truck, including charging loss and distance:
+ * for GLEC v3.3 classes it reproduces the published WTW intensity at the Indian grid factor.
+ */
+export const EV_ENERGY_PROXY_KWH_PER_TKM: Readonly<Partial<Record<RoadClassId, number>>> = Object.freeze(Object.fromEntries([
+  ...Object.entries(INDIA_ELECTRIC_TRUCKS).map(([id, truck]) => [id, Math.round((truck!.wtwG / 1000 / INDIA_GRID_KG_PER_KWH) * 10000) / 10000]),
+  ...Object.entries(GLEC_ELECTRIC_REFERENCE).map(([id, reference]) => {
     const diesel = ROAD_FACTORS.temt[id as RoadClassId]!.diesel!;
     const indianDieselKgPerTkm = (diesel.wtt + diesel.ttw) / FUELS.diesel.wtw;
     return [id, Math.round((reference!.kwhPerTkm / reference!.dieselKgPerTkm) * indianDieselKgPerTkm * 1000) / 1000];
   }),
-));
+]));
 
 export const MODE_LABELS: Readonly<Record<TransportMode, string>> = Object.freeze({ road: "Road", rail: "Rail", air: "Air", sea: "Sea", iww: "Inland waterway" });

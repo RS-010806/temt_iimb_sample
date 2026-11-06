@@ -8,16 +8,24 @@ export interface Source {
   note?: string;
 }
 
-export type SourceId = "glec-3.2" | "temt" | "cea-21" | "iso-14083" | "ghg-protocol-scope3";
+export type SourceId = "glec-3.3" | "glec-3.2" | "temt" | "cea-22" | "iso-14083" | "ghg-protocol-scope3";
 
 export const SOURCES: Readonly<Record<SourceId, Source>> = Object.freeze({
+  "glec-3.3": {
+    id: "glec-3.3",
+    title: "Global Logistics Emissions Council Framework v3.3",
+    publisher: "Smart Freight Centre",
+    year: 2026,
+    url: "https://www.smartfreightcentre.org/en/our-programs/global-logistics-emissions-council/",
+    note: "India values for road, electric trucks, rail and domestic air are developed by SFC India and the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore; Indian hubs use the global Fraunhofer IML defaults.",
+  },
   "glec-3.2": {
     id: "glec-3.2",
     title: "Global Logistics Emissions Council Framework v3.2",
     publisher: "Smart Freight Centre",
     year: 2025,
     url: "https://smartfreightcentre.org/news/13311209",
-    note: "Indian road intensities in Table 13 are based on research by the TCI–IIMB Supply Chain Sustainability Lab.",
+    note: "Used where the GLEC v3.3 table is not yet in TEMT: Indian diesel, petrol and CNG trucks (Table 13), sea vessels and container trade lanes, and jet and marine fuels.",
   },
   temt: {
     id: "temt",
@@ -27,13 +35,13 @@ export const SOURCES: Readonly<Record<SourceId, Source>> = Object.freeze({
     url: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab",
     note: "India-specific factors validated through TEMT's ISO 14083 certification (December 2024).",
   },
-  "cea-21": {
-    id: "cea-21",
-    title: "CO2 Baseline Database for the Indian Power Sector, Version 21.0",
+  "cea-22": {
+    id: "cea-22",
+    title: "CO2 Baseline Database for the Indian Power Sector, Version 22.0",
     publisher: "Central Electricity Authority, Ministry of Power",
-    year: 2025,
+    year: 2026,
     url: "https://cea.nic.in/cdm-co2-baseline-database/?lang=en",
-    note: "All-India weighted average emission factor for FY 2024–25, including cross-border transfers: 0.710 tCO2/MWh.",
+    note: "All-India weighted average for FY 2025–26, adjusted for cross-border transfers: 0.675 tCO2/MWh (Table S). As in GLEC v3.3's Indian values, TEMT applies it at the point of use with transmission and distribution losses and upstream fuel production: 0.903 kg CO2e/kWh.",
   },
   "iso-14083": {
     id: "iso-14083",

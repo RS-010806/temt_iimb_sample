@@ -260,7 +260,12 @@ export interface DistanceEstimate {
 export function estimateDistance(mode: TransportMode, from?: Place, to?: Place): DistanceEstimate | undefined {
   if (!hasCoords(from) || !hasCoords(to)) return undefined;
   const gcd = greatCircleKm(from, to);
-  if (mode === "air") return { km: gcd, method: "great-circle", note: `The standard ${AIR_DISTANCE_ADJUSTMENT_KM} km allowance for routing and holding is added in the calculation, as GLEC specifies.` };
+  if (mode === "air") {
+    const domestic = (from.country ?? "IN") === "IN" && (to.country ?? "IN") === "IN";
+    return { km: gcd, method: "great-circle", note: domestic
+      ? "GLEC v3.3's Indian domestic air value is built from actual fuel use, so routing is already included and no distance allowance is added."
+      : `For international flights, GLEC's ${AIR_DISTANCE_ADJUSTMENT_KM} km allowance for routing and holding is applied in the calculation.` };
+  }
   if (mode === "sea") {
     const a = from.kind === "port" && from.code ? from.code : nearestPort(from).id;
     const b = to.kind === "port" && to.code ? to.code : nearestPort(to).id;
