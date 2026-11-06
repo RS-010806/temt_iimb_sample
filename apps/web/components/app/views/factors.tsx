@@ -66,14 +66,15 @@ export function FactorsView() {
 
       {tab === "road" && (
         <div className="grid gap-4 animate-fade">
-          <Table head={["Vehicle class", "Fuel", "WTT", "TTW", "WTW", ...cmp.map((label) => `${label} WTW`)]} right={2}
+          {/* GLEC's Indian diesel, petrol and CNG truck values are still v3.2 Table 13: say so in the column. */}
+          <Table head={["Vehicle class", "Fuel", "WTT", "TTW", "WTW", ...cmp.map((label) => (other === "glec-india" ? "GLEC v3.2 Table 13 WTW" : `${label} WTW`))]} right={2}
             rows={ROAD_CLASSES.flatMap((item) => (["diesel", "cng", "petrol"] as const).flatMap((fuel) => {
               const own = ROAD_FACTORS[set][item.id]?.[fuel] ?? ROAD_FACTORS[other][item.id]?.[fuel];
               if (!own) return [];
               const alt = roadW(other, item.id, fuel);
               return [[`${item.label} (${item.gvw})`, fuel === "cng" ? "CNG" : fuel, g(own.wtt), g(own.ttw), g(own.wtt + own.ttw), ...(compare ? [alt ? g(alt) : "–"] : [])]];
             }))} />
-          <p className="text-[13px] leading-relaxed text-grey-600">g CO₂e per tonne-km, at the typical load factor of each class. Refrigerated road freight adds TEMT's refrigeration uplift. Courier and part-truckload shipments use TEMT's first-mile, line-haul and last-mile defaults with a transshipment at each hub.</p>
+          <p className="text-[13px] leading-relaxed text-grey-600">g CO₂e per tonne-km, at the typical load factor of each class. Refrigerated road freight adds TEMT's refrigeration uplift. Courier and part-truckload shipments use TEMT's first-mile, line-haul and last-mile defaults with a transshipment at each hub.{(compare || set === "glec-india") && " GLEC's Indian diesel, petrol and CNG truck values are GLEC v3.2 Table 13 until the v3.3 table is added."}</p>
           <Table head={["Electric truck class", "GLEC v3.3 India row", "kWh/t-km", "WTW, g/t-km", "Diesel, g/t-km"]} right={2} rows={ROAD_CLASSES.filter((item) => EV_ENERGY_PROXY_KWH_PER_TKM[item.id]).map((item) => {
             const indian = INDIA_ELECTRIC_TRUCKS[item.id];
             return [`${item.label} (${item.gvw})`, indian ? indian.row : "Not covered: TEMT estimate", fmt(indian ? indian.kwhPerTkm : EV_ENERGY_PROXY_KWH_PER_TKM[item.id]!, 3), indian ? fmt(indian.wtwG, 1) : g(EV_ENERGY_PROXY_KWH_PER_TKM[item.id]! * INDIA_GRID_KG_PER_KWH), g(ROAD_FACTORS.temt[item.id]!.diesel!.wtt + ROAD_FACTORS.temt[item.id]!.diesel!.ttw)];

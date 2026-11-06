@@ -487,8 +487,8 @@ async function main() {
     await click(page, nav("nav-factors"), 500);
     await hover(page, page.getByText("Calculations use TEMT's emission factors"), 1400);
     await click(page, page.getByText("Show GLEC v3.3 for comparison"), 500);
-    await reveal(page, page.getByRole("columnheader", { name: "GLEC v3.3 WTW" }));
-    await hover(page, page.getByRole("columnheader", { name: "GLEC v3.3 WTW" }), 1200);
+    await reveal(page, page.getByRole("columnheader", { name: "GLEC v3.2 Table 13 WTW" }));
+    await hover(page, page.getByRole("columnheader", { name: "GLEC v3.2 Table 13 WTW" }), 1200);
     await at(1, -0.3);
     await click(page, nav("nav-settings"), 500);
     await hover(page, page.getByLabel("Search NIFTY 500 companies"), 600);

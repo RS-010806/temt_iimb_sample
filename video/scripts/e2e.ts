@@ -477,7 +477,7 @@ async function workspace(browser: Browser) {
     await page.goto(`${BASE}/app/factors/`, { waitUntil: "networkidle" });
     await page.getByText("Calculations use TEMT's emission factors").waitFor();
     await page.getByText("Show GLEC v3.3 for comparison").click();
-    await page.getByRole("columnheader", { name: "GLEC v3.3 WTW" }).waitFor();
+    await page.getByRole("columnheader", { name: "GLEC v3.2 Table 13 WTW" }).waitFor();
     for (const tab of ["Rail and air", "Sea", "Waterways and hubs", "Fuels and electricity", "Sources", "Road"]) { await page.getByRole("button", { name: tab, exact: true }).click(); await page.waitForTimeout(150); }
     await shot(page, "factors");
   });
