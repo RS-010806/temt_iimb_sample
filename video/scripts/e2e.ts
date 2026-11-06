@@ -322,7 +322,9 @@ async function workspace(browser: Browser) {
     await page.getByRole("radio", { name: /Rail intermodal/ }).click();
     // The example's transfer stops snap to the nearest well-connected stations.
     await page.getByText(/Suggested: the nearest well-connected station/).first().waitFor({ timeout: 15000 });
-    const station = await page.getByLabel("Stop 1", { exact: true }).inputValue();
+    // The suggested stations load over the network: wait for Stop 1 to be filled in.
+    let station = "";
+    for (let i = 0; i < 40 && !/\([A-Z]{2,5}\)$/.test(station); i += 1) { station = await page.getByLabel("Stop 1", { exact: true }).inputValue(); if (!/\([A-Z]{2,5}\)$/.test(station)) await page.waitForTimeout(250); }
     if (!/\([A-Z]{2,5}\)$/.test(station)) throw new Error(`Stop 1 is not a station: ${station}`);
     await page.getByText("Shortest route on the Indian Railways network, station to station").first().waitFor({ timeout: 15000 });
     await page.getByText(/Rail intermodal is a fixed route:/).waitFor();
