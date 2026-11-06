@@ -26,7 +26,7 @@ export const CHAPTERS: ChapterScript[] = [
     "Each month splits into tank-to-wheel and well-to-tank, as ISO 14083 requires, followed by modes, business units, lanes and reduction opportunities.",
   ] },
   { id: "quick", title: "Quick calculate", lines: [
-    "The quick calculator compares every practical mode, door to door. Pune to Kolkata by rail is about eighty-five percent lower than by truck.",
+    "The quick calculator compares every practical mode, door to door. Pune to Kolkata by rail is about eighty-four percent lower than by truck.",
   ] },
   { id: "calculator", title: "Calculator", lines: [
     "The calculator starts with the method: distance-based, or fuel-based when you have fuel records. Then pick the mode.",
@@ -80,7 +80,7 @@ export const CHAPTERS: ChapterScript[] = [
     "The reduction planner tests rail shift, air to road, consolidation, electric trucks and load factors, and measures each lever against your target.",
   ] },
   { id: "factors", title: "Factors and settings", lines: [
-    "The factor library lists every value TEMT applies, with its source: TEMT's own India-specific factors first, and the GLEC defaults alongside for comparison.",
+    "The factor library lists every value TEMT applies, with its source: India-specific factors that follow the GLEC Framework version 3.3, from Indian trucks and railways to air, shipping and hubs.",
     "Settings hold your NIFTY 500 company, targets, backups, and an optional local AI model.",
   ] },
   { id: "copilot", title: "TEMT Copilot", lines: [

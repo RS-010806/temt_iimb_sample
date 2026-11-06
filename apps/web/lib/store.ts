@@ -36,7 +36,7 @@ export interface State {
 export const DEFAULT_SETTINGS: Settings = {
   organisation: { name: "" },
   factorSet: "temt",
-  factorSetVersion: 2,
+  factorSetVersion: 3,
   businessUnits: ["Operations"],
   target: { baseYear: "FY 2024–25", targetYear: "FY 2030–31", reductionPercent: 30 },
   carbonPriceInrPerTonne: 0,
@@ -61,9 +61,9 @@ export function subscribe(listener: () => void) {
 /** Fill missing settings and move older workspaces to the current factor-set ids and default. */
 export function normaliseSettings(saved?: Partial<Settings>): Settings {
   const merged: Settings = { ...DEFAULT_SETTINGS, ...saved, organisation: { ...DEFAULT_SETTINGS.organisation, ...saved?.organisation }, target: { ...DEFAULT_SETTINGS.target, ...saved?.target }, copilot: { ...DEFAULT_SETTINGS.copilot, ...saved?.copilot } };
-  if ((merged.factorSet as string) === "temt-legacy") merged.factorSet = "temt";
-  if (merged.factorSet !== "temt" && merged.factorSet !== "glec-india") merged.factorSet = "temt";
-  if ((saved?.factorSetVersion ?? 1) < 2) { merged.factorSet = "temt"; merged.factorSetVersion = 2; }
+  // TEMT has one factor set: workspaces that chose an earlier option move onto it.
+  merged.factorSet = "temt";
+  merged.factorSetVersion = 3;
   return merged;
 }
 

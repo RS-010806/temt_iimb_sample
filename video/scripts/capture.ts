@@ -287,7 +287,7 @@ async function main() {
     const card = page.locator('[data-tour="quick-calc"]');
     await click(page, card.getByRole("radio", { name: "Rail" }), 400);
     const text = await card.innerText();
-    if (!/85% below road/.test(text)) log("  narration says 85%; check the quick calculator");
+    if (!/84% below road/.test(text)) log("  narration says 84%; check the quick calculator");
     log(`  quick calculator says: ${text.replace(/\s+/g, " ").slice(0, 260)}`);
     await hover(page, card.getByText(/below road/).first(), 600);
     void at;
@@ -485,10 +485,9 @@ async function main() {
 
   await chapter("factors", async (at) => {
     await click(page, nav("nav-factors"), 500);
-    await hover(page, page.getByText("Calculations use TEMT's emission factors"), 1400);
-    await click(page, page.getByText("Show GLEC v3.3 for comparison"), 500);
-    await reveal(page, page.getByRole("columnheader", { name: "GLEC v3.2 Table 13 WTW" }));
-    await hover(page, page.getByRole("columnheader", { name: "GLEC v3.2 Table 13 WTW" }), 1200);
+    await hover(page, page.getByText("TEMT's emission factors, following the GLEC Framework v3.3"), 1400);
+    await click(page, page.getByRole("button", { name: "Rail and air", exact: true }), 500);
+    await hover(page, page.getByRole("cell", { name: /Indian domestic air, all aircraft/ }), 1200);
     await at(1, -0.3);
     await click(page, nav("nav-settings"), 500);
     await hover(page, page.getByLabel("Search NIFTY 500 companies"), 600);

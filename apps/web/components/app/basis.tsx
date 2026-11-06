@@ -37,7 +37,7 @@ function distanceBasis(leg: LegResult, meta?: LegMeta) {
 export function factorSource(leg: LegResult) {
   const source = SOURCES[leg.factor.source];
   const own = `${source.title} (${source.publisher}, ${source.year}) · ${leg.factor.ref}`;
-  return leg.factor.source === "glec-3.3" || leg.factor.source === "glec-3.2" ? own : `${own}. Reference framework: GLEC Framework v3.3 (${GLEC.publisher}, ${GLEC.year})`;
+  return leg.factor.source === "glec-3.3" ? own : `${own}. Reference framework: GLEC Framework v3.3 (${GLEC.publisher}, ${GLEC.year})`;
 }
 
 /** Plain steps from the inputs to the result. */

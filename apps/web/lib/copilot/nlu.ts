@@ -22,7 +22,7 @@ export interface Slots {
   page?: string;
   fy?: string;
   sector?: "fmcg" | "automotive" | "pharma" | "materials";
-  factorSet?: "glec-india" | "temt";
+  factorSet?: "glec" | "temt";
   airService?: "freighter" | "belly";
 }
 
@@ -115,7 +115,7 @@ export function extractSlots(raw: string): Slots {
   else if (/\bpharma|healthcare|medicine\b/.test(text)) slots.sector = "pharma";
   else if (/\bcement|materials|steel|metals\b/.test(text)) slots.sector = "materials";
   if (/\b(temt production|production temt|legacy|old factors|temt factors|temt set|own factors|india factors)\b/.test(text)) slots.factorSet = "temt";
-  else if (/\bglec\b/.test(text)) slots.factorSet = "glec-india";
+  else if (/\bglec\b/.test(text)) slots.factorSet = "glec";
 
   const route = raw.match(/\bfrom\s+(.+?)\s+(?:to|→|->|till|until)\s+(.+?)(?=\s+(?:by|via|using|in|on|with|for|carrying|and|,|\.|\?|$)|[,.?]|$)/i)
     ?? raw.match(/\bbetween\s+(.+?)\s+and\s+(.+?)(?=\s+(?:by|via|using|in|on|with|for|carrying)|[,.?]|$)/i)

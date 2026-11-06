@@ -61,7 +61,7 @@ export function suggestionsFor(pathname: string): string[] {
   if (pathname.startsWith("/app/reports")) return ["Export an Excel workbook", "How does this map to BRSR?", "Create a Power BI pack"];
   if (pathname.startsWith("/app/planner")) return ["What if we move 40% of long road hauls to rail?", "Do electric trucks help in India?", "Where can I reduce emissions?"];
   if (pathname.startsWith("/app/chain")) return ["What counts as a hub?", "How are courier shipments calculated?", "Compare 10 t Pune to Guwahati"];
-  if (pathname.startsWith("/app/factors")) return ["Where do the Indian factors come from?", "Compare with the GLEC v3.3 factors", "What is ISO 14083?"];
+  if (pathname.startsWith("/app/factors")) return ["Where do the Indian factors come from?", "Which GLEC version does TEMT follow?", "What is ISO 14083?"];
   if (pathname.startsWith("/app")) return ["Summarise my footprint", "Where can I reduce emissions?", "Export a PDF report"];
   return ["What is TEMT?", "Calculate 10 t Pune to Delhi", "Give me a tour"];
 }
@@ -230,13 +230,9 @@ async function handle(raw: string, ctx: AgentContext, carried?: Pending): Promis
     case "clear":
       if (!state.shipments.length) return { blocks: [text("Your workspace is already empty.")], suggestions };
       return { blocks: [text(`This removes all ${state.shipments.length} shipments from this browser. Settings are kept. Download a backup first if you may need them.`), { type: "actions", actions: [{ kind: "clear", label: "Clear workspace" }, { kind: "navigate", href: "/app/settings/#data", label: "Back up first" }] }] };
-    case "factor-set": {
-      const next = slots.factorSet!;
-      const before = totals(rows).wtwKg;
-      actions.updateSettings({ factorSet: next });
-      const after = totals(selectComputed(getState())).wtwKg;
-      return { blocks: [text(`Switched to **${FACTOR_SETS[next].label}**. All ${rows.length} shipments were recalculated; your inputs are unchanged.${rows.length ? ` Total footprint: ${emissionsText(before)} → ${emissionsText(after)}.` : ""}`)], suggestions };
-    }
+    case "factor-set":
+      // There is one factor set; explain it rather than switch.
+      return { blocks: [text(`TEMT calculates every shipment with **${FACTOR_SETS.temt.label}**, which follow the GLEC Framework v3.3: TEMT's own road values, GLEC v3.3's India values for rail, domestic air and electric trucks, and GLEC v3.3 defaults for shipping, waterways and hubs. There is nothing to switch.`)], suggestions: ["Where do the Indian factors come from?", "How is rail calculated?", "Open the factor library"] };
     case "export": {
       if (!rows.length) return { blocks: [text("There's nothing to export yet. Add a shipment, import a file or load sample data first.")], suggestions: ["Load sample data", "How do I import shipments?"] };
       const format = slots.format ?? "pdf";

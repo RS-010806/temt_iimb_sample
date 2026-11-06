@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { CheckCircle2, Cpu, Database, Download, History, Loader2, Server, Trash2, Upload, X } from "lucide-react";
-import { FACTOR_SETS, type FactorSetId } from "@temt/calculator";
+import { FACTOR_SETS } from "@temt/calculator";
 import { applyFilters, fiscalYears, totals } from "@/lib/analytics";
 import { testLocalModel } from "@/lib/copilot/local-llm";
 import { downloadBlob } from "@/lib/exports/common";
@@ -79,9 +80,8 @@ export function SettingsView() {
           </div>
         </Card>
 
-        <Card id="factors" title="Emission factors" description="TEMT's own factors are the default. Switch to GLEC v3.3 only to compare with a partner's figures; switching recalculates every shipment and never changes inputs.">
-          <Segmented ariaLabel="Factor set" value={settings.factorSet} onChange={(factorSet: FactorSetId) => { update({ factorSet }); toast({ tone: "ok", message: `Now using ${FACTOR_SETS[factorSet].short}.` }); }} options={(Object.keys(FACTOR_SETS) as FactorSetId[]).map((id) => ({ value: id, label: FACTOR_SETS[id].short }))} />
-          <p className="mt-3 text-[13.5px] leading-relaxed text-grey-700">{FACTOR_SETS[settings.factorSet].description}</p>
+        <Card id="factors" title="Emission factors" description="Every shipment is calculated with TEMT's emission factors, following the GLEC Framework v3.3.">
+          <p className="text-[13.5px] leading-relaxed text-grey-700">{FACTOR_SETS.temt.description} <Link prefetch={false} href="/app/factors/" className="font-semibold text-maroon-700 underline">See every factor in the factor library</Link>.</p>
           <div className="mt-6 border-t border-stone-200 pt-5">
             <h3 className="font-bold">Targets and carbon price</h3>
             <div className="mt-4 grid gap-4 md:grid-cols-2">

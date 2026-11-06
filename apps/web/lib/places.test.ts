@@ -118,9 +118,9 @@ describe("per-mode import templates", () => {
     expect(road[1]!.record!.input.legs[0]).toMatchObject({ tonnes: 8.5, fuel: "cng", distanceKm: 985 });
     expect(road[2]!.record!.input.legs[0]).toMatchObject({ method: "fuel", fuelId: "diesel", fuelQuantity: 58, fuelUnit: "l" });
     const air = await read("air");
-    expect(air[0]!.record!.input.legs[0]).toMatchObject({ tonnes: 0.8, airService: "belly", airScope: "domestic" });
+    expect(air[0]!.record!.input.legs[0]).toMatchObject({ tonnes: 0.8, airScope: "domestic" });
     expect(air[1]!.record!.origin.code).toBe("BOM");
-    expect(air[1]!.record!.input.legs[0]).toMatchObject({ airScope: "international", airService: "freighter" });
+    expect(air[1]!.record!.input.legs[0]).toMatchObject({ airScope: "international" });
     const sea = await read("sea");
     expect(sea[0]!.record!.input.legs[0]).toMatchObject({ seaBasis: "lane", tradeLane: "europe-me-india", containerType: "dry" });
     expect(sea[1]!.record!.input.legs[0]).toMatchObject({ seaBasis: "vessel" });

@@ -63,17 +63,16 @@ export const IMPORT_TEMPLATES: ImportTemplate[] = [
       { rr_number: "RR-112093", dispatch_date: "2026-04-09", from_station: "Hosur", to_station: "Guwahati", cargo_weight: 40, weight_unit: "ton", business_unit: "Foods" },
       { rr_number: "RR-112094", dispatch_date: "2026-04-12", from_station: "NDLS", to_station: "MAS", cargo_weight: 180, weight_unit: "ton" },
     ] },
-  { id: "air", label: "Air", summary: "AWB number, airports by code or name, aircraft", file: "TEMT-air-template", columns: [
+  { id: "air", label: "Air", summary: "AWB number, airports by code or name", file: "TEMT-air-template", columns: [
     reference("awb_number", "Air waybill (AWB) number"), DISPATCH,
     { key: "from_airport", required: true, help: "Airport code (BOM), airport name or the city it serves." },
     { key: "to_airport", required: true, help: "Airport code, airport name or city." }, WEIGHT, weightUnit("kg"),
-    { key: "aircraft", options: ["unknown", "belly", "freighter"], help: "belly (passenger aircraft hold), freighter, or unknown for the average mix." },
     { key: "distance_km", help: "Optional. Blank: great-circle distance between the airports (international flights add GLEC's 95 km routing allowance)." },
     { key: "fuel_used", help: "Optional primary data: jet fuel attributable to this shipment." },
     { key: "fuel_unit", options: ["litres", "kg", "tonnes"], help: "litres, kg or tonnes of jet fuel." }, ...OPTIONAL],
     examples: [
-      { awb_number: "098-12345675", dispatch_date: "2026-04-12", from_airport: "DEL", to_airport: "BLR", cargo_weight: 800, weight_unit: "kg", aircraft: "belly", business_unit: "Personal Care" },
-      { awb_number: "176-55667788", dispatch_date: "2026-04-14", from_airport: "Mumbai", to_airport: "DXB", cargo_weight: 1.2, weight_unit: "ton", aircraft: "freighter" },
+      { awb_number: "098-12345675", dispatch_date: "2026-04-12", from_airport: "DEL", to_airport: "BLR", cargo_weight: 800, weight_unit: "kg", business_unit: "Personal Care" },
+      { awb_number: "176-55667788", dispatch_date: "2026-04-14", from_airport: "Mumbai", to_airport: "DXB", cargo_weight: 1.2, weight_unit: "ton" },
     ] },
   { id: "sea", label: "Sea", summary: "B/L number, ports, container or vessel type", file: "TEMT-sea-template", columns: [
     reference("bl_number", "Bill of lading (B/L) number"), DISPATCH,
@@ -552,9 +551,7 @@ async function modeRows(id: ModeTemplate, rows: Raw[], options: ImportOptions): 
         else if (!leg.fuel) leg.fuel = fuel.fuelId === "cng" ? "cng" : fuel.fuelId === "petrol" ? "petrol" : "diesel";
       }
       if (id === "air") {
-        const aircraft = str(row.aircraft).toLowerCase();
-        if (aircraft && !["unknown", "belly", "freighter"].includes(aircraft)) messages.push(`Aircraft “${str(row.aircraft)}” not recognised; used the average mix.`);
-        Object.assign(leg, { airService: ["belly", "freighter"].includes(aircraft) ? aircraft : "unknown", airScope: origin.country && destination.country && (origin.country !== "IN" || destination.country !== "IN") ? "international" : "domestic" });
+        Object.assign(leg, { airService: "unknown", airScope: origin.country && destination.country && (origin.country !== "IN" || destination.country !== "IN") ? "international" : "domestic" });
       }
       if (id === "sea") {
         Object.assign(leg, { distanceBasis: num(row.distance_nm) ? "actual" : "shortest" });

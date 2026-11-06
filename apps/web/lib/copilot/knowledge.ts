@@ -31,9 +31,9 @@ export const ARTICLES: Article[] = [
     actions: [{ label: "Open the factor library", href: "/app/factors/" }],
   },
   {
-    id: "factor-sets", kind: "product", title: "TEMT factors and the GLEC comparison",
-    keywords: ["factor set", "switch factors", "legacy", "restate", "reconcile", "compare factor sets", "which factors", "glec comparison"],
-    body: "TEMT calculates with **its own India-specific factors** by default. For benchmarking, Settings can switch the whole workspace to the **GLEC Framework v3.3** defaults, for example to compare with a partner who reports on GLEC. Switching recalculates every shipment instantly; your inputs never change, and every report names the factor set it used.",
+    id: "factor-sets", kind: "product", title: "Which factors TEMT uses (GLEC Framework v3.3)",
+    keywords: ["factor set", "switch factors", "legacy", "restate", "reconcile", "compare factor sets", "which factors", "glec comparison", "glec version", "glec 3.3", "v3.3"],
+    body: "TEMT calculates every shipment with **one set of India-specific emission factors that follows the GLEC Framework v3.3**: TEMT's own road and courier values (validated through its ISO 14083 certification), GLEC v3.3's India values for **rail, domestic air and electric trucks**, and GLEC v3.3 defaults for shipping, inland waterways and hubs. There is no separate comparison set. Every report names the factors used and lists their sources.",
     actions: [{ label: "Open the factor library", href: "/app/factors/" }],
   },
   {
@@ -70,7 +70,7 @@ export const ARTICLES: Article[] = [
   {
     id: "air", kind: "concept", title: "How air freight is calculated",
     keywords: ["air", "flight", "airport", "belly", "freighter", "95 km", "short haul", "long haul", "air cargo"],
-    body: "Air distance is the great-circle distance between airports. **Indian domestic** flights use GLEC v3.3's Indian value for all aircraft, **1,259 g CO₂e per tonne-km** (DGCA fuel and traffic data, FY 2022–23 to 2024–25); it comes from actual fuel use, so no routing allowance is added. **International** flights add GLEC's 95 km allowance, and the GLEC comparison set distinguishes **short-haul (≤1,500 km)** and long-haul, and **freighter, belly-hold or unknown** aircraft. Per tonne-kilometre, air is roughly 20 times a heavy truck and over 100 times Indian rail, so small air volumes dominate footprints quickly.",
+    body: "Air distance is the great-circle distance between airports. **Indian domestic** flights use GLEC v3.3's Indian value, **1,259 g CO₂e per tonne-km** (DGCA fuel and traffic data, FY 2022–23 to 2024–25, all aircraft); it comes from actual fuel use, so no routing allowance is added. **International** flights use TEMT's international value, **817 g CO₂e per tonne-km**, on the great-circle distance plus GLEC's 95 km allowance for routing and holding. Per tonne-kilometre, air is roughly 20 times a heavy truck and over 100 times Indian rail, so small air volumes dominate footprints quickly.",
   },
   {
     id: "sea", kind: "concept", title: "How sea and coastal freight are calculated",

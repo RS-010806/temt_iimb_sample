@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
-  AIR_DISTANCE_ADJUSTMENT_KM, AIR_SHORT_HAUL_LIMIT_KM, ENGINE_V2_VERSION, EV_ENERGY_PROXY_KWH_PER_TKM, FACTOR_SETS, FUELS, GLEC_AIR,
-  HUB_TYPES, INDIA_DOMESTIC_AIR, INDIA_ELECTRIC_TRUCKS, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, MODE_LABELS, RAIL_FACTORS, REEFER_UPLIFT, ROAD_CLASSES, ROAD_FACTORS,
+  AIR_DISTANCE_ADJUSTMENT_KM, ENGINE_V2_VERSION, EV_ENERGY_PROXY_KWH_PER_TKM, FUELS,
+  HUB_TYPES, INDIA_ELECTRIC_TRUCKS, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, MODE_LABELS, RAIL_FACTORS, REEFER_UPLIFT, ROAD_CLASSES, ROAD_FACTORS,
   SEA_DISTANCE_ADJUSTMENT, TEMT_AIR, TEMT_COURIER, TRADE_LANES, VESSELS,
 } from "./library.js";
 import type { AirScope, AirService, ContainerType, FactorSetId, FuelId, HubCondition, HubTypeId, Intensity, RoadClassId, RoadFuel, TransportMode } from "./library.js";
@@ -129,15 +129,9 @@ function factorUsed(label: string, intensity: Pick<Intensity, "wtt" | "ttw" | "s
   return { label, wtt: intensity.wtt, ttw: intensity.ttw, unit, source: intensity.source, sourceTitle: SOURCES[intensity.source].title, ref: intensity.ref };
 }
 
-function roadIntensity(set: FactorSetId, vehicleClass: RoadClassId, fuel: Exclude<RoadFuel, "electric">, warnings: string[]): Intensity {
+function roadIntensity(set: FactorSetId, vehicleClass: RoadClassId, fuel: Exclude<RoadFuel, "electric">): Intensity {
   const own = ROAD_FACTORS[set][vehicleClass]?.[fuel];
   if (own) return own;
-  const otherSet: FactorSetId = set === "temt" ? "glec-india" : "temt";
-  const other = ROAD_FACTORS[otherSet][vehicleClass]?.[fuel];
-  if (other) {
-    warnings.push(`${FACTOR_SETS[set].short} has no ${fuel.toUpperCase()} value for this vehicle class; the ${FACTOR_SETS[otherSet].short} value is used.`);
-    return other;
-  }
   const available = Object.keys(ROAD_FACTORS[set][vehicleClass] ?? {}).join(", ");
   throw new CalculationError(`No ${fuel} factor is published for this vehicle class. Available fuels: ${available || "none"}.`, "fuel");
 }
@@ -228,12 +222,12 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): 
       dataQuality = input.customFactor.quality ?? "primary";
     } else if (input.mode === "road") {
       const fuel = (input.fuel ?? "diesel") as Exclude<RoadFuel, "electric">;
-      if (factorSet === "temt" && input.courierLeg) {
+      if (input.courierLeg) {
         intensity = input.courierLeg === "mid" ? TEMT_COURIER.midMile : input.courierLeg === "first" ? TEMT_COURIER.firstMile : TEMT_COURIER.lastMile;
         label = `Courier ${input.courierLeg}-mile default`;
       } else {
         const vehicleClass = input.vehicleClass ?? "gvw-12-20";
-        intensity = roadIntensity(factorSet, vehicleClass, fuel, warnings);
+        intensity = roadIntensity(factorSet, vehicleClass, fuel);
         label = `${describeRoadClass(vehicleClass)}, ${fuel === "cng" ? "CNG" : fuel}`;
       }
       if (input.refrigerated) uplifts.push({ label: "Refrigerated (temperature-controlled) uplift", multiplier: REEFER_UPLIFT });
@@ -243,23 +237,15 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): 
     } else if (input.mode === "air") {
       const gcd = distanceKm;
       const scope = input.airScope ?? "domestic";
+      intensity = TEMT_AIR[scope];
       if (scope === "domestic") {
-        // Both sets: GLEC v3.3's Indian domestic value, built from actual fuel use, so routing is already included.
-        intensity = INDIA_DOMESTIC_AIR;
-        label = "Air freight, Indian domestic (aircraft type unknown)";
+        // GLEC v3.3's Indian domestic value is built from actual fuel use, so routing is already included.
+        label = "Air freight, Indian domestic";
         trace.push(`Distance: ${num(gcd)} km great-circle. GLEC v3.3's Indian domestic air value comes from actual fuel use, so route deviations are already included and no distance allowance is added.`);
-        if (input.airService && input.airService !== "unknown") warnings.push("GLEC v3.3 publishes Indian domestic air for all aircraft together, so the belly-hold or freighter choice does not change the result.");
-      } else if (factorSet === "temt") {
-        intensity = TEMT_AIR[scope];
-        label = `Air freight, ${scope}`;
+      } else {
+        label = "Air freight, international";
         distanceKm = gcd + AIR_DISTANCE_ADJUSTMENT_KM;
         trace.push(`Distance: ${num(gcd)} km great-circle + ${AIR_DISTANCE_ADJUSTMENT_KM} km routing adjustment = ${num(distanceKm)} km`);
-      } else {
-        const service = input.airService ?? "unknown";
-        const haul = gcd <= AIR_SHORT_HAUL_LIMIT_KM ? "short" : "long";
-        intensity = GLEC_AIR[service][haul];
-        label = `Air freight, ${service === "unknown" ? "unknown aircraft mix" : service === "belly" ? "belly hold" : "freighter"}, ${haul}-haul`;
-        trace.push(`Distance: ${num(gcd)} km great-circle. GLEC air intensities already include the +95 km routing adjustment.`);
       }
     } else if (input.mode === "sea") {
       const basis = input.seaBasis ?? (input.vesselId ? "vessel" : "lane");
@@ -269,18 +255,16 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): 
         const type = input.containerType ?? "dry";
         const perTeu = input.tonnesPerTeu ?? 10;
         positive(perTeu, "tonnesPerTeu", "Cargo per TEU");
-        intensity = { wtt: lane[type].wtt / 1000 / perTeu, ttw: lane[type].ttw / 1000 / perTeu, source: "glec-3.2", ref: "Sea Table 18, container end-user values" };
+        intensity = { wtt: lane[type].wtt / 1000 / perTeu, ttw: lane[type].ttw / 1000 / perTeu, source: "glec-3.3", ref: "Sea Tables 18–19, container end-user values" };
         label = `Container, ${lane.label}, ${type}`;
         trace.push(`Container intensity: WTT ${lane[type].wtt} + TTW ${lane[type].ttw} g CO₂e/TEU-km ÷ ${num(perTeu)} t per TEU (includes the GLEC distance adjustment)`);
       } else {
         const vessel = VESSELS.find((item) => item.id === input.vesselId);
         if (!vessel) throw new CalculationError("Choose a supported vessel type and size.", "vesselId");
-        const useTemt = factorSet === "temt" ? vessel.temtTtw !== undefined : !vessel.glec;
-        if (useTemt && vessel.temtTtw !== undefined) {
+        if (vessel.temtTtw !== undefined) {
           intensity = t(vessel.temtTtw / 5, vessel.temtTtw);
-          if (factorSet === "glec-india") warnings.push("GLEC publishes container vessels by trade lane rather than size; the TEMT vessel value is used.");
         } else if (vessel.glec) {
-          intensity = { wtt: vessel.glec.wtt / 1000, ttw: vessel.glec.ttw / 1000, source: "glec-3.2", ref: "Sea Tables 14–17, VLSFO" };
+          intensity = { wtt: vessel.glec.wtt / 1000, ttw: vessel.glec.ttw / 1000, source: "glec-3.3", ref: "Sea Tables 14–17, VLSFO" };
           if ((input.distanceBasis ?? "shortest") === "shortest") uplifts.push({ label: "Sea distance adjustment (shortest route to sailed)", multiplier: SEA_DISTANCE_ADJUSTMENT });
         } else {
           throw new CalculationError("No factor is available for this vessel.", "vesselId");

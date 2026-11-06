@@ -14,9 +14,9 @@ const city = (label: string, lat: number, lon: number): Place => ({ label, kind:
 
 describe("sample workspaces", () => {
   for (const sector of Object.keys(SAMPLE_SECTORS) as SampleSector[]) {
-    it(`${sector}: calculates every shipment under both factor sets and improves year on year`, () => {
+    it(`${sector}: calculates every shipment and improves year on year`, () => {
       const records = makeSampleWorkspace(sector);
-      for (const set of ["glec-india", "temt"] as const) {
+      for (const set of ["temt"] as const) {
         const rows = records.map((record) => compute(record, set));
         expect(rows.filter((row) => row.error)).toEqual([]);
         const previous = totals(applyFilters(rows, { fy: "FY 2024–25" })), current = totals(applyFilters(rows, { fy: "FY 2025–26" }));
@@ -152,10 +152,8 @@ describe("copilot language understanding", () => {
 });
 
 describe("settings", () => {
-  it("defaults to TEMT's factors and moves earlier workspaces onto them", () => {
+  it("uses TEMT's factors and moves every earlier workspace onto them", () => {
     expect(DEFAULT_SETTINGS.factorSet).toBe("temt");
-    expect(normaliseSettings({ factorSet: "glec-india" }).factorSet).toBe("temt");
-    expect(normaliseSettings({ factorSet: "temt-legacy" as never, factorSetVersion: 2 }).factorSet).toBe("temt");
-    expect(normaliseSettings({ factorSet: "glec-india", factorSetVersion: 2 }).factorSet).toBe("glec-india");
+    for (const factorSet of ["glec-india", "temt-legacy", "temt"]) expect(normaliseSettings({ factorSet: factorSet as never, factorSetVersion: 2 }).factorSet).toBe("temt");
   });
 });

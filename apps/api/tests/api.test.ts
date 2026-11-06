@@ -134,14 +134,15 @@ describe("engine v2 endpoints", () => {
   it("publishes the versioned factor library", async () => {
     const response = await request(app()).get("/api/v2/factors").expect(200);
     expect(response.body.engineVersion).toMatch(/^temt-engine-2/);
-    expect(Object.keys(response.body.factorSets)).toEqual(["temt", "glec-india"]);
+    expect(Object.keys(response.body.factorSets)).toEqual(["temt"]);
     expect(response.body.road.classes).toHaveLength(7);
-    expect(response.body.sources["glec-3.2"].publisher).toBe("Smart Freight Centre");
+    expect(response.body.sources["glec-3.3"].publisher).toBe("Smart Freight Centre");
+    expect(response.body.rail.temt.wtt + response.body.rail.temt.ttw).toBeCloseTo(0.01094, 8);
   });
 
-  it("calculates shipments with the same engine as the browser, per factor set", async () => {
+  it("calculates shipments with the same engine as the browser", async () => {
     const { calculateShipment } = await import("@temt/calculator");
-    for (const factorSet of ["temt", "glec-india"] as const) {
+    for (const factorSet of ["temt"] as const) {
       const response = await request(app()).post("/api/v2/calculate").send({ factorSet, shipments: [{ id: "A", legs: [leg], hubs: [{ type: "transshipment", tonnes: 18 }] }] }).expect(200);
       const local = calculateShipment({ legs: [leg as never], hubs: [{ type: "transshipment", tonnes: 18 }] }, factorSet);
       expect(response.body.results[0].result.wtwKg).toBeCloseTo(local.wtwKg, 10);
@@ -151,6 +152,8 @@ describe("engine v2 endpoints", () => {
     const legacy = await request(app()).post("/api/v2/calculate").send({ factorSet: "temt-legacy", shipments: [{ id: "A", legs: [leg] }] }).expect(200);
     expect(legacy.body.factorSet).toBe("temt");
     expect((await request(app()).post("/api/v2/calculate").send({ shipments: [{ id: "A", legs: [leg] }] }).expect(200)).body.factorSet).toBe("temt");
+    // The GLEC comparison set no longer exists.
+    await request(app()).post("/api/v2/calculate").send({ factorSet: "glec-india", shipments: [{ id: "A", legs: [leg] }] }).expect(400);
   });
 
   it("reports invalid shipments individually and rejects oversized batches", async () => {

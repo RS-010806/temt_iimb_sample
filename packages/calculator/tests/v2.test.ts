@@ -13,20 +13,18 @@ describe("parity with production TEMT", () => {
     expect(leg.wtwKg).toBeCloseTo(246.71402, 5);
   });
 
-  it("uses GLEC v3.3's Indian rail value (11.0 g CO2e/t-km) in both sets", () => {
+  it("uses GLEC v3.3's Indian rail value (11.0 g CO2e/t-km)", () => {
     const leg = calculateLeg({ mode: "rail", tonnes: 1, distanceKm: 1994.288 }, "temt");
     expect(leg.wttKg).toBeCloseTo(1994.288 * 0.0094, 6);
     expect(leg.ttwKg).toBeCloseTo(1994.288 * 0.00154, 6);
-    expect(RAIL_FACTORS["glec-india"]).toBe(RAIL_FACTORS.temt);
     expect(leg.factor.source).toBe("glec-3.3");
   });
 
   it("uses GLEC v3.3's Indian domestic air value without the 95 km allowance, and adds it for international flights", () => {
-    for (const set of ["temt", "glec-india"] as const) {
-      const leg = calculateLeg({ mode: "air", tonnes: 2, distanceKm: 1000, airScope: "domestic", airService: "freighter" }, set);
-      expect(leg.distanceKm).toBe(1000);
-      expect(leg.wtwKg).toBeCloseTo(2 * 1000 * (0.216 + 1.043), 6);
-    }
+    const leg = calculateLeg({ mode: "air", tonnes: 2, distanceKm: 1000, airScope: "domestic", airService: "freighter" });
+    expect(leg.distanceKm).toBe(1000);
+    expect(leg.wtwKg).toBeCloseTo(2 * 1000 * (0.216 + 1.043), 6);
+    expect(RAIL_FACTORS.temt.source).toBe("glec-3.3");
     const abroad = calculateLeg({ mode: "air", tonnes: 2, distanceKm: 1000, airScope: "international" }, "temt");
     expect(abroad.distanceKm).toBe(1095);
     expect(abroad.wtwKg).toBeCloseTo(2 * 1095 * (0.646 + 0.171), 6);
@@ -60,42 +58,29 @@ describe("worked examples from the TCI–IIMB carbon accounting course", () => {
   });
 });
 
-describe("GLEC comparison set", () => {
-  it("matches the v1 published road and container factors", () => {
-    const hcv = ROAD_FACTORS["glec-india"]["gvw-30-50"]!.diesel!;
-    expect(hcv.wtt + hcv.ttw).toBeCloseTo(FACTORS["road-hcv"].kgCO2ePerTonneKm, 6);
+describe("GLEC v3.3 defaults within TEMT's factors", () => {
+  it("matches the v1 published container factor", () => {
     const sea = calculateLeg({ mode: "sea", tonnes: 10, distanceKm: 1000, seaBasis: "lane", tradeLane: "intra-me-india" });
     expect(sea.wtwKg / 10000).toBeCloseTo(FACTORS["ocean-container"].kgCO2ePerTonneKm, 8);
+    expect(sea.factor.source).toBe("glec-3.3");
   });
 
-  it("switches air haul at 1,500 km and uses the aircraft service type", () => {
-    const short = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1500, airScope: "international" }, "glec-india");
-    const long = calculateLeg({ mode: "air", tonnes: 1, distanceKm: 1501, airService: "freighter", airScope: "international" }, "glec-india");
-    expect(short.factor.label).toContain("short-haul");
-    expect(short.wtwKg).toBeCloseTo(1500 * 1.363, 6);
-    expect(long.wtwKg).toBeCloseTo(1501 * 0.608, 6);
-    expect(short.distanceKm).toBe(1500);
-  });
-
-  it("applies the sea distance adjustment only to estimated shortest routes", () => {
-    const vesselId = VESSELS.find((vessel) => vessel.type === "Bulk carrier" && vessel.size.startsWith("60,000"))!.id;
-    const shortest = calculateLeg({ mode: "sea", tonnes: 1000, distanceKm: 2000, seaBasis: "vessel", vesselId }, "glec-india");
-    const actual = calculateLeg({ mode: "sea", tonnes: 1000, distanceKm: 2000, seaBasis: "vessel", vesselId, distanceBasis: "actual" }, "glec-india");
+  it("applies the sea distance adjustment only to estimated shortest routes on GLEC vessel values", () => {
+    const vesselId = VESSELS.find((vessel) => vessel.type === "Ferry Ro-Pax" && vessel.size.startsWith("0–1,999"))!.id;
+    const shortest = calculateLeg({ mode: "sea", tonnes: 1000, distanceKm: 2000, seaBasis: "vessel", vesselId });
+    const actual = calculateLeg({ mode: "sea", tonnes: 1000, distanceKm: 2000, seaBasis: "vessel", vesselId, distanceBasis: "actual" });
     expect(shortest.wtwKg / actual.wtwKg).toBeCloseTo(1.15, 10);
-    expect(actual.wtwKg).toBeCloseTo(1000 * 2000 * (0.9 + 4.4) / 1000, 6);
+    expect(actual.wtwKg).toBeCloseTo(1000 * 2000 * (96.6 + 453.0) / 1000, 6);
   });
 
-  it("falls back across factor sets with a visible warning", () => {
-    const leg = calculateLeg({ mode: "road", tonnes: 5, distanceKm: 100, vehicleClass: "gvw-12-20", fuel: "cng" }, "glec-india");
-    expect(leg.warnings[0]).toMatch(/TEMT factors value is used/);
-    expect(leg.factor.source).toBe("temt");
-    expect(() => calculateLeg({ mode: "road", tonnes: 5, distanceKm: 100, vehicleClass: "gvw-30-50", fuel: "petrol" }, "glec-india")).toThrow(CalculationError);
+  it("names the fuels a vehicle class has when another is asked for", () => {
+    expect(() => calculateLeg({ mode: "road", tonnes: 5, distanceKm: 100, vehicleClass: "gvw-30-50", fuel: "petrol" })).toThrow(CalculationError);
   });
 
-  it("publishes every road class with its GLEC operating assumptions", () => {
+  it("publishes every road class with a diesel factor and its operating assumptions", () => {
     expect(ROAD_CLASSES).toHaveLength(7);
     for (const item of ROAD_CLASSES) {
-      expect(ROAD_FACTORS["glec-india"][item.id]?.diesel).toBeDefined();
+      expect(ROAD_FACTORS.temt[item.id]?.diesel).toBeDefined();
       expect(item.loadFactor).toBeGreaterThan(0.6);
     }
   });
@@ -132,10 +117,10 @@ describe("electric vehicles, fuel allocation and hubs", () => {
     expect(() => calculateLeg({ mode: "road", method: "fuel", tonnes: 4, fuelId: "diesel", fuelQuantity: 10, allocationShare: 1.5 })).toThrow(CalculationError);
   });
 
-  it("calculates GLEC hub operations per tonne and per container", () => {
-    expect(calculateHub({ type: "transshipment", tonnes: 10 }, "glec-india").wtwKg).toBeCloseTo(12, 10);
-    expect(calculateHub({ type: "warehouse", tonnes: 2, condition: "mixed" }, "glec-india").wtwKg).toBeCloseTo(100, 10);
-    expect(calculateHub({ type: "container-terminal", containers: 3 }, "glec-india").wtwKg).toBeCloseTo(34.2, 10);
+  it("calculates GLEC v3.3 hub operations per tonne and per container", () => {
+    expect(calculateHub({ type: "transshipment", tonnes: 10 }).wtwKg).toBeCloseTo(12, 10);
+    expect(calculateHub({ type: "warehouse", tonnes: 2, condition: "mixed" }).wtwKg).toBeCloseTo(100, 10);
+    expect(calculateHub({ type: "container-terminal", containers: 3 }).wtwKg).toBeCloseTo(34.2, 10);
     expect(() => calculateHub({ type: "container-terminal", tonnes: 3 })).toThrow(/Containers handled/);
   });
 });

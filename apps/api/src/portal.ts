@@ -58,10 +58,8 @@ function unzip(buffer: Buffer) {
 
 /** Server-side totals, calculated with the same engine the browser uses. */
 function summarise(data: { settings: Record<string, unknown>; shipments: { input: unknown }[] }) {
-  // Same rule as the browser: TEMT's factors unless the workspace deliberately chose the GLEC comparison set
-  // (workspaces saved before settings version 2 defaulted to GLEC and now use TEMT's factors).
-  const glec = data.settings.factorSet === "glec-india" && Number(data.settings.factorSetVersion ?? 1) >= 2;
-  const factorSet: FactorSetId = glec ? "glec-india" : "temt";
+  // TEMT has one factor set, as in the browser.
+  const factorSet: FactorSetId = "temt";
   let wtwKg = 0, tonneKm = 0, calculated = 0;
   const byMode: Record<string, number> = {};
   for (const shipment of data.shipments) {

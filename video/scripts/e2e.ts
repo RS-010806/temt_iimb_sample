@@ -475,22 +475,20 @@ async function workspace(browser: Browser) {
     return `${before.replace(/\s+/g, " ")} → ${after.replace(/\s+/g, " ")}`;
   });
 
-  await step(page, "Factor library: TEMT factors first, GLEC comparison and every tab", async () => {
+  await step(page, "Factor library: one set of factors on GLEC v3.3, and every tab", async () => {
     await page.goto(`${BASE}/app/factors/`, { waitUntil: "networkidle" });
-    await page.getByText("Calculations use TEMT's emission factors").waitFor();
-    await page.getByText("Show GLEC v3.3 for comparison").click();
-    await page.getByRole("columnheader", { name: "GLEC v3.2 Table 13 WTW" }).waitFor();
+    await page.getByText("TEMT's emission factors, following the GLEC Framework v3.3").waitFor();
+    if (await page.getByText(/for comparison/).count()) throw new Error("The factor library still offers a comparison");
+    await page.getByRole("button", { name: "Rail and air", exact: true }).click();
+    await page.getByRole("cell", { name: /Indian domestic air, all aircraft \(GLEC v3\.3, India\)/ }).waitFor();
     for (const tab of ["Rail and air", "Sea", "Waterways and hubs", "Fuels and electricity", "Sources", "Road"]) { await page.getByRole("button", { name: tab, exact: true }).click(); await page.waitForTimeout(150); }
     await shot(page, "factors");
   });
 
-  await step(page, "Settings: switch to the GLEC comparison set and back", async () => {
+  await step(page, "Settings: one factor set, with no switch", async () => {
     await page.goto(`${BASE}/app/settings/#factors`, { waitUntil: "networkidle" });
-    const factors = page.getByRole("group", { name: "Factor set" });
-    await factors.getByRole("button", { name: "GLEC v3.3" }).click();
-    await toast(/Now using GLEC v3\.3/);
-    await factors.getByRole("button", { name: "TEMT factors" }).click();
-    await toast(/Now using TEMT factors/);
+    await page.getByText("Every shipment is calculated with TEMT's emission factors, following the GLEC Framework v3.3.").waitFor();
+    if (await page.getByRole("group", { name: "Factor set" }).count()) throw new Error("Settings still offers a factor-set switch");
   });
 
   await step(page, "Settings: NIFTY 500 company, backup, clear and restore, server check", async () => {

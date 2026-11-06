@@ -18,7 +18,7 @@ A working freight-emissions product for India's listed companies, rebuilt for th
 | Dashboard and reports | Monthly trend by life-cycle stage, mode, business unit, lanes, GHG Protocol scope, data quality, targets and year-on-year comparison. |
 | Exports | PDF report, Excel workbook, Word report (all three with the BRSR Principle 6 mapping), Power BI pack (star schema, DAX, theme), CSV and JSON. |
 | Reduction planner | Air-to-road and road-to-rail shift, consolidation, electric trucks and load-factor scenarios, measured against a target. |
-| Factor library | TEMT's India-specific emission factors with sources and versions, and the GLEC Framework v3.3 defaults as an optional comparison. |
+| Factor library | TEMT's India-specific emission factors, following the GLEC Framework v3.3, with their sources and versions. |
 | Copilot | Plain-English and voice assistant in the browser: calculates, compares, saves, analyses, runs what-ifs, exports and explains. Optional local model via Ollama or LM Studio. |
 | Guided tour | A 14-step in-product walkthrough on sample data. |
 | Account (optional) | Sign in to sync the workspace across devices, keep a report history, manage sessions, and download or delete your data. |
@@ -66,7 +66,7 @@ Each calculated leg records what ISO 14083 asks a report to state: transport act
 
 ## Sources
 
-- TEMT's emission factors (TCI–IIMB Supply Chain Sustainability Lab), ISO 14083:2023, GHG Protocol Scope 3 guidance, CEA CO₂ Baseline Database V22.0, the GLEC Framework v3.3 India values for rail, domestic air and electric trucks (SFC India and the TCI–IIMB Lab) and, where TEMT has no value of its own, the GLEC Framework v3.3 defaults (Smart Freight Centre; v3.2 for the tables not yet updated). Full register: [docs/SOURCES.md](docs/SOURCES.md).
+- TEMT's emission factors (TCI–IIMB Supply Chain Sustainability Lab), ISO 14083:2023, GHG Protocol Scope 3 guidance, CEA CO₂ Baseline Database V22.0, the GLEC Framework v3.3 India values for rail, domestic air and electric trucks (SFC India and the TCI–IIMB Lab) and, where TEMT has no value of its own, the GLEC Framework v3.3 defaults (Smart Freight Centre). Full register: [docs/SOURCES.md](docs/SOURCES.md).
 - [TEMT at IIM Bangalore](https://www.iimb.ac.in/node/11590) · [TCI–IIMB Supply Chain Sustainability Lab](https://www.iimb.ac.in/tci-supply-chain-sustainability-lab)
 
 The original Apache 2.0 licence is preserved. Fonts retain their licences in `apps/web/public/fonts`.

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { dbOptionsFromEnv, openDb, type Db, type DbOptions } from "./db.js";
 import { createPortal } from "./portal.js";
 import {
-  analyze, AnalysisInputError, calculateShipment, ENGINE_V2_VERSION, ENGINE_VERSION, FACTOR_SETS, FACTORS, FUELS, GLEC_AIR, HUB_TYPES, IWW_VESSELS, MAX_LEGS,
+  analyze, AnalysisInputError, calculateShipment, ENGINE_V2_VERSION, ENGINE_VERSION, FACTOR_SETS, FACTORS, FUELS, HUB_TYPES, IWW_VESSELS, MAX_LEGS,
   RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, shipmentInputSchema, SOURCES, TEMT_AIR, TRADE_LANES, VESSELS,
 } from "@temt/calculator";
 
@@ -38,8 +38,8 @@ export function parseAllowedOrigins(value: string | undefined): string[] {
 
 const requestSchema = z.object({ rows: z.array(z.unknown()) });
 export const MAX_V2_SHIPMENTS = 1000;
-// "temt-legacy" is the earlier name of TEMT's own factor set, still accepted from older clients.
-const v2Schema = z.object({ factorSet: z.enum(["temt", "glec-india", "temt-legacy"]).transform((id) => (id === "temt-legacy" ? "temt" : id)).optional(), shipments: z.array(z.unknown()).max(MAX_V2_SHIPMENTS) });
+// TEMT has one factor set; "temt-legacy" is its earlier name, still accepted from older clients.
+const v2Schema = z.object({ factorSet: z.enum(["temt", "temt-legacy"]).transform((): "temt" => "temt").optional(), shipments: z.array(z.unknown()).max(MAX_V2_SHIPMENTS) });
 
 const requireJson: express.RequestHandler = (req, res, next) => {
   if (!req.is("application/json")) {
@@ -114,7 +114,7 @@ export function createApp(options: AppOptions = {}) {
   // Engine v2: multimodal transport chains with versioned factor sets. Same code as the browser.
   app.get("/api/v2/factors", (_req, res) => {
     res.json({ engineVersion: ENGINE_V2_VERSION, factorSets: FACTOR_SETS, sources: SOURCES, road: { classes: ROAD_CLASSES, factors: ROAD_FACTORS },
-      rail: RAIL_FACTORS, air: { glec: GLEC_AIR, temt: TEMT_AIR }, sea: { tradeLanes: TRADE_LANES, vessels: VESSELS }, inlandWaterways: IWW_VESSELS, hubs: HUB_TYPES, fuels: FUELS });
+      rail: RAIL_FACTORS, air: TEMT_AIR, sea: { tradeLanes: TRADE_LANES, vessels: VESSELS }, inlandWaterways: IWW_VESSELS, hubs: HUB_TYPES, fuels: FUELS });
   });
 
   app.post("/api/v2/calculate", requireJson, express.json({ limit: MAX_BODY_BYTES, strict: true }), (req, res) => {

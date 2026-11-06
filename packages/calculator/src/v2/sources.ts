@@ -8,7 +8,7 @@ export interface Source {
   note?: string;
 }
 
-export type SourceId = "glec-3.3" | "glec-3.2" | "temt" | "cea-22" | "iso-14083" | "ghg-protocol-scope3";
+export type SourceId = "glec-3.3" | "temt" | "cea-22" | "iso-14083" | "ghg-protocol-scope3";
 
 export const SOURCES: Readonly<Record<SourceId, Source>> = Object.freeze({
   "glec-3.3": {
@@ -17,15 +17,7 @@ export const SOURCES: Readonly<Record<SourceId, Source>> = Object.freeze({
     publisher: "Smart Freight Centre",
     year: 2026,
     url: "https://www.smartfreightcentre.org/en/our-programs/global-logistics-emissions-council/",
-    note: "India values for road, electric trucks, rail and domestic air are developed by SFC India and the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore; Indian hubs use the global Fraunhofer IML defaults.",
-  },
-  "glec-3.2": {
-    id: "glec-3.2",
-    title: "Global Logistics Emissions Council Framework v3.2",
-    publisher: "Smart Freight Centre",
-    year: 2025,
-    url: "https://smartfreightcentre.org/news/13311209",
-    note: "Used where the GLEC v3.3 table is not yet in TEMT: Indian diesel, petrol and CNG trucks (Table 13), sea vessels and container trade lanes, and jet and marine fuels.",
+    note: "India values for road, electric trucks, rail and domestic air are developed by SFC India and the TCI–IIMB Supply Chain Sustainability Lab at IIM Bangalore; hubs use the global Fraunhofer IML defaults, which include Indian hubs.",
   },
   temt: {
     id: "temt",

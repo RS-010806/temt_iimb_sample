@@ -580,11 +580,6 @@ function LegEditor({ index, leg, from, to, fromName, toName, misfit, estimate, k
             <Field label="Fuel"><Segmented ariaLabel={`Leg ${index + 1} fuel`} value={leg.fuel} onChange={(fuel) => onChange({ fuel })} options={[{ value: "diesel", label: "Diesel" }, { value: "cng", label: "CNG" }, { value: "petrol", label: "Petrol" }]} /></Field>
           </div>
         )}
-        {leg.mode === "air" && (
-          <Field label="Aircraft" info="Belly cargo flies in passenger aircraft; freighters carry only cargo. If you don't know, keep the mix.">
-            <Segmented ariaLabel={`Leg ${index + 1} aircraft`} value={leg.airService} onChange={(airService) => onChange({ airService })} options={[{ value: "unknown", label: "Don't know (mix)" }, { value: "belly", label: "Belly hold" }, { value: "freighter", label: "Freighter" }]} />
-          </Field>
-        )}
         {leg.mode === "sea" && (
           <div className="grid items-start gap-3 md:grid-cols-2">
             <Field label="Shipped as"><Segmented ariaLabel={`Leg ${index + 1} sea basis`} value={leg.seaBasis} onChange={(seaBasis) => onChange({ seaBasis })} options={[{ value: "lane", label: "Container" }, { value: "vessel", label: "Bulk, tanker or other vessel" }]} /></Field>
