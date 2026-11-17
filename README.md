@@ -66,7 +66,7 @@ Each calculated leg records what ISO 14083 asks a report to state: transport act
 
 ## Sources
 
-- TEMT's emission factors (TCI–IIMB Supply Chain Sustainability Lab), ISO 14083:2023, GHG Protocol Scope 3 guidance, CEA CO₂ Baseline Database V22.0, the GLEC Framework v3.3 India values for rail, domestic air and electric trucks (SFC India and the TCI–IIMB Lab) and, where TEMT has no value of its own, the GLEC Framework v3.3 defaults (Smart Freight Centre). Full register: [docs/SOURCES.md](docs/SOURCES.md).
+- TEMT's emission factors (TCI–IIMB Supply Chain Sustainability Lab), ISO 14083:2023, GHG Protocol Scope 3 guidance, CEA CO₂ Baseline Database V22.0, the GLEC Framework v3.3 India values for road, electric trucks, rail and domestic air (SFC India and the TCI–IIMB Lab), GLEC v3.3 Table 1 for international air and, where TEMT has no value of its own, the GLEC Framework v3.3 defaults (Smart Freight Centre). Full register: [docs/SOURCES.md](docs/SOURCES.md).
 - [TEMT at IIM Bangalore](https://www.iimb.ac.in/node/11590) · [TCI–IIMB Supply Chain Sustainability Lab](https://www.iimb.ac.in/tci-supply-chain-sustainability-lab)
 
 The original Apache 2.0 licence is preserved. Fonts retain their licences in `apps/web/public/fonts`.

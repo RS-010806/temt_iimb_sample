@@ -25,7 +25,7 @@ export const SOURCES: Readonly<Record<SourceId, Source>> = Object.freeze({
     publisher: "TCI–IIMB Supply Chain Sustainability Lab, IIM Bangalore",
     year: 2024,
     url: "https://www.iimb.ac.in/tci-supply-chain-sustainability-lab",
-    note: "India-specific factors validated through TEMT's ISO 14083 certification (December 2024).",
+    note: "TEMT's own courier and part-truckload defaults and refrigeration uplift, validated through its ISO 14083 certification (December 2024).",
   },
   "cea-22": {
     id: "cea-22",
@@ -33,7 +33,7 @@ export const SOURCES: Readonly<Record<SourceId, Source>> = Object.freeze({
     publisher: "Central Electricity Authority, Ministry of Power",
     year: 2026,
     url: "https://cea.nic.in/cdm-co2-baseline-database/?lang=en",
-    note: "All-India weighted average for FY 2025–26, adjusted for cross-border transfers: 0.675 tCO2/MWh (Table S). As in GLEC v3.3's Indian values, TEMT applies it at the point of use with transmission and distribution losses and upstream fuel production: 0.903 kg CO2e/kWh.",
+    note: "All-India weighted average for FY 2025–26, adjusted for cross-border transfers: 0.675 tCO2/MWh (Table S). As in GLEC v3.3's Indian values, TEMT converts it to CO2e (CH4 and N2O) and applies it at the point of use with transmission and distribution losses and upstream fuel production: 0.907 kg CO2e/kWh.",
   },
   "iso-14083": {
     id: "iso-14083",

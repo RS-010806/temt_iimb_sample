@@ -88,10 +88,10 @@ const COURIER_LEG = { first: "Courier first mile", mid: "Courier line haul", las
 const suggestedHandling = (before?: TransportMode, after?: TransportMode): Handling => ([before, after].some((mode) => mode === "rail" || mode === "sea") ? "container-terminal" : "transshipment");
 /** Trucks also start and end at airports, stations, ports and waterway terminals: a road-only stop can be any place, cities first. */
 const ROAD_STOP_KINDS: PlaceKind[] = [...MODE_PLACE_KINDS.road, "airport", "station", "port", "terminal"];
-/** A stop must be the place its legs need: an airport next to an air leg, a port next to sea, a station next to rail, a terminal next to a waterway; road-only stops can be any place. */
-const kindsFor = (modes: TransportMode[]): PlaceKind[] => { const kinds = [...new Set(modes.filter((mode) => mode !== "road").flatMap((mode) => MODE_PLACE_KINDS[mode]))]; return kinds.length ? kinds : ROAD_STOP_KINDS; };
+/** Any stop can be any place, so the user enters the exact place; the kinds its legs use most (a station next to rail, an airport next to air) are listed first. */
+const kindsFor = (modes: TransportMode[]): PlaceKind[] => { const needed = [...new Set(modes.filter((mode) => mode !== "road").flatMap((mode) => MODE_PLACE_KINDS[mode]))]; return [...needed, ...ROAD_STOP_KINDS.filter((kind) => !needed.includes(kind))]; };
 const PLACE_WORD: Partial<Record<PlaceKind, string>> = { airport: "an airport", port: "a port", station: "a railway station", terminal: "a waterway terminal" };
-const placeholderFor = (modes: TransportMode[]) => { const kinds = kindsFor(modes); return kinds.includes("city") ? "City, PIN code, airport or station" : kinds.map((kind) => ({ airport: "Airport or code", port: "Port or city", station: "Station or code", terminal: "Waterway terminal" } as Partial<Record<PlaceKind, string>>)[kind]).join(", or "); };
+const placeholderFor = (modes: TransportMode[]) => { const first = kindsFor(modes)[0]; return first === "station" ? "Station, city or PIN code" : first === "airport" ? "Airport, city or PIN code" : first === "port" ? "Port, city or PIN code" : first === "terminal" ? "Waterway terminal, city or PIN code" : "City, PIN code, airport or station"; };
 const stopName = (index: number, count: number) => (index === 0 ? "Origin" : index === count - 1 ? "Destination" : `Stop ${index}`);
 const placeKey = (place?: Place) => (hasCoords(place) ? `${place.kind}:${place.code ?? ""}:${place.lat.toFixed(4)},${place.lon.toFixed(4)}` : "");
 const shortLabel = (place?: Place) => compactLabel(place);
@@ -313,16 +313,16 @@ export function ChainView() {
   // Calculate the whole chain.
   let error: string | undefined;
   let calculation: { result: ReturnType<typeof calculateShipment>; inputs: LegInput[]; hubs: HubInput[]; legMeta: LegMeta[] } | undefined;
-  // A leg by air, sea, rail or waterway must start and end at an airport, port, station or terminal.
+  // A stop can be any place. When a rail, sea, air or waterway leg starts or ends somewhere other than a station,
+  // port, airport or terminal, the leg is measured from that place (rail and sea from the nearest station or port).
+  const MEASURED_FROM: Partial<Record<TransportMode, string>> = { rail: "the nearest railway station", sea: "the nearest port", air: "this place", iww: "this place" };
   const misfits = legs.map((item, i) => {
-    const bad = [i, i + 1].find((at) => !placeFitsMode(stops[at]?.place, item.mode));
-    return bad === undefined ? undefined : `${stopName(bad, stops.length)} must be ${PLACE_WORD[MODE_PLACE_KINDS[item.mode][0]!]} for this ${MODE_LABELS[item.mode].toLowerCase()} leg.`;
+    const off = [i, i + 1].filter((at) => !placeFitsMode(stops[at]?.place, item.mode));
+    return off.length ? `${off.map((at) => stopName(at, stops.length)).join(" and ")} ${off.length > 1 ? "are not" : "is not"} ${PLACE_WORD[MODE_PLACE_KINDS[item.mode][0]!]}: TEMT measures this ${MODE_LABELS[item.mode].toLowerCase()} leg from ${MEASURED_FROM[item.mode]}. Choose the exact ${MODE_PLACE_KINDS[item.mode][0]} if you know it.` : undefined;
   });
-  const misfit = misfits.findIndex(Boolean);
   const waiting = legs.findIndex((item, i) => item.source === "route" && estimates[i] === "loading");
   const gap = legs.findIndex((_, i) => !kms[i]);
   if (!tonnes) error = "Enter the cargo weight.";
-  else if (misfit >= 0) error = `Leg ${misfit + 1}: ${misfits[misfit]}`;
   else if (waiting >= 0) error = `Finding the rail route for leg ${waiting + 1}…`;
   else if (gap >= 0) error = `Leg ${gap + 1} needs a distance: choose both of its stops, or enter the distance manually.`;
   else {
@@ -555,7 +555,7 @@ function LegEditor({ index, leg, from, to, fromName, toName, misfit, estimate, k
           <Segmented ariaLabel={`Leg ${index + 1} mode`} value={leg.mode} onChange={(mode) => onChange({ mode, courierLeg: undefined })}
             options={(Object.keys(MODE_ICON) as TransportMode[]).map((mode) => { const ModeIcon = MODE_ICON[mode]; return { value: mode, label: MODE_SHORT[mode], icon: <ModeIcon size={13} aria-hidden="true" /> }; })} />
         )}
-        {misfit && <p className="callout callout-warn !py-2 text-[13px]" role="alert"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />{misfit}</p>}
+        {misfit && <p className="text-[13px] leading-relaxed text-grey-600">{misfit}</p>}
 
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">

@@ -27,13 +27,13 @@ export const ARTICLES: Article[] = [
   {
     id: "glec", kind: "concept", title: "Where TEMT's Indian factors come from",
     keywords: ["glec", "smart freight centre", "sfc", "default factors", "india factors", "tci", "iimb lab", "table 13", "where do the indian factors come from", "emission factors"],
-    body: "TEMT's emission factors were developed from research at the **TCI–IIMB Supply Chain Sustainability Lab** at IIM Bangalore and validated through TEMT's ISO 14083 certification. They cover seven Indian truck classes by gross vehicle weight and fuel, Indian Railways, air by haul and aircraft type, and sea by vessel. The Lab's Indian values for trucks, electric trucks, Indian Railways (11.0 g CO₂e per tonne-km) and domestic air (1,259 g) are published in the international GLEC Framework v3.3, and TEMT uses the rail, domestic air and electric-truck values. Where TEMT has no value of its own, such as container trade lanes, inland waterways and hubs, it uses the ISO 14083-aligned GLEC defaults.",
+    body: "TEMT's emission factors were developed from research at the **TCI–IIMB Supply Chain Sustainability Lab** at IIM Bangalore and validated through TEMT's ISO 14083 certification. They cover seven Indian truck classes by gross vehicle weight and fuel, Indian Railways, air and sea by vessel. The Lab's Indian values for trucks (diesel, petrol, CNG and electric), Indian Railways (11.1 g CO₂e per tonne-km) and domestic air (1,259 g) are published in the international GLEC Framework v3.3, and TEMT uses them. Where TEMT has no value of its own, such as container trade lanes, inland waterways and hubs, it uses the ISO 14083-aligned GLEC defaults.",
     actions: [{ label: "Open the factor library", href: "/app/factors/" }],
   },
   {
     id: "factor-sets", kind: "product", title: "Which factors TEMT uses (GLEC Framework v3.3)",
     keywords: ["factor set", "switch factors", "legacy", "restate", "reconcile", "compare factor sets", "which factors", "glec comparison", "glec version", "glec 3.3", "v3.3"],
-    body: "TEMT calculates every shipment with **one set of India-specific emission factors that follows the GLEC Framework v3.3**: TEMT's own road and courier values (validated through its ISO 14083 certification), GLEC v3.3's India values for **rail, domestic air and electric trucks**, and GLEC v3.3 defaults for shipping, inland waterways and hubs. There is no separate comparison set. Every report names the factors used and lists their sources.",
+    body: "TEMT calculates every shipment with **one set of India-specific emission factors that follows the GLEC Framework v3.3**: GLEC v3.3's India values for **road (diesel, petrol, CNG and electric trucks), rail and domestic air**, GLEC v3.3 defaults for international air, shipping, inland waterways and hubs, and TEMT's own courier values. There is no separate comparison set. Every report names the factors used and lists their sources.",
     actions: [{ label: "Open the factor library", href: "/app/factors/" }],
   },
   {
@@ -70,7 +70,7 @@ export const ARTICLES: Article[] = [
   {
     id: "air", kind: "concept", title: "How air freight is calculated",
     keywords: ["air", "flight", "airport", "belly", "freighter", "95 km", "short haul", "long haul", "air cargo"],
-    body: "Air distance is the great-circle distance between airports. **Indian domestic** flights use GLEC v3.3's Indian value, **1,259 g CO₂e per tonne-km** (DGCA fuel and traffic data, FY 2022–23 to 2024–25, all aircraft); it comes from actual fuel use, so no routing allowance is added. **International** flights use TEMT's international value, **817 g CO₂e per tonne-km**, on the great-circle distance plus GLEC's 95 km allowance for routing and holding. Per tonne-kilometre, air is roughly 20 times a heavy truck and over 100 times Indian rail, so small air volumes dominate footprints quickly.",
+    body: "Air distance is the great-circle distance between airports. **Indian domestic** flights use GLEC v3.3's Indian value, **1,259 g CO₂e per tonne-km** (DGCA fuel and traffic data, FY 2022–23 to 2024–25, all aircraft); **International** flights use GLEC v3.3's Table 1 values for aircraft type unknown, **1,323 g CO₂e per tonne-km short-haul (under 1,500 km) and 789 g long-haul**, Every flight adds GLEC's 95 km allowance for routing and holding to the great-circle distance. Per tonne-kilometre, air is roughly 20 times a heavy truck and over 100 times Indian rail, so small air volumes dominate footprints quickly.",
   },
   {
     id: "sea", kind: "concept", title: "How sea and coastal freight are calculated",
@@ -86,7 +86,7 @@ export const ARTICLES: Article[] = [
   {
     id: "ev", kind: "concept", title: "Electric trucks and the Indian grid",
     keywords: ["ev", "electric", "battery", "e-truck", "charging", "grid", "cea", "renewable", "kwh"],
-    body: "Electric legs use electricity × grid factor. TEMT uses the **CEA V22.0** all-India average for FY 2025–26 (0.675 kg CO₂/kWh at generation), applied at the point of use with transmission and distribution losses and upstream fuel production as GLEC v3.3 does: **0.903 kg CO₂e/kWh**. Without measured kWh, TEMT uses **GLEC v3.3's Indian electric-truck values**, which include a 10% charging loss: from 137.7 g CO₂e per tonne-km for a small truck under 3.5 t to 38.6 g for a 55 t articulated truck, against 56–232 g for TEMT's diesel trucks. Heavy rigid trucks of 20–50 t are not in v3.3 and are estimated on Indian loading. Enter kWh from charging records for primary data, and your supplier's factor for renewable power, where the big gains are.",
+    body: "Electric legs use electricity × grid factor. TEMT uses the **CEA V22.0** all-India average for FY 2025–26 (0.675 kg CO₂/kWh at generation), applied at the point of use with transmission and distribution losses and upstream fuel production as GLEC v3.3 does: **0.907 kg CO₂e/kWh**. Without measured kWh, TEMT uses **GLEC v3.3's Indian electric-truck values**, which include a 10% charging loss: from 138.3 g CO₂e per tonne-km for a small truck under 3.5 t to 38.7 g for a 55 t articulated truck, against 53–299 g for diesel trucks. Heavy rigid trucks of 20–50 t are not in v3.3 and are estimated on Indian loading. Enter kWh from charging records for primary data, and your supplier's factor for renewable power, where the big gains are.",
   },
   {
     id: "courier", kind: "concept", title: "Courier and part-truckload (PTL)",

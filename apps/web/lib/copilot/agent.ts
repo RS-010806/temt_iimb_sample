@@ -232,7 +232,7 @@ async function handle(raw: string, ctx: AgentContext, carried?: Pending): Promis
       return { blocks: [text(`This removes all ${state.shipments.length} shipments from this browser. Settings are kept. Download a backup first if you may need them.`), { type: "actions", actions: [{ kind: "clear", label: "Clear workspace" }, { kind: "navigate", href: "/app/settings/#data", label: "Back up first" }] }] };
     case "factor-set":
       // There is one factor set; explain it rather than switch.
-      return { blocks: [text(`TEMT calculates every shipment with **${FACTOR_SETS.temt.label}**, which follow the GLEC Framework v3.3: TEMT's own road values, GLEC v3.3's India values for rail, domestic air and electric trucks, and GLEC v3.3 defaults for shipping, waterways and hubs. There is nothing to switch.`)], suggestions: ["Where do the Indian factors come from?", "How is rail calculated?", "Open the factor library"] };
+      return { blocks: [text(`TEMT calculates every shipment with **${FACTOR_SETS.temt.label}**, which follow the GLEC Framework v3.3: GLEC v3.3's India values for road, electric trucks, rail and domestic air, GLEC v3.3 defaults for international air, shipping, waterways and hubs, and TEMT's own courier values. There is nothing to switch.`)], suggestions: ["Where do the Indian factors come from?", "How is rail calculated?", "Open the factor library"] };
     case "export": {
       if (!rows.length) return { blocks: [text("There's nothing to export yet. Add a shipment, import a file or load sample data first.")], suggestions: ["Load sample data", "How do I import shipments?"] };
       const format = slots.format ?? "pdf";

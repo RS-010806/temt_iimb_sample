@@ -137,7 +137,8 @@ describe("engine v2 endpoints", () => {
     expect(Object.keys(response.body.factorSets)).toEqual(["temt"]);
     expect(response.body.road.classes).toHaveLength(7);
     expect(response.body.sources["glec-3.3"].publisher).toBe("Smart Freight Centre");
-    expect(response.body.rail.temt.wtt + response.body.rail.temt.ttw).toBeCloseTo(0.01094, 8);
+    expect(response.body.rail.temt.wtt + response.body.rail.temt.ttw).toBeCloseTo(0.0111, 8);
+    expect(response.body.air.international.longHaul.wtt + response.body.air.international.longHaul.ttw).toBeCloseTo(0.789, 8);
   });
 
   it("calculates shipments with the same engine as the browser", async () => {

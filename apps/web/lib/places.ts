@@ -192,7 +192,8 @@ export async function rankPlaces(query: string, kinds: PlaceKind[] = ["city", "p
     // By IATA code, the city it serves or its name; larger Indian airports first.
     const size = { L: 3, M: 2, S: 1 };
     for (const row of await loadAirports()) {
-      const rank = Math.min(score(row.c.toLowerCase(), q) - 0.5, best([row.m], queries), best([row.n], queries) + 0.25);
+      const code = score(row.c.toLowerCase(), q);
+      const rank = Math.min(code < 99 ? code - 0.5 : 99, best([row.m], queries), best([row.n], queries) + 0.25);
       if (rank < 99) results.push({ place: airportPlace(row), rank: rank + (row.k === "IN" ? 0 : 0.25), weight: (row.k === "IN" ? 10 : 0) + size[row.t ?? "S"] });
     }
   }
@@ -261,10 +262,7 @@ export function estimateDistance(mode: TransportMode, from?: Place, to?: Place):
   if (!hasCoords(from) || !hasCoords(to)) return undefined;
   const gcd = greatCircleKm(from, to);
   if (mode === "air") {
-    const domestic = (from.country ?? "IN") === "IN" && (to.country ?? "IN") === "IN";
-    return { km: gcd, method: "great-circle", note: domestic
-      ? "GLEC v3.3's Indian domestic air value is built from actual fuel use, so routing is already included and no distance allowance is added."
-      : `For international flights, GLEC's ${AIR_DISTANCE_ADJUSTMENT_KM} km allowance for routing and holding is applied in the calculation.` };
+    return { km: gcd, method: "great-circle", note: `Great-circle distance between the airports. GLEC's ${AIR_DISTANCE_ADJUSTMENT_KM} km allowance for routing and holding is added in the calculation.` };
   }
   if (mode === "sea") {
     const a = from.kind === "port" && from.code ? from.code : nearestPort(from).id;

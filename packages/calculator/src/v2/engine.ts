@@ -1,8 +1,8 @@
 import { z } from "zod";
 import {
-  AIR_DISTANCE_ADJUSTMENT_KM, ENGINE_V2_VERSION, EV_ENERGY_PROXY_KWH_PER_TKM, FUELS,
+  AIR_DISTANCE_ADJUSTMENT_KM, AIR_SHORT_HAUL_LIMIT_KM, airIntensity, ENGINE_V2_VERSION, EV_ENERGY_PROXY_KWH_PER_TKM, FUELS,
   HUB_TYPES, INDIA_ELECTRIC_TRUCKS, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, MODE_LABELS, RAIL_FACTORS, REEFER_UPLIFT, ROAD_CLASSES, ROAD_FACTORS,
-  SEA_DISTANCE_ADJUSTMENT, TEMT_AIR, TEMT_COURIER, TRADE_LANES, VESSELS,
+  SEA_DISTANCE_ADJUSTMENT, TEMT_COURIER, TRADE_LANES, VESSELS,
 } from "./library.js";
 import type { AirScope, AirService, ContainerType, FactorSetId, FuelId, HubCondition, HubTypeId, Intensity, RoadClassId, RoadFuel, TransportMode } from "./library.js";
 import { SOURCES, type SourceId } from "./sources.js";
@@ -237,15 +237,13 @@ export function calculateLeg(input: LegInput, factorSet: FactorSetId = "temt"): 
     } else if (input.mode === "air") {
       const gcd = distanceKm;
       const scope = input.airScope ?? "domestic";
-      intensity = TEMT_AIR[scope];
+      intensity = airIntensity(scope, gcd);
+      distanceKm = gcd + AIR_DISTANCE_ADJUSTMENT_KM;
+      trace.push(`Distance: ${num(gcd)} km great-circle + ${AIR_DISTANCE_ADJUSTMENT_KM} km routing adjustment = ${num(distanceKm)} km`);
       if (scope === "domestic") {
-        // GLEC v3.3's Indian domestic value is built from actual fuel use, so routing is already included.
         label = "Air freight, Indian domestic";
-        trace.push(`Distance: ${num(gcd)} km great-circle. GLEC v3.3's Indian domestic air value comes from actual fuel use, so route deviations are already included and no distance allowance is added.`);
       } else {
-        label = "Air freight, international";
-        distanceKm = gcd + AIR_DISTANCE_ADJUSTMENT_KM;
-        trace.push(`Distance: ${num(gcd)} km great-circle + ${AIR_DISTANCE_ADJUSTMENT_KM} km routing adjustment = ${num(distanceKm)} km`);
+        label = `Air freight, international ${gcd < AIR_SHORT_HAUL_LIMIT_KM ? "short-haul" : "long-haul"}`;
       }
     } else if (input.mode === "sea") {
       const basis = input.seaBasis ?? (input.vesselId ? "vessel" : "lane");

@@ -33,15 +33,17 @@ export const FACTOR_SETS: Readonly<Record<FactorSetId, FactorSet>> = Object.free
     id: "temt",
     label: "TEMT emission factors",
     short: "TEMT factors",
-    description: "TEMT's India-specific emission factors from the TCI–IIMB Supply Chain Sustainability Lab, following the GLEC Framework v3.3: TEMT's own road and courier values, validated through its ISO 14083 certification; GLEC v3.3's India values for rail, domestic air and electric trucks; and GLEC v3.3 defaults for shipping, inland waterways and hubs.",
+    description: "TEMT's India-specific emission factors from the TCI–IIMB Supply Chain Sustainability Lab, following the GLEC Framework v3.3: GLEC v3.3's Indian values for road (diesel, petrol, CNG and electric trucks), rail and domestic air; GLEC v3.3 defaults for international air, shipping, inland waterways and hubs; and TEMT's own courier values.",
   },
 });
 
-export const ENGINE_V2_VERSION = "temt-engine-2.1.0";
+export const ENGINE_V2_VERSION = "temt-engine-2.2.0";
 /** Road refrigeration uplift applied by TEMT to temperature-controlled road freight. */
 export const REEFER_UPLIFT = 1.21;
-/** Air distance is great-circle distance plus 95 km (GLEC / ISO 14083 distance adjustment). */
+/** Air distance is great-circle distance plus 95 km (GLEC / ISO 14083 distance adjustment), domestic and international. */
 export const AIR_DISTANCE_ADJUSTMENT_KM = 95;
+/** GLEC v3.3 Table 1: flights under 1,500 km great-circle distance are short-haul. */
+export const AIR_SHORT_HAUL_LIMIT_KM = 1500;
 /** GLEC non-container sea values are quoted without the 15% distance adjustment factor. */
 export const SEA_DISTANCE_ADJUSTMENT = 1.15;
 
@@ -64,26 +66,31 @@ export interface RoadClass {
 }
 
 export const ROAD_CLASSES: readonly RoadClass[] = Object.freeze([
-  { id: "gvw-3.5", label: "Light commercial vehicle", gvw: "up to 3.5 t", payload: "0.5–2 t", payloadMaxT: 2, typical: "Mini-truck or pickup, first and last mile", loadFactor: 0.83, emptyRunning: 0.109 },
-  { id: "gvw-3-5", label: "Small commercial vehicle", gvw: "3–5 t", payload: "2–3.5 t", payloadMaxT: 3.5, typical: "Small rigid truck, city distribution", loadFactor: 0.827, emptyRunning: 0.109 },
-  { id: "gvw-5-12", label: "Intermediate rigid truck", gvw: "5–12 t", payload: "3.5–8 t", payloadMaxT: 8, typical: "14–17 ft rigid, regional distribution", loadFactor: 0.788, emptyRunning: 0.108 },
-  { id: "gvw-12-20", label: "Medium rigid truck", gvw: "12–20 t", payload: "8–12 t", payloadMaxT: 12, typical: "19–22 ft rigid, part-load line haul", loadFactor: 0.768, emptyRunning: 0.124 },
-  { id: "gvw-20-30", label: "Heavy rigid truck", gvw: "20–30 t", payload: "12–20 t", payloadMaxT: 20, typical: "24 ft multi-axle rigid", loadFactor: 0.694, emptyRunning: 0.12 },
-  { id: "gvw-30-50", label: "Multi-axle heavy truck", gvw: "30–50 t", payload: "20–40 t", payloadMaxT: 40, typical: "32 ft multi-axle, full truckload", loadFactor: 0.683, emptyRunning: 0.144 },
-  { id: "trailer-30-60", label: "Tractor-trailer", gvw: "30–60 t", payload: "20–50 t", payloadMaxT: 50, typical: "40 ft trailer, container and bulk", loadFactor: 0.6721, emptyRunning: 0.133 },
+  { id: "gvw-3.5", label: "Light commercial vehicle", gvw: "up to 3.5 t", payload: "0.5–2 t", payloadMaxT: 2, typical: "Mini-truck or pickup, first and last mile", loadFactor: 0.841, emptyRunning: 0.11 },
+  { id: "gvw-3-5", label: "Small commercial vehicle", gvw: "3–5 t", payload: "2–3.5 t", payloadMaxT: 3.5, typical: "Small rigid truck, city distribution", loadFactor: 0.8335, emptyRunning: 0.115 },
+  { id: "gvw-5-12", label: "Intermediate rigid truck", gvw: "5–12 t", payload: "3.5–8 t", payloadMaxT: 8, typical: "14–17 ft rigid, regional distribution", loadFactor: 0.813, emptyRunning: 0.121 },
+  { id: "gvw-12-20", label: "Medium rigid truck", gvw: "12–20 t", payload: "8–12 t", payloadMaxT: 12, typical: "19–22 ft rigid, part-load line haul", loadFactor: 0.807, emptyRunning: 0.126 },
+  { id: "gvw-20-30", label: "Heavy rigid truck", gvw: "20–30 t", payload: "12–20 t", payloadMaxT: 20, typical: "24 ft multi-axle rigid", loadFactor: 0.78, emptyRunning: 0.131 },
+  { id: "gvw-30-50", label: "Multi-axle heavy truck", gvw: "30–50 t", payload: "20–40 t", payloadMaxT: 40, typical: "32 ft multi-axle, full truckload", loadFactor: 0.7425, emptyRunning: 0.14 },
+  { id: "trailer-30-60", label: "Tractor-trailer", gvw: "30–60 t", payload: "20–50 t", payloadMaxT: 50, typical: "40 ft trailer, container and bulk", loadFactor: 0.72, emptyRunning: 0.139 },
 ]);
 
 type RoadTable = Partial<Record<RoadClassId, Partial<Record<Exclude<RoadFuel, "electric">, Intensity>>>>;
 
+/**
+ * GLEC v3.3 Table 13, Indian road emission intensity values (SFC India and TCI–IIMB Supply Chain Sustainability Lab),
+ * average loading. The values include GLEC's 5% distance conversion for diversionary and out-of-route distances.
+ */
+const road = (wtt: number, ttw: number, row: string, fuel: string) => g(wtt, ttw, `Table 13, ${row}, ${fuel}`);
 export const ROAD_FACTORS: Readonly<Record<FactorSetId, RoadTable>> = Object.freeze({
   "temt": {
-    "gvw-3.5": { diesel: t(0.053, 0.179, "Road vehicle table"), petrol: t(0.051, 0.156, "Road vehicle table"), cng: t(0.075, 0.181, "Road vehicle table") },
-    "gvw-3-5": { diesel: t(0.041, 0.138, "Road vehicle table") },
-    "gvw-5-12": { diesel: t(0.027, 0.089, "Road vehicle table"), cng: t(0.034, 0.083, "Road vehicle table") },
-    "gvw-12-20": { diesel: t(0.019, 0.063, "Road vehicle table"), cng: t(0.031, 0.074, "Road vehicle table") },
-    "gvw-20-30": { diesel: t(0.023, 0.077, "Road vehicle table") },
-    "gvw-30-50": { diesel: t(0.014, 0.048, "Road vehicle table") },
-    "trailer-30-60": { diesel: t(0.013, 0.043, "Road vehicle table") },
+    "gvw-3.5": { diesel: road(69.2, 229.8, "Small commercial vehicles, GVW < 3.5 t", "diesel"), petrol: road(93.1, 291.1, "Small commercial vehicles, GVW < 3.5 t", "petrol"), cng: road(116.6, 312.3, "Small commercial vehicles, GVW < 3.5 t", "CNG") },
+    "gvw-3-5": { diesel: road(44.3, 147.1, "Medium commercial vehicles 1, GVW 3–5 t", "diesel"), cng: road(67.1, 179.8, "Medium commercial vehicles 1, GVW 3–5 t", "CNG") },
+    "gvw-5-12": { diesel: road(25.8, 85.8, "Medium commercial vehicles 2, GVW 5–12 t", "diesel"), cng: road(43.9, 117.7, "Medium commercial vehicles 2, GVW 5–12 t", "CNG") },
+    "gvw-12-20": { diesel: road(20.9, 69.4, "Heavy commercial vehicles 1, GVW 12–20 t", "diesel"), cng: road(20.1, 53.9, "Heavy commercial vehicles 1, GVW 12–20 t", "CNG") },
+    "gvw-20-30": { diesel: road(17.0, 56.5, "Heavy commercial vehicles 2, GVW 20–30 t", "diesel") },
+    "gvw-30-50": { diesel: road(13.3, 44.1, "Heavy commercial vehicles 3, GVW 30–50 t", "diesel") },
+    "trailer-30-60": { diesel: road(12.3, 40.7, "Tractor-trailers, GVW 30–60 t", "diesel") },
   },
 });
 
@@ -91,11 +98,12 @@ export const ROAD_FACTORS: Readonly<Record<FactorSetId, RoadTable>> = Object.fre
 export const CEA_GRID_KG_PER_KWH = 0.675;
 /**
  * Indian grid electricity at the point of use, well-to-wheel, as GLEC v3.3 applies it to Indian rail and electric
- * trucks: CEA V22.0 adjusted for transmission and distribution losses (NITI Aayog India Climate & Energy Dashboard)
- * and upstream fuel production (EcoTransIT 2023, India). It is the value implied by GLEC v3.3's Indian electric-truck
- * table (WTT g/t-km ÷ (kWh/t-km × 1.10 charging loss × 1.05 distance)). Electricity has no tank-to-wheel emissions.
+ * trucks: CEA V22.0 converted to CO2e with CH4 and N2O (IPCC 2006, AR6 GWP100), adjusted for transmission and
+ * distribution losses (NITI Aayog India Climate & Energy Dashboard) and upstream fuel production (EcoTransIT 2023,
+ * India). It is the value implied by GLEC v3.3 Table 13a (WTT g/t-km ÷ (kWh/t-km × 1.10 charging loss × 1.05
+ * distance)). Electricity has no tank-to-wheel emissions.
  */
-export const INDIA_GRID_KG_PER_KWH = 0.903;
+export const INDIA_GRID_KG_PER_KWH = 0.907;
 
 // ─── Courier / part-truckload (TEMT three-leg model) ────────────
 
@@ -108,7 +116,7 @@ export const TEMT_COURIER = Object.freeze({
 // ─── Rail ──────────────────────────────────────────────────────────────────
 
 /** GLEC v3.3, Region: India: Indian Railways goods services, FY 2022–23 to 2024–25, with CEA V22.0 electricity. */
-const INDIA_RAIL = g(9.4, 1.54, "Rail, Region: India (mixed diesel and electric traction, FY 2022–23 to 2024–25)");
+const INDIA_RAIL = g(9.6, 1.5, "Rail, Region: India (mixed diesel and electric traction, FY 2022–23 to 2024–25)");
 export const RAIL_FACTORS: Readonly<Record<FactorSetId, Intensity>> = Object.freeze({
   temt: INDIA_RAIL,
 });
@@ -116,15 +124,24 @@ export const RAIL_FACTORS: Readonly<Record<FactorSetId, Intensity>> = Object.fre
 // ─── Air ───────────────────────────────────────────────────────────────────
 
 /**
- * GLEC v3.3 Indian domestic air (DGCA traffic and jet fuel, FY 2022–23 to 2024–25), aircraft type unknown. Built from
- * actual fuel use, so route deviations are already included: it applies to the great-circle distance without the
- * 95 km allowance.
+ * GLEC v3.3 Indian domestic air (DGCA traffic and jet fuel, FY 2022–23 to 2024–25), aircraft type unknown. TEMT
+ * applies it, like every air value, to the great-circle distance plus the 95 km allowance.
  */
 export const INDIA_DOMESTIC_AIR = g(216, 1043, "Air, Indian domestic (aircraft type unknown, FY 2022–23 to 2024–25)");
-export const TEMT_AIR: Readonly<Record<AirScope, Intensity>> = Object.freeze({
-  domestic: INDIA_DOMESTIC_AIR,
-  international: t(0.171, 0.646, "Air international default"),
+/**
+ * GLEC v3.3 Table 1, aircraft type unknown, in the version excluding the +95 km distance adjustment: TEMT applies it
+ * to the great-circle distance plus 95 km. Short-haul is under 1,500 km great-circle distance.
+ */
+export const INTERNATIONAL_AIR = Object.freeze({
+  shortHaul: g(227, 1096, "Table 1, aircraft type unknown, short-haul (< 1,500 km), excluding +95 km DAF"),
+  longHaul: g(136, 653, "Table 1, aircraft type unknown, long-haul (> 1,500 km), excluding +95 km DAF"),
 });
+export const TEMT_AIR = Object.freeze({ domestic: INDIA_DOMESTIC_AIR, international: INTERNATIONAL_AIR });
+/** Air intensity for a flight: Indian domestic, or GLEC Table 1 by haul for international flights. */
+export function airIntensity(scope: AirScope, greatCircleKm: number): Intensity {
+  if (scope === "domestic") return INDIA_DOMESTIC_AIR;
+  return greatCircleKm < AIR_SHORT_HAUL_LIMIT_KM ? INTERNATIONAL_AIR.shortHaul : INTERNATIONAL_AIR.longHaul;
+}
 
 // ─── Sea ───────────────────────────────────────────────────────────────────
 
@@ -291,23 +308,23 @@ export const FUELS: Readonly<Record<FuelId, Fuel>> = Object.freeze({
 });
 
 /**
- * GLEC v3.3 Indian electric-truck values (Table 13 continued): manufacturer specifications and industry pilots, with
+ * GLEC v3.3 Indian electric-truck values (Table 13a): manufacturer specifications and industry pilots, with
  * TCI–IIMB load factors and empty running. The WTW intensity includes a 10% charging loss, +5% distance and grid
  * electricity at the point of use (CEA V22.0). Each TEMT class takes the row with its own operating assumptions.
  */
 export interface ElectricTruck { row: string; kwhPerTkm: number; wtwG: number; loadFactor: number; emptyRunning: number }
 export const INDIA_ELECTRIC_TRUCKS: Readonly<Partial<Record<RoadClassId, ElectricTruck>>> = Object.freeze({
-  "gvw-3.5": { row: "Rigid truck <3.5 t GVW", kwhPerTkm: 0.132, wtwG: 137.7, loadFactor: 0.83, emptyRunning: 0.109 },
-  "gvw-3-5": { row: "Rigid truck 3.5–12 t GVW", kwhPerTkm: 0.128, wtwG: 133.4, loadFactor: 0.7958, emptyRunning: 0.1082 },
-  "gvw-5-12": { row: "Rigid truck 14 t GVW", kwhPerTkm: 0.123, wtwG: 128.4, loadFactor: 0.788, emptyRunning: 0.108 },
-  "gvw-12-20": { row: "Rigid truck 18.5 t GVW", kwhPerTkm: 0.072, wtwG: 76.8, loadFactor: 0.768, emptyRunning: 0.124 },
-  "trailer-30-60": { row: "Articulated truck 55 t GVW", kwhPerTkm: 0.036, wtwG: 38.6, loadFactor: 0.6721, emptyRunning: 0.133 },
+  "gvw-3.5": { row: "Rigid truck <3.5 t GVW", kwhPerTkm: 0.132, wtwG: 138.3, loadFactor: 0.83, emptyRunning: 0.109 },
+  "gvw-3-5": { row: "Rigid truck 3.5–12 t GVW", kwhPerTkm: 0.128, wtwG: 133.9, loadFactor: 0.7958, emptyRunning: 0.1082 },
+  "gvw-5-12": { row: "Rigid truck 14 t GVW", kwhPerTkm: 0.123, wtwG: 128.9, loadFactor: 0.788, emptyRunning: 0.108 },
+  "gvw-12-20": { row: "Rigid truck 18.5 t GVW", kwhPerTkm: 0.072, wtwG: 77.1, loadFactor: 0.768, emptyRunning: 0.124 },
+  "trailer-30-60": { row: "Articulated truck 55 t GVW", kwhPerTkm: 0.036, wtwG: 38.7, loadFactor: 0.6721, emptyRunning: 0.133 },
 });
 
 /**
  * GLEC v3.3 has no Indian electric value for heavy rigid trucks of 20–50 t. For those two classes TEMT applies GLEC
  * v3.3 Table 11's European ratio of electricity to diesel for the matching rigid class (kWh/t-km over Table 8 diesel
- * kg/t-km) to the diesel use implied by TEMT's Indian factor, so the estimate reflects Indian loading.
+ * kg/t-km) to the diesel use implied by GLEC v3.3's Indian diesel value (Table 13), so the estimate reflects Indian loading.
  */
 export const GLEC_ELECTRIC_REFERENCE: Readonly<Partial<Record<RoadClassId, { kwhPerTkm: number; dieselKgPerTkm: number; europeanClass: string }>>> = Object.freeze({
   "gvw-20-30": { kwhPerTkm: 0.16, dieselKgPerTkm: 0.037, europeanClass: "Rigid truck 26–40 t" },

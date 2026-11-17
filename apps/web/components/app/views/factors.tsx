@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { CEA_GRID_KG_PER_KWH, EV_ENERGY_PROXY_KWH_PER_TKM, FACTOR_SETS, FUELS, HUB_TYPES, INDIA_DOMESTIC_AIR, INDIA_ELECTRIC_TRUCKS, INDIA_GRID_KG_PER_KWH, IWW_VESSELS, RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, SOURCES, TEMT_AIR, TRADE_LANES, VESSELS, type RoadClassId } from "@temt/calculator";
+import { CEA_GRID_KG_PER_KWH, EV_ENERGY_PROXY_KWH_PER_TKM, FACTOR_SETS, FUELS, HUB_TYPES, INDIA_DOMESTIC_AIR, INDIA_ELECTRIC_TRUCKS, INDIA_GRID_KG_PER_KWH, INTERNATIONAL_AIR, IWW_VESSELS, RAIL_FACTORS, ROAD_CLASSES, ROAD_FACTORS, SOURCES, TRADE_LANES, VESSELS, type RoadClassId } from "@temt/calculator";
 import { fmt } from "@/lib/format";
 import { BarList } from "../charts";
 import { PageHeader, Segmented, cx } from "../../ui";
@@ -32,7 +32,7 @@ export function FactorsView() {
     { key: "hcv", label: "Multi-axle truck 30–50 t, diesel", value: road("gvw-30-50"), color: "var(--mode-road)" },
     { key: "icv", label: "Intermediate truck 5–12 t, diesel", value: road("gvw-5-12"), color: "var(--mode-road)" },
     { key: "lcv", label: "Light commercial vehicle, diesel", value: road("gvw-3.5"), color: "var(--mode-road)" },
-    { key: "air-long", label: "Air, international", value: TEMT_AIR.international.wtt + TEMT_AIR.international.ttw, color: "var(--mode-air)" },
+    { key: "air-long", label: "Air, international long-haul", value: INTERNATIONAL_AIR.longHaul.wtt + INTERNATIONAL_AIR.longHaul.ttw, color: "var(--mode-air)" },
     { key: "air-domestic", label: "Air, Indian domestic", value: INDIA_DOMESTIC_AIR.wtt + INDIA_DOMESTIC_AIR.ttw, color: "var(--mode-air)" },
   ];
 
@@ -51,17 +51,17 @@ export function FactorsView() {
 
       {tab === "road" && (
         <div className="grid gap-4 animate-fade">
-          <Table head={["Vehicle class", "Fuel", "WTT", "TTW", "WTW"]} right={2}
+          <Table head={["Vehicle class", "Fuel", "Load factor", "Empty running", "WTT", "TTW", "WTW"]} right={2}
             rows={ROAD_CLASSES.flatMap((item) => (["diesel", "cng", "petrol"] as const).flatMap((fuel) => {
               const own = ROAD_FACTORS.temt[item.id]?.[fuel];
-              return own ? [[`${item.label} (${item.gvw})`, fuel === "cng" ? "CNG" : fuel, g(own.wtt), g(own.ttw), g(own.wtt + own.ttw)]] : [];
+              return own ? [[`${item.label} (${item.gvw})`, fuel === "cng" ? "CNG" : fuel, `${fmt(item.loadFactor * 100, 2)}%`, `${fmt(item.emptyRunning * 100, 1)}%`, g(own.wtt), g(own.ttw), g(own.wtt + own.ttw)]] : [];
             }))} />
-          <p className="text-[13px] leading-relaxed text-grey-600">g CO₂e per tonne-km, at the typical load factor of each class. Refrigerated road freight adds TEMT's refrigeration uplift. Courier and part-truckload shipments use TEMT's first-mile, line-haul and last-mile defaults with a transshipment at each hub.</p>
-          <Table head={["Electric truck class", "GLEC v3.3 India row", "kWh/t-km", "WTW, g/t-km", "Diesel, g/t-km"]} right={2} rows={ROAD_CLASSES.filter((item) => EV_ENERGY_PROXY_KWH_PER_TKM[item.id]).map((item) => {
+          <p className="text-[13px] leading-relaxed text-grey-600">g CO₂e per tonne-km: GLEC v3.3 Table 13, Indian road emission intensity values from SFC India and the TCI–IIMB Lab, at each class's average load factor and empty running. They include GLEC's 5% distance conversion for out-of-route travel. Refrigerated road freight adds TEMT's refrigeration uplift. Courier and part-truckload shipments use TEMT's first-mile, line-haul and last-mile defaults with a transshipment at each hub.</p>
+          <Table head={["Electric truck class", "GLEC v3.3 Table 13a row", "kWh/t-km", "WTW, g/t-km", "Diesel, g/t-km"]} right={2} rows={ROAD_CLASSES.filter((item) => EV_ENERGY_PROXY_KWH_PER_TKM[item.id]).map((item) => {
             const indian = INDIA_ELECTRIC_TRUCKS[item.id];
             return [`${item.label} (${item.gvw})`, indian ? indian.row : "Not covered: TEMT estimate", fmt(indian ? indian.kwhPerTkm : EV_ENERGY_PROXY_KWH_PER_TKM[item.id]!, 3), indian ? fmt(indian.wtwG, 1) : g(EV_ENERGY_PROXY_KWH_PER_TKM[item.id]! * INDIA_GRID_KG_PER_KWH), g(ROAD_FACTORS.temt[item.id]!.diesel!.wtt + ROAD_FACTORS.temt[item.id]!.diesel!.ttw)];
           })} />
-          <p className="text-[13px] leading-relaxed text-grey-600">GLEC v3.3 publishes Indian electric-truck values from manufacturer specifications and industry pilots, with TCI–IIMB load factors. Their WTW intensity includes a 10% charging loss, 5% out-of-route distance and grid electricity at the point of use. Each TEMT class takes the row with its own operating assumptions. For heavy rigid trucks of 20–50 t, which have no Indian value, TEMT applies GLEC v3.3 Table 11's ratio of electricity to diesel to its Indian diesel factor, so the estimate reflects Indian loading. Enter kWh from charging records for primary data.</p>
+          <p className="text-[13px] leading-relaxed text-grey-600">GLEC v3.3 Table 13a publishes Indian electric-truck values from manufacturer specifications and industry pilots, with TCI–IIMB load factors. Their WTW intensity includes a 10% charging loss, 5% out-of-route distance and grid electricity at the point of use. Each TEMT class takes the row with its own operating assumptions. For heavy rigid trucks of 20–50 t, which have no Indian value, TEMT applies GLEC v3.3 Table 11's ratio of electricity to diesel to the Indian diesel value of Table 13, so the estimate reflects Indian loading. Enter kWh from charging records for primary data.</p>
         </div>
       )}
       {tab === "rail-air" && (
@@ -69,9 +69,10 @@ export function FactorsView() {
           <Table head={["Rail and air", "WTT", "TTW", "WTW"]} rows={[
             ["Indian Railways, mixed diesel and electric traction (GLEC v3.3, India)", g(RAIL_FACTORS.temt.wtt), g(RAIL_FACTORS.temt.ttw), g(RAIL_FACTORS.temt.wtt + RAIL_FACTORS.temt.ttw)],
             ["Indian domestic air, all aircraft (GLEC v3.3, India)", g(INDIA_DOMESTIC_AIR.wtt), g(INDIA_DOMESTIC_AIR.ttw), g(INDIA_DOMESTIC_AIR.wtt + INDIA_DOMESTIC_AIR.ttw)],
-            ["International air (TEMT)", g(TEMT_AIR.international.wtt), g(TEMT_AIR.international.ttw), g(TEMT_AIR.international.wtt + TEMT_AIR.international.ttw)],
+            ["International air, short-haul under 1,500 km, aircraft type unknown (GLEC v3.3 Table 1)", g(INTERNATIONAL_AIR.shortHaul.wtt), g(INTERNATIONAL_AIR.shortHaul.ttw), g(INTERNATIONAL_AIR.shortHaul.wtt + INTERNATIONAL_AIR.shortHaul.ttw)],
+            ["International air, long-haul over 1,500 km, aircraft type unknown (GLEC v3.3 Table 1)", g(INTERNATIONAL_AIR.longHaul.wtt), g(INTERNATIONAL_AIR.longHaul.ttw), g(INTERNATIONAL_AIR.longHaul.wtt + INTERNATIONAL_AIR.longHaul.ttw)],
           ]} />
-          <p className="text-[13px] text-grey-600">g CO₂e per tonne-km over the great-circle distance between airports. The Indian rail and domestic air values are built from Indian Railways and DGCA data for FY 2022–23 to 2024–25 by SFC India and the TCI–IIMB Lab. Domestic air comes from actual fuel use, so no routing allowance is added; international flights include GLEC's 95 km allowance.</p>
+          <p className="text-[13px] text-grey-600">g CO₂e per tonne-km over the great-circle distance between airports. The Indian rail and domestic air values are built from Indian Railways and DGCA data for FY 2022–23 to 2024–25 by SFC India and the TCI–IIMB Lab. Air values apply to the great-circle distance plus GLEC's 95 km allowance; for international flights TEMT uses Table 1's values excluding the distance adjustment, so the allowance is counted once.</p>
         </div>
       )}
       {tab === "sea" && (
