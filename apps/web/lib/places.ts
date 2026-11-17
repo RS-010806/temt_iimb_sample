@@ -2,7 +2,7 @@ import { AIR_DISTANCE_ADJUSTMENT_KM, CIRCUITY, PORTS, greatCircleKm, landPathKm,
 import { loadStations, railRoute, type Station, type StationKind } from "./rail";
 import { TERMINALS, waterwayKm, waterwayName } from "./waterways";
 
-export type PlaceKind = "city" | "pin" | "station" | "airport" | "port" | "terminal" | "custom";
+export type PlaceKind = "city" | "pin" | "station" | "airport" | "port" | "terminal" | "locality" | "custom";
 
 /**
  * What each transport mode's places must be: freight leaves and arrives by air at airports, by sea at ports, by rail
@@ -23,6 +23,61 @@ export const STATE_NAMES: Record<string, string> = {
   TN: "Tamil Nadu", TR: "Tripura", UK: "Uttarakhand", UP: "Uttar Pradesh", WB: "West Bengal",
 };
 export const stateName = (code?: string) => (code ? STATE_NAMES[code] ?? code : undefined);
+const STATE_CODES_BY_NAME: Record<string, string> = Object.fromEntries(Object.entries(STATE_NAMES).map(([code, name]) => [name.toLowerCase(), code]));
+
+// ─── Localities and landmarks from OpenStreetMap ─────────────────────────────
+
+type PhotonFeature = { geometry: { coordinates: [number, number] }; properties: Record<string, string | undefined> };
+const MAP_WORD: Record<string, string> = {
+  suburb: "Locality", neighbourhood: "Locality", quarter: "Locality", locality: "Locality", residential: "Residential area",
+  village: "Village", hamlet: "Village", isolated_dwelling: "Village", town: "Town", city: "City", stadium: "Stadium", pitch: "Sports ground",
+  industrial: "Industrial area", warehouse: "Warehouse", commercial: "Commercial area", retail: "Market area", post_office: "Post office",
+};
+const mapWord = (props: Record<string, string | undefined>) => {
+  if (props.type === "street" || props.osm_key === "highway") return "Road";
+  const value = props.osm_value ?? "";
+  return MAP_WORD[value] ?? (value ? value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ") : "Place");
+};
+const mapCache = new Map<string, Promise<Place[]>>();
+
+/**
+ * Localities, roads, industrial areas and landmarks anywhere in India, from OpenStreetMap (Photon search), for places
+ * that are not in TEMT's own lists of towns, PIN codes and terminals.
+ */
+export function searchMapPlaces(query: string, limit = 5): Promise<Place[]> {
+  const q = query.trim().replace(/\s+/g, " ");
+  if (q.length < 3 || /^\d+$/.test(q)) return Promise.resolve([]);
+  const key = q.toLowerCase();
+  const cached = mapCache.get(key);
+  if (cached) return cached.then((places) => places.slice(0, limit));
+  const request = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    try {
+      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=15&lang=en&bbox=68.1,6.5,97.5,35.7`, { signal: controller.signal });
+      if (!response.ok) return [];
+      const data = (await response.json()) as { features?: PhotonFeature[] };
+      const seen = new Set<string>();
+      const places: Place[] = [];
+      for (const feature of data.features ?? []) {
+        const props = feature.properties;
+        if (props.countrycode !== "IN" || !props.name) continue;
+        if (["bus_stop", "platform", "stop_position", "state", "country"].includes(props.osm_value ?? "") || props.type === "state" || props.type === "country") continue;
+        const area = props.city ?? props.county ?? props.district;
+        const label = area && !props.name.toLowerCase().includes(area.toLowerCase()) ? `${props.name}, ${area}` : props.name;
+        if (seen.has(label.toLowerCase())) continue;
+        seen.add(label.toLowerCase());
+        const [lon, lat] = feature.geometry.coordinates;
+        places.push({ label, kind: "locality", lat, lon, state: STATE_CODES_BY_NAME[(props.state ?? "").toLowerCase()], country: "IN", detail: `${mapWord(props)} (OpenStreetMap)` });
+      }
+      return places;
+    } finally {
+      clearTimeout(timer);
+    }
+  })().catch(() => { mapCache.delete(key); return [] as Place[]; });
+  mapCache.set(key, request);
+  return request.then((places) => places.slice(0, limit));
+}
 
 /** Earlier and current names people still type interchangeably. */
 const SYNONYMS: [string, string][] = [

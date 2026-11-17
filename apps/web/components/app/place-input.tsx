@@ -1,12 +1,12 @@
 "use client";
 
 import { useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Anchor, Building2, Hash, MapPin, Plane, TrainFront, Waves, X } from "lucide-react";
-import { TERMINAL_KINDS, loadAirports, loadCities, loadPins, loadStations, searchPlaces, stateName, type Place, type PlaceKind } from "@/lib/places";
+import { Anchor, Building2, Hash, Landmark, MapPin, Plane, TrainFront, Waves, X } from "lucide-react";
+import { TERMINAL_KINDS, loadAirports, loadCities, loadPins, loadStations, searchMapPlaces, searchPlaces, stateName, type Place, type PlaceKind } from "@/lib/places";
 import { FieldIdContext, cx } from "../ui";
 
-const ICONS: Record<PlaceKind, typeof MapPin> = { city: Building2, pin: Hash, station: TrainFront, airport: Plane, port: Anchor, terminal: Waves, custom: MapPin };
-const KIND_LABEL: Record<PlaceKind, string> = { city: "City or town", pin: "PIN code", station: "Railway station", airport: "Airport", port: "Port", terminal: "Waterway terminal", custom: "As typed" };
+const ICONS: Record<PlaceKind, typeof MapPin> = { city: Building2, pin: Hash, station: TrainFront, airport: Plane, port: Anchor, terminal: Waves, locality: Landmark, custom: MapPin };
+const KIND_LABEL: Record<PlaceKind, string> = { city: "City or town", pin: "PIN code", station: "Railway station", airport: "Airport", port: "Port", terminal: "Waterway terminal", locality: "Locality", custom: "As typed" };
 const LIST_NAME: Partial<Record<PlaceKind, string>> = { station: "railway stations", airport: "airports", port: "ports", terminal: "waterway terminals" };
 const COUNTRY = new Intl.DisplayNames(["en-IN"], { type: "region" });
 
@@ -35,6 +35,7 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [mapLoading, setMapLoading] = useState(false);
   const listId = useId();
   const wrapper = useRef<HTMLDivElement>(null);
   const kindsKey = kinds.join(",");
@@ -67,14 +68,35 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
     if (!q || q === value?.label) { setResults([]); setResultsFor(q); return; }
     let cancelled = false;
     setLoading(true);
-    const timer = setTimeout(() => {
-      searchPlaces(q, kindsKey.split(",") as PlaceKind[], 5).then((found) => {
+    setMapLoading(false);
+    const list = kindsKey.split(",") as PlaceKind[];
+    // Where towns and PIN codes are allowed, localities, roads and landmarks also come from OpenStreetMap.
+    const useMap = list.includes("city") && q.length >= 3 && !/^\d+$/.test(q);
+    const show = (found: Place[]) => {
+      setResults(found);
+      setResultsFor(q);
+      setCursor(0);
+      if (pendingEnter.current) { pendingEnter.current = false; choose(found[0] ?? { label: q, kind: "custom" }); }
+    };
+    const timer = setTimeout(async () => {
+      try {
+        const found = await searchPlaces(q, list, 5);
         if (cancelled) return;
-        setResults(found);
-        setResultsFor(q);
-        setCursor(0);
-        if (pendingEnter.current) { pendingEnter.current = false; choose(found[0] ?? { label: q, kind: "custom" }); }
-      }).catch(() => { if (!cancelled) { setResults([]); setResultsFor(q); } }).finally(() => { if (!cancelled) setLoading(false); });
+        const exact = found.some((item) => item.label.toLowerCase() === q.toLowerCase());
+        if (!useMap || exact) { show(found); return; }
+        // TEMT's own matches show at once; map places follow after a short pause in typing.
+        if (found.length) { show(found); setLoading(false); }
+        setMapLoading(true);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        if (cancelled) return;
+        const mapped = await searchMapPlaces(q, Math.max(3, 7 - found.length));
+        if (cancelled) return;
+        show([...found, ...mapped.filter((item) => !found.some((own) => own.label.toLowerCase() === item.label.toLowerCase()))]);
+      } catch {
+        if (!cancelled) { setResults([]); setResultsFor(q); }
+      } finally {
+        if (!cancelled) { setLoading(false); setMapLoading(false); }
+      }
     }, 120);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [query, open, kindsKey, value?.label]);
@@ -91,7 +113,8 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
   // While a search for new text is pending, earlier results are hidden rather than shown as if they matched.
   const pending = !!typed && typed !== value?.label && (loading || resultsFor !== typed);
   const current = pending ? [] : results;
-  const offerTyped = typed && !pending && typed !== value?.label && (listOnly ? current.length === 0 : !current.some((item) => item.label.toLowerCase() === typed.toLowerCase()));
+  const fromMap = current.some((item) => item.kind === "locality");
+  const offerTyped = typed && !pending && !mapLoading && typed !== value?.label && (listOnly ? current.length === 0 : !current.some((item) => item.label.toLowerCase() === typed.toLowerCase()));
   const options: Place[] = [...current, ...(offerTyped ? [{ label: typed, kind: "custom" as const }] : [])];
   const listName = kinds.map((kind) => LIST_NAME[kind]).filter(Boolean).join(" or ");
   const choose = (place: Place) => { onChange(place); setQuery(place.label); setOpen(false); };
@@ -115,7 +138,7 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
           }} />
         {query && <button type="button" aria-label="Clear location" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-grey-400 hover:bg-stone-100 hover:text-grey-700" onClick={() => { setQuery(""); onChange(undefined); setOpen(true); inputRef.current?.focus(); }}><X size={14} /></button>}
       </div>
-      {open && (options.length > 0 || pending) && (
+      {open && (options.length > 0 || pending || mapLoading) && (
         <ul id={listId} role="listbox" className="absolute z-40 mt-1.5 w-full overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-[var(--shadow-float)] animate-fade">
           {pending && <li className="px-3 py-2.5 text-sm text-grey-500">Searching…</li>}
           {options.map((place, index) => {
@@ -132,6 +155,8 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
               </li>
             );
           })}
+          {mapLoading && !pending && <li className="px-3 py-2 text-[13px] text-grey-500">Searching the map for localities and landmarks…</li>}
+          {fromMap && !pending && <li className="px-3 pb-1 pt-1.5 text-[11px] text-grey-400">Localities and landmarks: © OpenStreetMap contributors</li>}
         </ul>
       )}
     </div>
