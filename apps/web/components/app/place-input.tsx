@@ -2,7 +2,7 @@
 
 import { useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Anchor, Building2, Hash, Landmark, MapPin, Plane, TrainFront, Waves, X } from "lucide-react";
-import { TERMINAL_KINDS, loadAirports, loadCities, loadPins, loadStations, searchMapPlaces, searchPlaces, stateName, type Place, type PlaceKind } from "@/lib/places";
+import { TERMINAL_KINDS, loadAirports, loadCities, loadPins, loadStations, FREIGHT_POINT_WORDS, searchFreightPoints, searchMapPlaces, searchPlaces, stateName, type Place, type PlaceKind } from "@/lib/places";
 import { FieldIdContext, cx } from "../ui";
 
 const ICONS: Record<PlaceKind, typeof MapPin> = { city: Building2, pin: Hash, station: TrainFront, airport: Plane, port: Anchor, terminal: Waves, locality: Landmark, custom: MapPin };
@@ -89,9 +89,16 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
         setMapLoading(true);
         await new Promise((resolve) => setTimeout(resolve, 250));
         if (cancelled) return;
-        const mapped = await searchMapPlaces(q, Math.max(3, 7 - found.length));
+        // Rail freight points from FOIS (sidings, ICDs, goods sheds) locate plants and terminals: first when the text asks
+        // for one ("ICD Sabarmati", "CONCOR Dadri"), otherwise after the map's localities.
+        const [mapped, freight] = await Promise.all([
+          searchMapPlaces(q, Math.max(3, 7 - found.length)),
+          list.includes("station") ? Promise.resolve([] as Place[]) : searchFreightPoints(q, 3).catch(() => [] as Place[]),
+        ]);
         if (cancelled) return;
-        show([...found, ...mapped.filter((item) => !found.some((own) => own.label.toLowerCase() === item.label.toLowerCase()))]);
+        const ordered = FREIGHT_POINT_WORDS.test(q) ? [...found, ...freight, ...mapped] : [...found, ...mapped.slice(0, 4), ...freight.slice(0, 2), ...mapped.slice(4)];
+        const seen = new Set<string>();
+        show(ordered.filter((item) => { const key = item.label.toLowerCase(); if (seen.has(key)) return false; seen.add(key); return true; }).slice(0, 8));
       } catch {
         if (!cancelled) { setResults([]); setResultsFor(q); }
       } finally {
@@ -156,7 +163,7 @@ export function PlaceInput({ value, onChange, kinds = ["city", "pin"], placehold
             );
           })}
           {mapLoading && !pending && <li className="px-3 py-2 text-[13px] text-grey-500">Searching the map for localities and landmarks…</li>}
-          {fromMap && !pending && <li className="px-3 pb-1 pt-1.5 text-[11px] text-grey-400">Localities and landmarks: © OpenStreetMap contributors</li>}
+          {fromMap && !pending && <li className="px-3 pb-1 pt-1.5 text-[11px] text-grey-400">Localities and landmarks: © OpenStreetMap contributors{current.some((item) => item.kind === "station") && !kinds.includes("station") ? " · rail freight points: FOIS, Indian Railways" : ""}</li>}
         </ul>
       )}
     </div>

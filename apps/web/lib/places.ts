@@ -39,6 +39,21 @@ const mapWord = (props: Record<string, string | undefined>) => {
   return MAP_WORD[value] ?? (value ? value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ") : "Place");
 };
 const mapCache = new Map<string, Promise<Place[]>>();
+/** Edit distance between two short words. */
+function editDistance(a: string, b: string) {
+  let previous = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) row[j] = Math.min(previous[j]! + 1, row[j - 1]! + 1, previous[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+    previous = row;
+  }
+  return previous[b.length]!;
+}
+/** Indian place names are spelt several ways (Hinjewadi, Hinjawadi): one letter off, or two for long names, still matches. */
+function near(part: string, word: string) {
+  const limit = word.length >= 8 ? 2 : 1;
+  return (Math.abs(part.length - word.length) <= limit && editDistance(part, word) <= limit) || (part.length > word.length && editDistance(part.slice(0, word.length), word) <= limit);
+}
 
 /**
  * Localities, roads, industrial areas and landmarks anywhere in India, from OpenStreetMap (Photon search), for places
@@ -59,6 +74,8 @@ export function searchMapPlaces(query: string, limit = 5): Promise<Place[]> {
       const data = (await response.json()) as { features?: PhotonFeature[] };
       const seen = new Set<string>();
       const places: Place[] = [];
+      // Every part of each address, for checking that a place really matches the typed words.
+      const address = new Map<Place, string[]>();
       for (const feature of data.features ?? []) {
         const props = feature.properties;
         if (props.countrycode !== "IN" || !props.name) continue;
@@ -68,9 +85,24 @@ export function searchMapPlaces(query: string, limit = 5): Promise<Place[]> {
         if (seen.has(label.toLowerCase())) continue;
         seen.add(label.toLowerCase());
         const [lon, lat] = feature.geometry.coordinates;
-        places.push({ label, kind: "locality", lat, lon, state: STATE_CODES_BY_NAME[(props.state ?? "").toLowerCase()], country: "IN", detail: `${mapWord(props)} (OpenStreetMap)` });
+        const place: Place = { label, kind: "locality", lat, lon, state: STATE_CODES_BY_NAME[(props.state ?? "").toLowerCase()], country: "IN", detail: `${mapWord(props)} (OpenStreetMap)` };
+        places.push(place);
+        address.set(place, [props.name, props.street, props.locality, props.district, props.city, props.county, props.state].filter(Boolean).join(" ").toLowerCase().split(/[\s,()./&-]+/).filter(Boolean));
       }
-      return places;
+      // The map search forgives spelling, which also brings in look-alikes ("ICD" finds "Ice Cream"): rank the places
+      // by how many typed words their address contains (the text may itself be misspelt, so nothing matching keeps all).
+      const words = key.split(" ").filter((word) => word.length >= 2 && !FILLER.has(word));
+      const has = (place: Place, word: string) => {
+        const parts = address.get(place) ?? [];
+        const text = ` ${parts.join(" ")}`;
+        return (WORD_FORMS[word] ?? [word]).some((form) => text.includes(` ${form}`)) || (word.length >= 5 && parts.some((part) => near(part, word)));
+      };
+      // Freight words ("ICD", "CONCOR", "port") must match; places with every word come first, then those with some.
+      const required = words.filter((word) => WORD_FORMS[word] || FREIGHT_POINT_WORDS.test(word));
+      const kept = places.filter((place) => required.every((word) => has(place, word)));
+      const all = kept.filter((place) => words.every((word) => has(place, word)));
+      const some = kept.filter((place) => !all.includes(place) && words.some((word) => has(place, word)));
+      return all.length || some.length ? [...all, ...some] : required.length ? [] : places;
     } finally {
       clearTimeout(timer);
     }
@@ -202,6 +234,43 @@ function score(text: string, query: string) {
 }
 const best = (texts: (string | undefined)[], queries: string[]) => Math.min(...texts.flatMap((text) => (text ? queries.map((query) => score(text, query)) : [99])));
 
+/** Abbreviations that FOIS spells out (or the other way round), so "ICD Sabarmati" finds "Inland Container Depot Siding Sabarmati". */
+const WORD_FORMS: Record<string, string[]> = {
+  icd: ["icd", "inland container depot"], cfs: ["cfs", "container freight station"], sdg: ["sdg", "siding"], siding: ["siding", "sdg"],
+  concor: ["concor", "container corporation"], ntpc: ["ntpc", "national thermal power"], pft: ["pft", "private freight terminal"],
+  iocl: ["iocl", "ioc", "indian oil"], ioc: ["ioc", "indian oil"], sail: ["sail", "steel authority"], fci: ["fci", "food corporation"],
+};
+const FILLER = new Set(["of", "the", "ltd", "m/s", "pvt", "limited", "and", "at", "near", "co"]);
+/** Every word of a several-word query appears at the start of a word in the text: rank 2.5, else no match. */
+function wordsRank(texts: (string | undefined)[], query: string) {
+  const words = query.split(" ").filter((word) => word.length >= 2 && !FILLER.has(word));
+  if (words.length < 2) return 99;
+  const hay = ` ${texts.filter(Boolean).join(" ").toLowerCase().replace(/[\s,()./&-]+/g, " ")}`;
+  return words.every((word) => (WORD_FORMS[word] ?? [word]).some((form) => hay.includes(` ${form}`))) ? 2.5 : 99;
+}
+/** Queries about a rail freight point rather than a town or locality. */
+export const FREIGHT_POINT_WORDS = /\b(icd|cfs|concor|siding|sdg|pft|goods|railhead|rake|depot|container|terminal|port)\b/i;
+
+/**
+ * Freight points from the FOIS register of Indian Railways (private sidings, container depots and ICDs, goods sheds,
+ * port railheads) for a road search: they locate factories, plants and terminals that are not towns.
+ */
+export async function searchFreightPoints(query: string, limit = 3): Promise<Place[]> {
+  const q = query.trim().toLowerCase().replace(/\s+/g, " ");
+  if (q.length < 3 || /^\d+$/.test(q)) return [];
+  const stations = await loadStations();
+  const byCode = new Map(stations.map((station) => [station.code, station]));
+  const found: { station: Station; rank: number }[] = [];
+  for (const station of stations) {
+    if (station.kind === "station") continue;
+    const host = station.servedBy ? byCode.get(station.servedBy)?.name : undefined;
+    const rank = Math.min(best([station.name, ...station.aliases], [q]), wordsRank([station.name, ...station.aliases, host], q));
+    if (rank < 3) found.push({ station, rank });
+  }
+  found.sort((a, b) => a.rank - b.rank || a.station.name.length - b.station.name.length);
+  return found.slice(0, limit).map(({ station }) => stationPlace(station, byCode));
+}
+
 export interface PlaceMatch {
   place: Place;
   /** 0 exact, 1 starts with, 2 a word starts with, 3 contains; fractions break ties between kinds. */
@@ -233,7 +302,8 @@ export async function rankPlaces(query: string, kinds: PlaceKind[] = ["city", "p
     for (const station of stations) {
       const code = station.code.toLowerCase();
       const codeRank = code === q || station.aliases.some((alias) => alias.toLowerCase() === q) ? -0.5 : 99;
-      const rank = Math.min(codeRank, best([station.name, ...station.aliases], queries));
+      const host = station.servedBy ? byCode.get(station.servedBy)?.name : undefined;
+      const rank = Math.min(codeRank, best([station.name, ...station.aliases], queries), wordsRank([station.name, ...station.aliases, host], q));
       if (rank < 99) results.push({ place: stationPlace(station, byCode), rank: rank + 0.1, weight: station.trains + (station.kind === "station" ? 0 : 0.5) });
     }
   }
@@ -269,7 +339,7 @@ export async function rankPlaces(query: string, kinds: PlaceKind[] = ["city", "p
   // Within each group, the kind listed first wins (stations for rail, airports for air), then exact names, then
   // bigger cities and busier stations.
   const group = (rank: number) => (rank < 2 ? 0 : rank < 3 ? 1 : 2);
-  const priority = (place: Place) => kinds.indexOf(place.kind);
+  const priority = (place: Place) => { const at = kinds.indexOf(place.kind); return at < 0 ? kinds.length : at; };
   results.sort((a, b) => group(a.rank) - group(b.rank) || priority(a.place) - priority(b.place) || Number(a.rank >= 0.5) - Number(b.rank >= 0.5) || b.weight - a.weight || a.rank - b.rank);
   const seen = new Set<string>();
   return results.filter(({ place }) => { const key = `${place.kind}:${place.label}`; if (seen.has(key)) return false; seen.add(key); return true; }).slice(0, limit).map(({ place, rank }) => ({ place, rank }));
